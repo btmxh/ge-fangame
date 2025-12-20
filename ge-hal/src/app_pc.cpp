@@ -3,8 +3,11 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_log.h>
+#include <SDL3/SDL_pixels.h>
+#include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
 #include <cstdlib>
+#include <cstring>
 #include <memory>
 
 namespace ge {
@@ -19,17 +22,18 @@ public:
       exit();
     }
 
-    window = SDL_CreateWindow("Glow Embrace Fangame", App::WIDTH, App::HEIGHT,
-                              SDL_WINDOW_RESIZABLE);
-    if (!window) {
+    if (!SDL_CreateWindowAndRenderer("Glow Embrace Fangame", App::WIDTH,
+                                     App::HEIGHT, SDL_WINDOW_RESIZABLE, &window,
+                                     &renderer)) {
       SDL_Log("SDL_CreateWindow Error: %s", SDL_GetError());
       exit();
     }
 
-    window_surface = SDL_GetWindowSurface(window);
-    blit_surface = SDL_CreateSurfaceFrom(
-        App::WIDTH, App::HEIGHT, SDL_PIXELFORMAT_RGB565, &app->framebuffer,
-        App::WIDTH * sizeof(app->framebuffer[0]));
+    SDL_SetRenderVSync(renderer, 1);
+
+    frame_texture =
+        SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565,
+                          SDL_TEXTUREACCESS_STREAMING, App::WIDTH, App::HEIGHT);
 
     SDL_AudioSpec spec{};
     spec.format = SDL_AUDIO_U8;
@@ -49,7 +53,8 @@ public:
   }
 
   ~AppImpl() {
-    SDL_DestroySurface(blit_surface);
+    SDL_DestroyTexture(frame_texture);
+    SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
   }
@@ -57,7 +62,8 @@ public:
   static void exit() { std::exit(1); }
 
   SDL_Window *window = nullptr;
-  SDL_Surface *window_surface = nullptr, *blit_surface = nullptr;
+  SDL_Renderer *renderer = nullptr;
+  SDL_Texture *frame_texture = nullptr;
   SDL_AudioDeviceID audio_dev = 0;
   SDL_AudioStream *audio_stream;
   bool quit = false;
@@ -138,14 +144,9 @@ void App::begin() {
     if (event.type == SDL_EVENT_QUIT) {
       app_impl_instance->quit = true;
     }
-    if (event.type == SDL_EVENT_WINDOW_RESIZED) {
-      app_impl_instance->window_surface =
-          SDL_GetWindowSurface(app_impl_instance->window);
-    }
   }
 
-  SDL_Rect rect{0, 0, WIDTH, HEIGHT};
-  SDL_FillSurfaceRect(app_impl_instance->blit_surface, &rect, 0x0);
+  std::memset(framebuffer, 0, WIDTH * HEIGHT * sizeof(framebuffer[0]));
 }
 
 void App::end() {
@@ -161,16 +162,21 @@ void App::end() {
   int dst_x = (win_w - dst_w) / 2;
   int dst_y = (win_h - dst_h) / 2;
 
-  SDL_Rect dst{dst_x, dst_y, dst_w, dst_h};
+  auto *impl = app_impl_instance.get();
 
-  // clear window (letterbox)
-  SDL_FillSurfaceRect(app_impl_instance->window_surface, nullptr, 0x0);
+  // upload framebuffer → texture
+  SDL_UpdateTexture(impl->frame_texture, nullptr, framebuffer,
+                    WIDTH * sizeof(framebuffer[0]));
 
-  SDL_BlitSurfaceScaled(app_impl_instance->blit_surface, nullptr,
-                        app_impl_instance->window_surface, &dst,
-                        SDL_SCALEMODE_NEAREST);
+  // letterbox clear
+  SDL_SetRenderDrawColor(impl->renderer, 0, 0, 0, 255);
+  SDL_RenderClear(impl->renderer);
 
-  SDL_UpdateWindowSurface(app_impl_instance->window);
+  // render scaled texture
+  SDL_FRect dstf{(float)dst_x, (float)dst_y, (float)dst_w, (float)dst_h};
+
+  SDL_RenderTexture(impl->renderer, impl->frame_texture, nullptr, &dstf);
+  SDL_RenderPresent(impl->renderer);
 }
 
 std::int64_t App::now() { return SDL_GetTicks(); }

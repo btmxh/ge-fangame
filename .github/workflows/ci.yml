@@ -116,7 +116,7 @@ jobs:
               cmake --build build-arm --verbose
             else
               # Check if failure is expected STM32 unsupported error
-              if grep -qE "STM32 platform not yet supported" \
+              if grep -q "STM32 platform not yet supported in ge-hal" \
                 cmake-output.txt; then
                 echo "Expected: STM32 support not yet implemented"
                 exit 0

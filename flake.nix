@@ -25,7 +25,7 @@
           embeddedToolchain = pkgs.pkgsCross.arm-embedded.stdenv.cc;
 
           python = pkgs.python3.withPackages (ps: with ps; [ pillow ]);
-          inherit (self.checks.${system}.pre-commit-check) shellHook enabledPackages config;
+          inherit (self.checks.${system}.pre-commit-check) shellHook enabledPackages;
         in
         {
           default = pkgs.mkShell {
@@ -49,7 +49,9 @@
               ]
               ++ enabledPackages;
 
-            inherit shellHook;
+            shellHook = shellHook + ''
+              export CMAKE_EXPORT_COMPILE_COMMANDS=1
+            '';
 
             packages = with pkgs; [
               openocd

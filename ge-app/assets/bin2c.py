@@ -11,6 +11,9 @@ inp, out_c, out_h, name = sys.argv[1:5]
 with open(inp, "rb") as f:
     data = f.read()
 
+# Create parent dir
+os.makedirs(os.path.dirname(out_c), exist_ok=True)
+
 # -------- generate .c --------
 with open(out_c, "w") as f:
     f.write("#include <stdint.h>\n")

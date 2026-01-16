@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Install Nix
         uses: cachix/install-nix-action@v27
@@ -63,7 +65,7 @@ jobs:
             cmake --build build --config Release --verbose
 
             # Verify the binary was created
-            ls -lh build/ge-app/Release
+            ls -lh build/ge-app/Release/ge-app
           '
 
       - name: Upload host build artifact
@@ -99,15 +101,14 @@ jobs:
             cmake -S. -Bbuild-arm \
               -DCMAKE_BUILD_TYPE=Release \
               -DGE_HAL_STM32=ON \
-              -DCMAKE_TOOLCHAIN_FILE=cmake/arm-none-eabi.cmake
-            cmake --build build-arm --config Release --verbose
-            ls -lh build-arm/ge-app/Release
+              -DCMAKE_TOOLCHAIN_FILE=cmake/arm-none-eabi.cmake &&
+            cmake --build build-arm --config Release --verbose &&
+            ls -lh build-arm/ge-app/Release/ge-app
           '
 
       - name: Upload ARM build artifact (if exists)
         uses: actions/upload-artifact@v4
         with:
           name: ge-app-arm-stm32
-          path: build-arm/ge-app/Release/*
-          if-no-files-found: ignore
+          path: build/ge-app/Release/ge-app
           retention-days: 7

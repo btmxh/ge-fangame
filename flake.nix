@@ -22,8 +22,6 @@
         system:
         let
           pkgs = import nixpkgs { inherit system; };
-          embeddedToolchain = pkgs.pkgsCross.arm-embedded.stdenv.cc;
-
           python = pkgs.python3.withPackages (ps: with ps; [ pillow ]);
           inherit (self.checks.${system}.pre-commit-check) shellHook enabledPackages;
         in
@@ -35,7 +33,7 @@
               pkg-config
 
               # this order matters: we want to have the host gcc as the default option
-              embeddedToolchain
+              gcc-arm-embedded
               gcc
 
               python
@@ -51,6 +49,7 @@
 
             shellHook = shellHook + ''
               export CMAKE_EXPORT_COMPILE_COMMANDS=1
+              export CMAKE_GENERATOR="Ninja Multi-Config"
             '';
 
             packages = with pkgs; [
@@ -61,6 +60,11 @@
               clang-tools
               nixd
               nixfmt-rfc-style
+
+              # cmake
+              gersemi
+              cmake-lint
+              neocmakelsp
             ];
           };
         }

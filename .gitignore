@@ -3,3 +3,4 @@
 /.direnv
 .envrc
 /.pre-commit-config.yaml
+/.neocmake.toml

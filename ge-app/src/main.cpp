@@ -1,12 +1,37 @@
 #include "ge-hal/app.hpp"
+#include "ge-hal/core.hpp"
 
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
-
+#include <array>
 #include <bgm_loop.h>
 
-int main() {
-  ge::App app;
+#ifdef GE_HAL_STM32
+#include "ge-hal/stm/gpio.hpp"
+#include "ge-hal/stm/time.hpp"
+#endif
+
+int main(int argc, char *argv[]) {
+  (void)argc;
+  (void)argv;
+
+  ge::App app{};
+
+#ifdef GE_HAL_STM32
+  using namespace ge::hal::stm;
+
+  std::array<Pin, 2> leds = {Pin('G', 13), Pin('G', 14)};
+  for (auto led : leds)
+    led.set_mode(GPIOMode::Output);
+
+  while (true) {
+    for (auto led : leds) {
+      led.toggle();
+      delay_timed(1000);
+    }
+
+    float x = app.now() * 2.0f;
+    app.log("Hello, World! %d\r\n", (int)x);
+  }
+#else
   app.audio_bgm_play(bgm_loop, bgm_loop_len, true);
   while (app) {
     app.begin();
@@ -31,5 +56,6 @@ int main() {
 
     // app.log("Frame rendered at time %lld ms", app.now());
   }
+#endif
   return 0;
 }

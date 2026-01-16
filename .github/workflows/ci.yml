@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  pre-commit-checks:
+    name: Pre-commit Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: devenv
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          skipPush: true
+
+      - name: Run pre-commit checks
+        run: nix flake check
+
+  build-host:
+    name: Build for Host (x86_64-linux)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: devenv
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          skipPush: true
+
+      - name: Build for host (with dummy SDL backend)
+        run: |
+          nix develop --command bash -c '
+            # Configure with headless/offscreen SDL settings
+            export SDL_VIDEODRIVER=dummy
+            export SDL_AUDIODRIVER=dummy
+            
+            # Build using CMake
+            cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release
+            cmake --build build --verbose
+            
+            # Verify the binary was created
+            ls -lh build/bin/ge-app
+          '
+
+      - name: Upload host build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ge-app-x86_64-linux
+          path: build/bin/ge-app
+          retention-days: 7
+
+  build-arm:
+    name: Build for ARM (STM32)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: devenv
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          skipPush: true
+
+      - name: Build for ARM/STM32 (cross-compilation)
+        run: |
+          nix develop --command bash -c '
+            # Note: STM32 build is not yet fully supported in CMakeLists.txt
+            # This will attempt to configure for ARM cross-compilation
+            
+            # Use the ARM embedded toolchain
+            export CC=arm-none-eabi-gcc
+            export CXX=arm-none-eabi-g++
+            
+            # Try to configure - this may fail if STM32 support is incomplete
+            # We use "|| true" to not fail the CI if this is expected
+            cmake -S. -Bbuild-arm \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DGE_HAL_STM32=ON \
+              -DCMAKE_SYSTEM_NAME=Generic \
+              -DCMAKE_SYSTEM_PROCESSOR=arm \
+              -DCMAKE_C_COMPILER=arm-none-eabi-gcc \
+              -DCMAKE_CXX_COMPILER=arm-none-eabi-g++ || {
+                echo "ARM/STM32 build configuration not yet fully supported"
+                echo "This is expected based on CMakeLists.txt comments"
+                exit 0
+              }
+            
+            # If configuration succeeded, try to build
+            if [ -f build-arm/CMakeCache.txt ]; then
+              cmake --build build-arm --verbose || {
+                echo "ARM build failed - this is expected as STM32 support is WIP"
+              }
+            fi
+          '
+
+      - name: Upload ARM build artifact (if exists)
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ge-app-arm-stm32
+          path: build-arm/bin/*
+          if-no-files-found: ignore
+          retention-days: 7

@@ -22,13 +22,10 @@
         system:
         let
           pkgs = import nixpkgs { inherit system; };
-          forEachSystem = nixpkgs.lib.genAttrs (import systems);
-
           embeddedToolchain = pkgs.pkgsCross.arm-embedded.stdenv.cc;
 
           python = pkgs.python3.withPackages (ps: with ps; [ pillow ]);
           inherit (self.checks.${system}.pre-commit-check) shellHook enabledPackages config;
-          inherit (config) package configFile;
         in
         {
           default = pkgs.mkShell {

@@ -59,11 +59,11 @@ jobs:
             export SDL_AUDIODRIVER=dummy
 
             # Build using CMake
-            cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release
-            cmake --build build --verbose
+            cmake -S. -Bbuild
+            cmake --build build --config Release --verbose
 
             # Verify the binary was created
-            ls -lh build/bin/
+            ls -lh build/ge-app/Release
           '
 
       - name: Upload host build artifact
@@ -96,37 +96,12 @@ jobs:
       - name: Build for ARM/STM32 (cross-compilation)
         run: |
           nix develop --command bash -c '
-            set -o pipefail
-
-            # Note: STM32 build is not yet fully supported in CMakeLists.txt
-            # The ge-hal/CMakeLists.txt shows a FATAL_ERROR for GE_HAL_STM32
-            # This job will succeed when that expected error occurs
-
-            # Try to configure for ARM cross-compilation
-            if cmake -S. -Bbuild-arm \
+            cmake -S. -Bbuild-arm \
               -DCMAKE_BUILD_TYPE=Release \
               -DGE_HAL_STM32=ON \
-              -DCMAKE_SYSTEM_NAME=Generic \
-              -DCMAKE_SYSTEM_PROCESSOR=arm \
-              -DCMAKE_C_COMPILER=arm-none-eabi-gcc \
-              -DCMAKE_CXX_COMPILER=arm-none-eabi-g++ \
-              2>&1 | tee cmake-output.txt; then
-              # Configuration succeeded, try to build
-              echo "Configuration succeeded, building..."
-              cmake --build build-arm --verbose
-            else
-              # Check if failure is expected STM32 unsupported error
-              if grep -q "STM32 platform not yet supported in ge-hal" \
-                cmake-output.txt; then
-                echo "Expected: STM32 support not yet implemented"
-                exit 0
-              else
-                # Unexpected error, fail the job
-                echo "Unexpected configuration error!"
-                cat cmake-output.txt
-                exit 1
-              fi
-            fi
+              -DCMAKE_TOOLCHAIN_FILE=cmake/arm-none-eabi.cmake
+            cmake --build build-arm --config Release --verbose
+            ls -lh build-arm/ge-app/Release
           '
 
       - name: Upload ARM build artifact (if exists)

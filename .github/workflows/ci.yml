@@ -96,12 +96,13 @@ jobs:
       - name: Build for ARM/STM32 (cross-compilation)
         run: |
           nix develop --command bash -c '
+            set -o pipefail
+
             # Note: STM32 build is not yet fully supported in CMakeLists.txt
             # The ge-hal/CMakeLists.txt shows a FATAL_ERROR for GE_HAL_STM32
             # This job will succeed when that expected error occurs
 
             # Try to configure for ARM cross-compilation
-            set -o pipefail
             if cmake -S. -Bbuild-arm \
               -DCMAKE_BUILD_TYPE=Release \
               -DGE_HAL_STM32=ON \
@@ -115,7 +116,7 @@ jobs:
               cmake --build build-arm --verbose
             else
               # Check if failure is expected STM32 unsupported error
-              if grep -q "STM32 platform not yet supported in ge-hal" \
+              if grep -qE "STM32 platform not yet supported" \
                 cmake-output.txt; then
                 echo "Expected: STM32 support not yet implemented"
                 exit 0

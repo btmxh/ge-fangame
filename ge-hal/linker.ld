@@ -1,7 +1,8 @@
 ENTRY(Reset_Handler);
 MEMORY {
   flash(rx)  : ORIGIN = 0x08000000, LENGTH = 2048k
-  sram(rwx) : ORIGIN = 0x20000000, LENGTH = 192k  /* remaining 64k in a separate address space */
+  sram(rwx)  : ORIGIN = 0x20000000, LENGTH = 192k  /* remaining 64k in a separate address space */
+  sdram(rw)  : ORIGIN = 0xD0000000, LENGTH = 8M
 }
 _estack     = ORIGIN(sram) + LENGTH(sram);    /* stack points to end of SRAM */
 
@@ -47,4 +48,11 @@ SECTIONS {
 
   . = ALIGN(8);
   _end = .;
+
+  .sdram (NOLOAD) : {
+    . = ALIGN(8);
+    _ssdram = .;
+    *(.sdram*)
+    _esdram = .;
+  } > sdram
 }

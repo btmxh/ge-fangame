@@ -9,6 +9,10 @@ public:
   App();
   ~App();
 
+#ifdef GE_HAL_STM32
+  static void system_init();
+#endif
+
   static constexpr int WIDTH = 320, HEIGHT = 240, AUDIO_FREQ = 8000;
   operator bool();
 
@@ -18,8 +22,7 @@ public:
   std::int64_t now();
   void log(const char *fmt, ...);
 
-  void audio_bgm_play(const std::uint8_t *data, std::size_t length,
-                      bool loop);
+  void audio_bgm_play(const std::uint8_t *data, std::size_t length, bool loop);
 
   void audio_bgm_stop();
   bool audio_bgm_is_playing();

@@ -16,6 +16,24 @@ void Pin::set_mode(GPIOMode mode) const {
   reg->MODER |= (static_cast<uint32_t>(mode) & 3U) << (num * 2); // Set new mode
 }
 
+void Pin::set_otype(GPIOOType otype) const {
+  auto reg = gpio();
+  reg->OTYPER &= ~(1U << num); // Clear existing setting
+  reg->OTYPER |= (static_cast<uint32_t>(otype) & 1U) << num; // Set new otype
+}
+
+void Pin::set_pupd(GPIOPuPd pupd) const {
+  auto reg = gpio();
+  reg->PUPDR &= ~(3U << (num * 2)); // Clear existing setting
+  reg->PUPDR |= (static_cast<uint32_t>(pupd) & 3U) << (num * 2); // Set new pupd
+}
+
+void Pin::set_speed(GPIOSpeed speed) const {
+  auto reg = gpio();
+  reg->OSPEEDR &= ~(3U << (num * 2)); // Clear existing setting
+  reg->OSPEEDR |= (static_cast<uint32_t>(speed) & 3U) << (num * 2); // Set new speed
+}
+
 void Pin::set_af(uint8_t af) const {
   auto reg = gpio();
   u32 shift = (num & 0x7UL) * 4;

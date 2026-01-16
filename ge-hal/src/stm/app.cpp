@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "ge-hal/stm/sdram.hpp"
 #include "ge-hal/stm/time.hpp"
 #include "stm32f429xx.h"
 #include <ge-hal/stm/uart.hpp>
@@ -14,7 +15,8 @@ ge::hal::stm::UARTHandle stdout_usart = nullptr;
 namespace ge {
 
 static void enable_fpu() {
-  SCB->CPACR |= (3UL << 20) | (3UL << 22); // enable FPU: CP10 and CP11 full access
+  SCB->CPACR |=
+      (3UL << 20) | (3UL << 22); // enable FPU: CP10 and CP11 full access
 }
 
 static void config_flash() {
@@ -22,12 +24,15 @@ static void config_flash() {
                 FLASH_ACR_LATENCY_5WS; // enable cache, set latency
 }
 
-App::App() {
+void App::system_init() {
   enable_fpu();
   config_flash();
   hal::stm::setup_clock();
   stdout_usart = hal::stm::USART_CONFIG_DEBUG.init(115200);
+  hal::stm::init_sdram();
 }
+
+App::App() {}
 
 App::operator bool() { return true; }
 
@@ -39,8 +44,8 @@ std::int64_t App::now() { return hal::stm::systick_get(); }
 void App::log(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
-  vprintf(fmt, args);
-  fflush(stdout);
+  std::vprintf(fmt, args);
+  std::fflush(stdout);
   va_end(args);
 }
 

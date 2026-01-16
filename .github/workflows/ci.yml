@@ -70,7 +70,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ge-app-x86_64-linux
-          path: build/bin/ge-app
+          path: build/ge-app/Release/ge-app
           retention-days: 7
 
   build-arm:
@@ -108,6 +108,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ge-app-arm-stm32
-          path: build-arm/bin/*
+          path: build-arm/ge-app/Release/*
           if-no-files-found: ignore
           retention-days: 7

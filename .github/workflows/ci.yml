@@ -100,11 +100,8 @@ jobs:
             # The ge-hal/CMakeLists.txt shows a FATAL_ERROR for GE_HAL_STM32
             # This job will succeed when that expected error occurs
 
-            # Use the ARM embedded toolchain
-            export CC=arm-none-eabi-gcc
-            export CXX=arm-none-eabi-g++
-
             # Try to configure for ARM cross-compilation
+            set -o pipefail
             if cmake -S. -Bbuild-arm \
               -DCMAKE_BUILD_TYPE=Release \
               -DGE_HAL_STM32=ON \

@@ -105,15 +105,14 @@ jobs:
             export CXX=arm-none-eabi-g++
 
             # Try to configure for ARM cross-compilation
-            cmake_cmd="cmake -S. -Bbuild-arm \
+            if cmake -S. -Bbuild-arm \
               -DCMAKE_BUILD_TYPE=Release \
               -DGE_HAL_STM32=ON \
               -DCMAKE_SYSTEM_NAME=Generic \
               -DCMAKE_SYSTEM_PROCESSOR=arm \
               -DCMAKE_C_COMPILER=arm-none-eabi-gcc \
-              -DCMAKE_CXX_COMPILER=arm-none-eabi-g++"
-
-            if $cmake_cmd 2>&1 | tee cmake-output.txt; then
+              -DCMAKE_CXX_COMPILER=arm-none-eabi-g++ \
+              2>&1 | tee cmake-output.txt; then
               # Configuration succeeded, try to build
               echo "Configuration succeeded, building..."
               cmake --build build-arm --verbose

@@ -39,6 +39,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Install Nix
         uses: cachix/install-nix-action@v27
@@ -81,6 +83,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Install Nix
         uses: cachix/install-nix-action@v27
@@ -110,5 +114,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ge-app-arm-stm32
-          path: build/ge-app/Release/ge-app
+          path: build-arm/ge-app/Release/ge-app
           retention-days: 7

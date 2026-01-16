@@ -1,1 +1,2 @@
-TEMPORARY: loop.raw is copyrighted music (Tomoya Ohtani's Unstoppable)
+NOTE: ProggyClean.ttf is from https://github.com/bluescan/proggyfonts, licensed
+under the MIT License.

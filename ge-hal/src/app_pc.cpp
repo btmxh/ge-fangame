@@ -2,10 +2,14 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_audio.h>
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_gamepad.h>
+#include <SDL3/SDL_init.h>
 #include <SDL3/SDL_log.h>
 #include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
@@ -17,7 +21,7 @@ public:
   void audio_callback(SDL_AudioStream *stream, int);
 
   AppImpl(App *app) {
-    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD)) {
       SDL_Log("SDL_Init Error: %s", SDL_GetError());
       exit();
     }
@@ -66,6 +70,7 @@ public:
   SDL_Texture *frame_texture = nullptr;
   SDL_AudioDeviceID audio_dev = 0;
   SDL_AudioStream *audio_stream;
+  SDL_Gamepad *pad = nullptr;
   bool quit = false;
 
   struct AudioStream {
@@ -143,10 +148,25 @@ void App::begin() {
   while (SDL_PollEvent(&event)) {
     if (event.type == SDL_EVENT_QUIT) {
       app_impl_instance->quit = true;
+    } else if (event.type == SDL_EVENT_GAMEPAD_ADDED) {
+      if (app_impl_instance->pad == nullptr) {
+        app_impl_instance->pad = SDL_OpenGamepad(event.gdevice.which);
+        if (!app_impl_instance->pad) {
+          log("SDL_OpenGamepad Error: %s", SDL_GetError());
+        } else {
+          log("Gamepad connected: %s",
+              SDL_GetGamepadName(app_impl_instance->pad));
+        }
+      }
+    } else if (event.type == SDL_EVENT_GAMEPAD_REMOVED) {
+      if (app_impl_instance->pad &&
+          SDL_GetGamepadID(app_impl_instance->pad) == event.gdevice.which) {
+        SDL_CloseGamepad(app_impl_instance->pad);
+        app_impl_instance->pad = nullptr;
+        log("Gamepad disconnected");
+      }
     }
   }
-
-  std::memset(framebuffer, 0, WIDTH * HEIGHT * sizeof(framebuffer[0]));
 }
 
 void App::end() {
@@ -180,6 +200,36 @@ void App::end() {
 }
 
 std::int64_t App::now() { return SDL_GetTicks(); }
+
+JoystickState App::get_joystick_state() {
+  if (!app_impl_instance->pad)
+    return JoystickState{};
+
+  auto norm_axis = [](int v) {
+    return (v >= 0) ? (v / 32767.0f) : (v / 32768.0f);
+  };
+
+  float x = norm_axis(
+      SDL_GetGamepadAxis(app_impl_instance->pad, SDL_GAMEPAD_AXIS_LEFTX));
+  float y = norm_axis(
+      -SDL_GetGamepadAxis(app_impl_instance->pad, SDL_GAMEPAD_AXIS_LEFTY));
+
+  static const float dz = 0.12, dz_squared = dz * dz;
+
+  float mag = std::sqrt(x * x + y * y);
+  if (mag < dz) {
+    x = y = 0.0f;
+  } else {
+    float scale = (mag - dz) / (1.0f - dz);
+    x = (x / mag) * scale;
+    y = (y / mag) * scale;
+  }
+
+  x = std::max(std::min(x, 1.0f), -1.0f);
+  y = std::max(std::min(y, 1.0f), -1.0f);
+
+  return {x, y};
+}
 
 void App::log(const char *fmt, ...) {
   va_list args;

@@ -1,15 +1,21 @@
 
 #pragma once
 
+#include "ge-hal/fb.hpp"
 #include <cstdint>
 
 namespace ge {
+
+struct JoystickState {
+  float x, y;
+};
+
 class App {
 public:
   App();
   ~App();
 
-  static constexpr int WIDTH = 320, HEIGHT = 240, AUDIO_FREQ = 8000;
+  static constexpr int WIDTH = 240, HEIGHT = 320, AUDIO_FREQ = 8000;
   operator bool();
 
   void begin();
@@ -18,8 +24,13 @@ public:
   std::int64_t now();
   void log(const char *fmt, ...);
 
-  void audio_bgm_play(const std::uint8_t *data, std::size_t length,
-                      bool loop);
+  JoystickState get_joystick_state();
+
+  FramebufferRegion framebuffer_region() {
+    return FramebufferRegion{framebuffer, WIDTH, WIDTH, HEIGHT};
+  }
+
+  void audio_bgm_play(const std::uint8_t *data, std::size_t length, bool loop);
 
   void audio_bgm_stop();
   bool audio_bgm_is_playing();

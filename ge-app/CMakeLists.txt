@@ -4,10 +4,12 @@ add_executable(ge-app)
 
 target_sources(
     ge-app
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
-    # add more .cpp here
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ge-app/text.cpp
 )
 
+target_include_directories(ge-app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(ge-app PRIVATE ge-hal ge-assets)
 
 set_target_properties(

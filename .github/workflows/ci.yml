@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -57,11 +57,11 @@ jobs:
             # Configure with headless/offscreen SDL settings
             export SDL_VIDEODRIVER=dummy
             export SDL_AUDIODRIVER=dummy
-            
+
             # Build using CMake
             cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release
             cmake --build build --verbose
-            
+
             # Verify the binary was created
             ls -lh build/bin/ge-app
           '
@@ -98,11 +98,11 @@ jobs:
           nix develop --command bash -c '
             # Note: STM32 build is not yet fully supported in CMakeLists.txt
             # This will attempt to configure for ARM cross-compilation
-            
+
             # Use the ARM embedded toolchain
             export CC=arm-none-eabi-gcc
             export CXX=arm-none-eabi-g++
-            
+
             # Try to configure - this may fail if STM32 support is incomplete
             # We use "|| true" to not fail the CI if this is expected
             cmake -S. -Bbuild-arm \
@@ -116,11 +116,11 @@ jobs:
                 echo "This is expected based on CMakeLists.txt comments"
                 exit 0
               }
-            
+
             # If configuration succeeded, try to build
             if [ -f build-arm/CMakeCache.txt ]; then
               cmake --build build-arm --verbose || {
-                echo "ARM build failed - this is expected as STM32 support is WIP"
+                echo "ARM build failed - STM32 support is WIP"
               }
             fi
           '

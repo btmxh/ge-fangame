@@ -50,6 +50,7 @@
             shellHook = shellHook + ''
               export CMAKE_EXPORT_COMPILE_COMMANDS=1
               export CMAKE_GENERATOR="Ninja Multi-Config"
+              export CMAKE_COLOR_DIAGNOSTICS=ON
             '';
 
             packages = with pkgs; [

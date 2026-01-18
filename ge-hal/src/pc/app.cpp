@@ -147,6 +147,7 @@ void App::begin() {
   }
 
   std::memset(framebuffer, 0, WIDTH * HEIGHT * sizeof(framebuffer[0]));
+  return framebuffer;
 }
 
 void App::end() {

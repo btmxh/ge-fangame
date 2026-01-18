@@ -1,13 +1,13 @@
 
 #pragma once
 
-#include <cstdint>
+#include "ge-hal/core.hpp"
 
 namespace ge {
 class App {
 public:
   App();
-  ~App();
+  ~App() = default;
 
 #ifdef GE_HAL_STM32
   static void system_init();
@@ -16,7 +16,7 @@ public:
   static constexpr int WIDTH = 240, HEIGHT = 320, AUDIO_FREQ = 8000;
   operator bool();
 
-  void begin();
+  u16 *begin();
   void end();
 
   std::int64_t now();
@@ -35,8 +35,5 @@ public:
 
   // -------- global --------
   void audio_set_master_volume(std::uint8_t vol); // 0..255
-
-  // private:
-  std::uint16_t framebuffer[WIDTH * HEIGHT] = {0};
 };
 }; // namespace ge

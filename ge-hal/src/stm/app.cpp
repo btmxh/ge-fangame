@@ -39,8 +39,10 @@ App::App() {
 
 App::operator bool() { return true; }
 
-void App::begin() {}
-void App::end() {}
+static int buffer_index = 0;
+
+u16 *App::begin() { return hal::stm::pixel_buffer(buffer_index); }
+void App::end() { hal::stm::swap_buffers(buffer_index); }
 
 std::int64_t App::now() { return hal::stm::systick_get(); }
 
@@ -48,11 +50,15 @@ void App::log(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   std::vprintf(fmt, args);
+  std::fputs("\r\n", stdout);
   std::fflush(stdout);
   va_end(args);
 }
 
 void App::audio_bgm_play(const std::uint8_t *data, std::size_t len, bool loop) {
+  (void)data;
+  (void)len;
+  (void)loop;
 }
 
 void App::audio_bgm_stop() {}
@@ -60,10 +66,14 @@ void App::audio_bgm_stop() {}
 bool App::audio_bgm_is_playing() { return false; }
 
 void App::audio_sfx_play(const std::uint8_t *data, std::size_t len,
-                         std::size_t /*rate*/) {}
+                         std::size_t rate) {
+  (void)data;
+  (void)len;
+  (void)rate;
+}
 
 void App::audio_sfx_stop_all() {}
 
-void App::audio_set_master_volume(std::uint8_t vol) {}
+void App::audio_set_master_volume(std::uint8_t vol) { (void)vol; }
 
 } // namespace ge

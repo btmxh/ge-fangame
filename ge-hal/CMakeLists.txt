@@ -7,14 +7,19 @@ if(GE_HAL_STM32)
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-hal/app.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-hal/stm/gpio.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-hal/stm/rcc.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-hal/stm/time.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-hal/stm/uart.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-hal/stm/sdram.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-hal/stm/spi.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-hal/stm/framebuffer.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/stm/app.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/stm/gpio.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/stm/time.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/stm/uart.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/stm/sdram.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/stm/spi.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/stm/framebuffer.cpp
     )
     target_link_libraries(ge-hal PUBLIC cmsis cmsis_device_f4)
     target_compile_definitions(ge-hal PUBLIC GE_HAL_STM32)

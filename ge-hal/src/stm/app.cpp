@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "ge-hal/stm/framebuffer.hpp"
 #include "ge-hal/stm/sdram.hpp"
 #include "ge-hal/stm/time.hpp"
 #include "stm32f429xx.h"
@@ -28,11 +29,13 @@ void App::system_init() {
   enable_fpu();
   config_flash();
   hal::stm::setup_clock();
-  stdout_usart = hal::stm::USART_CONFIG_DEBUG.init(115200);
-  hal::stm::init_sdram();
 }
 
-App::App() {}
+App::App() {
+  stdout_usart = hal::stm::USART_CONFIG_DEBUG.init(115200);
+  hal::stm::init_sdram();
+  hal::stm::init_ltdc();
+}
 
 App::operator bool() { return true; }
 

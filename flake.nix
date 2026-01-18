@@ -56,6 +56,7 @@
             packages = with pkgs; [
               openocd
               gdb
+              tio
 
               # tooling
               clang-tools

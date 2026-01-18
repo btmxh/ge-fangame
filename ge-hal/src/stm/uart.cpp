@@ -1,4 +1,5 @@
 #include "ge-hal/stm/uart.hpp"
+#include "ge-hal/stm/rcc.hpp"
 #include "ge-hal/stm/time.hpp"
 
 namespace ge {
@@ -6,32 +7,17 @@ namespace hal {
 namespace stm {
 
 UARTHandle UARTConfigInfo::init(u32 baud_rate) const {
-  u32 freq = 0;
-  // enable clocks
-  switch (bus) {
-  case UARTBus::APB1:
-    freq = APB1_FREQUENCY;
-    RCC->APB1ENR |= (1UL << reg_bit_pos);
-    break;
-  case UARTBus::APB2:
-    freq = APB2_FREQUENCY;
-    RCC->APB2ENR |= (1UL << reg_bit_pos);
-    break;
-  case UARTBus::APB1_LP:
-    freq = APB1_FREQUENCY;
-    RCC->APB1LPENR |= (1UL << reg_bit_pos);
-    break;
-  }
+  u32 freq = get_rcc_freq(bus);
+  get_rcc_reg(bus) |= 1UL << reg_bit_pos;
 
   tx.set_mode(GPIOMode::AlternateFunction);
   tx.set_af(7);
   rx.set_mode(GPIOMode::AlternateFunction);
   rx.set_af(7);
 
-  uart->CR1 = 0;                // disable uart
-  uart->BRR = freq / baud_rate; // set baud rate
-  uart->CR1 |=
-      USART_CR1_TE | USART_CR1_RE | USART_CR1_UE; // enable tx, rx, uart
+  uart->CR1 = 0;
+  uart->BRR = freq / baud_rate;
+  uart->CR1 |= USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
 
   return UARTHandle{uart};
 }
@@ -39,7 +25,7 @@ UARTHandle UARTConfigInfo::init(u32 baud_rate) const {
 void UARTHandle::write(u8 byte) {
   uart->DR = byte;
   while ((uart->SR & USART_SR_TXE) == 0)
-    asm("nop");
+    delay_spin(1);
 }
 u8 UARTHandle::read() { return uart->DR & 0xFFUL; }
 

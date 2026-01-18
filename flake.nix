@@ -80,7 +80,10 @@
             nixfmt.enable = true;
             statix.enable = true;
             check-yaml.enable = true;
-            end-of-file-fixer.enable = true;
+            end-of-file-fixer = {
+              enable = true;
+              excludes = [ ".*\\.bin" ];
+            };
             trim-trailing-whitespace.enable = true;
             ruff.enable = true;
             ruff-format.enable = true;

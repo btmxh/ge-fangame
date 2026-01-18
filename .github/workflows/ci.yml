@@ -103,7 +103,6 @@ jobs:
         run: |
           nix develop --command bash -c '
             cmake -S. -Bbuild-arm \
-              -DCMAKE_BUILD_TYPE=Release \
               -DGE_HAL_STM32=ON \
               -DCMAKE_TOOLCHAIN_FILE=cmake/arm-none-eabi.cmake &&
             cmake --build build-arm --config Release --verbose &&

@@ -1,0 +1,6 @@
+[submodule "ge-hal/ge-hal/extern/CMSIS_5"]
+	path = ge-hal/extern/CMSIS_5
+	url = https://github.com/ARM-software/CMSIS_5
+[submodule "ge-hal/ge-hal/extern/cmsis_device_f4"]
+	path = ge-hal/extern/cmsis_device_f4
+	url = https://github.com/STMicroelectronics/cmsis_device_f4

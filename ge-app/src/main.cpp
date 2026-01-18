@@ -10,9 +10,6 @@
 #include "ge-hal/fb.hpp"
 
 #include <cassert>
-#include <cmath>
-#include <cstring>
-#include <iostream>
 
 #include <bg_clouds.h>
 #include <bgm_ambient.h>

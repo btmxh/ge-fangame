@@ -17,25 +17,26 @@ def main(data, out_c, out_h, name, header_additional=""):
 
         f.write(f"const uint32_t {name}_len = {len(data)};\n")
 
-    # -------- generate .h --------
-    guard = f"{name.upper()}_H"
+        # Create parent dir
+        os.makedirs(os.path.dirname(out_c), exist_ok=True)
+        os.makedirs(os.path.dirname(out_h), exist_ok=True)
 
-    with open(out_h, "w") as f:
-        f.write("#pragma once\n\n")
-        f.write("#include <stdint.h>\n\n")
-        f.write("#ifdef __cplusplus\n")
-        f.write('extern "C" {\n')
-        f.write("#endif\n\n")
+        with open(out_h, "w") as f:
+            f.write("#pragma once\n\n")
+            f.write("#include <stdint.h>\n\n")
+            f.write("#ifdef __cplusplus\n")
+            f.write('extern "C" {\n')
+            f.write("#endif\n\n")
 
-        f.write(f"extern const uint8_t {name}[];\n")
-        f.write(f"extern const uint32_t {name}_len;\n\n")
-        if header_additional:
-            f.write(header_additional)
-            f.write("\n")
+            f.write(f"extern const uint8_t {name}[];\n")
+            f.write(f"extern const uint32_t {name}_len;\n\n")
+            if header_additional:
+                f.write(header_additional)
+                f.write("\n")
 
-        f.write("#ifdef __cplusplus\n")
-        f.write("}\n")
-        f.write("#endif\n")
+            f.write("#ifdef __cplusplus\n")
+            f.write("}\n")
+            f.write("#endif\n")
 
 
 if __name__ == "__main__":

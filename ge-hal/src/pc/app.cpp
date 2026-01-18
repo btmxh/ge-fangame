@@ -170,8 +170,6 @@ FramebufferRegion App::begin() {
     }
   }
 
-  std::memset(app_impl_instance->framebuffer, 0,
-              WIDTH * HEIGHT * sizeof(app_impl_instance->framebuffer[0]));
   return FramebufferRegion{app_impl_instance->framebuffer, WIDTH, WIDTH,
                            HEIGHT};
 }

@@ -2,6 +2,7 @@
 
 #include "ge-hal/core.hpp"
 #include <cassert>
+#include <type_traits>
 
 namespace ge {
 
@@ -20,7 +21,7 @@ enum class PixelFormat : u8 {
   A4 = 10
 };
 
-inline usize pixel_format_bpp(PixelFormat fmt) {
+inline constexpr usize pixel_format_bpp(PixelFormat fmt) {
   switch (fmt) {
   case PixelFormat::ARGB8888:
     return 32;
@@ -43,19 +44,20 @@ inline usize pixel_format_bpp(PixelFormat fmt) {
   }
 }
 
-class Surface {
+template <class ElemT> class BaseSurface {
 public:
-  Surface(void *fb_ptr, int stride, int width, int height,
-          u32 buffer_index = BUFFER_INDEX_NONE)
+  BaseSurface(ElemT *fb_ptr, u32 stride, u32 width, u32 height,
+              PixelFormat fmt = PixelFormat::RGB565,
+              u32 buffer_index = BUFFER_INDEX_NONE)
       : fb_ptr(fb_ptr), stride(stride), width(width), height(height),
-        buffer_index{buffer_index} {}
+        buffer_index{buffer_index}, fmt{fmt} {}
 
-  Surface subsurface(u32 x, u32 y, u32 w, u32 h) const {
+  BaseSurface<ElemT> subsurface(u32 x, u32 y, u32 w, u32 h) const {
     if (x + w > width)
       w = width - x;
     if (y + h > height)
       h = height - y;
-    return Surface(pixel_at(x, y), stride, w, h, buffer_index);
+    return BaseSurface(pixel_at(x, y), stride, w, h, fmt, buffer_index);
   }
 
   u32 get_width() const { return width; }
@@ -64,14 +66,18 @@ public:
   u32 get_buffer_index() const { return buffer_index; }
   PixelFormat get_pixel_format() const { return fmt; }
 
-  void *pixel_at(u32 x, u32 y) const {
+  ElemT *pixel_at(u32 x, u32 y) const {
     if (x >= width || y >= height)
       return nullptr;
-    u8 *ptr = static_cast<u8 *>(fb_ptr);
-    return &ptr[(y * stride + x) * pixel_format_bpp(fmt) / 8];
+    using ByteT = std::conditional_t<std::is_const<ElemT>::value, const u8, u8>;
+    auto ptr = static_cast<ByteT *>(fb_ptr);
+    return reinterpret_cast<ElemT *>(
+        &ptr[(y * stride + x) * pixel_format_bpp(fmt) / 8]);
   }
 
-  template <class ColorT> void set_pixel(int x, int y, ColorT color) {
+  template <class ColorT, class E = ElemT,
+            class = std::enable_if_t<!std::is_const<E>::value>>
+  void set_pixel(int x, int y, ColorT color) {
     auto ptr = pixel_at(x, y);
     if (pixel_format_bpp(fmt) >= 8) {
       assert(sizeof(ColorT) * 8 == pixel_format_bpp(fmt));
@@ -89,14 +95,15 @@ public:
     }
   }
 
-  template <class ColorT = void> ColorT *data() const {
-    return static_cast<ColorT *>(fb_ptr);
-  }
+  ElemT *data() const { return fb_ptr; }
 
 private:
   static constexpr u32 BUFFER_INDEX_NONE = -1;
-  void *fb_ptr;
+  ElemT *fb_ptr;
   u32 stride, width, height, buffer_index;
   PixelFormat fmt = PixelFormat::RGB565;
 };
+
+using Surface = BaseSurface<void>;
+using ConstSurface = BaseSurface<const void>;
 } // namespace ge

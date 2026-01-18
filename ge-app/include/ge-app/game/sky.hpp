@@ -14,9 +14,7 @@
 namespace ge {
 class Sky {
 public:
-  Sky() : sun_texture{sun_color, sun_alpha, sun_width, sun_height} {
-    invalidate();
-  }
+  Sky() : sun_texture{sun_color, sun_width, sun_height} { invalidate(); }
   void invalidate() { std::memset(rendered, 0, sizeof(rendered)); }
 
   void set_sky_color(std::uint16_t sky_color) {

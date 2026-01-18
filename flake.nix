@@ -22,7 +22,12 @@
         system:
         let
           pkgs = import nixpkgs { inherit system; };
-          python = pkgs.python3.withPackages (ps: with ps; [ pillow ]);
+          python = pkgs.python3.withPackages (
+            ps: with ps; [
+              pillow
+              types-pillow
+            ]
+          );
           inherit (self.checks.${system}.pre-commit-check) shellHook enabledPackages;
         in
         {
@@ -37,7 +42,6 @@
               gcc
 
               python
-              # python3.withPackages (ps: with ps; [ numpy ])
             ];
 
             buildInputs =
@@ -63,6 +67,7 @@
               clang-tools
               nixd
               nixfmt-rfc-style
+              ty
 
               # cmake
               gersemi

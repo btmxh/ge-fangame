@@ -43,13 +43,16 @@ static SDL_PixelFormat to_sdl_format(PixelFormat fmt) {
 // --- Internal Helper: Surface Wrapper ---
 // Creates a temporary SDL_Surface that "views" the existing memory buffer.
 // Does NOT copy data, does NOT free memory on destruction.
-static SDL_Surface *create_sdl_wrapper(Surface &s) {
+template <class T> static SDL_Surface *create_sdl_wrapper(BaseSurface<T> &s) {
   int bpp = pixel_format_bpp(s.get_pixel_format());
   int pitch = (s.get_stride() * bpp) / 8; // SDL pitch is in bytes
   auto sdl_fmt = to_sdl_format(s.get_pixel_format());
 
-  SDL_Surface *surf = SDL_CreateSurfaceFrom(s.get_width(), s.get_height(),
-                                            sdl_fmt, s.data(), pitch);
+  // CONST SAFETY: SDL_CreateSurfaceFrom requires a non-const pointer,
+  // but we promise not to modify the data through SDL_Surface.
+  SDL_Surface *surf =
+      SDL_CreateSurfaceFrom(s.get_width(), s.get_height(), sdl_fmt,
+                            const_cast<void *>(s.data()), pitch);
 
   if (!surf) {
     std::cerr << "[DMA2D] SDL Surface creation failed: " << SDL_GetError()
@@ -68,7 +71,7 @@ static SDL_Surface *create_sdl_wrapper(Surface &s) {
 
 // --- Internal Helper: Region Normalization ---
 // Identical logic to the STM32 driver to ensure safety
-static void normalize_regions(Surface &dst, Surface &src) {
+static void normalize_regions(Surface &dst, ConstSurface &src) {
   u32 width = std::min(src.get_width(), dst.get_width());
   u32 height = std::min(src.get_height(), dst.get_height());
   src = src.subsurface(0, 0, width, height);
@@ -90,7 +93,7 @@ void fill(Surface dst, u32 color) {
   SDL_DestroySurface(s_dst);
 }
 
-void blit(Surface dst, Surface src) {
+void blit(Surface dst, ConstSurface src) {
   normalize_regions(dst, src);
 
   SDL_Surface *s_src = create_sdl_wrapper(src);
@@ -107,7 +110,7 @@ void blit(Surface dst, Surface src) {
     SDL_DestroySurface(s_dst);
 }
 
-void blit_blend(Surface dst, Surface src, u8 global_alpha) {
+void blit_blend(Surface dst, ConstSurface src, u8 global_alpha) {
   normalize_regions(dst, src);
 
   SDL_Surface *s_src = create_sdl_wrapper(src);
@@ -149,7 +152,7 @@ void load_palette(const u32 *colors, usize num_colors) {
   }
 }
 
-void blit_indexed(Surface dst, Surface src) { blit(dst, src); }
+void blit_indexed(Surface dst, ConstSurface src) { blit(dst, src); }
 
 } // namespace gpu
 } // namespace hal

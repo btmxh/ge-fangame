@@ -47,7 +47,8 @@ static u32 buffer_index = 0;
 
 Surface App::begin() {
   auto buffer = hal::stm::pixel_buffer(buffer_index);
-  return Surface{buffer, App::WIDTH, App::WIDTH, App::HEIGHT, buffer_index};
+  return Surface{buffer,      App::WIDTH,          App::WIDTH,
+                 App::HEIGHT, PixelFormat::RGB565, buffer_index};
 }
 
 void App::end() { hal::stm::swap_buffers(buffer_index); }

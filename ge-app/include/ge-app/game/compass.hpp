@@ -2,7 +2,6 @@
 
 #include "ge-app/texture.hpp"
 
-#include <cmath>
 #include <compass-base.h>
 #include <compass-needle.h>
 
@@ -18,9 +17,8 @@ public:
   }
 
 private:
-  Texture base{compass_base_color, compass_base_alpha, compass_base_width,
-               compass_base_height};
-  Texture needle{compass_needle_color, compass_needle_alpha,
-                 compass_needle_width, compass_needle_height};
+  Texture base{compass_base_color, compass_base_width, compass_base_height};
+  Texture needle{compass_needle_color, compass_needle_width,
+                 compass_needle_height};
 };
 } // namespace ge

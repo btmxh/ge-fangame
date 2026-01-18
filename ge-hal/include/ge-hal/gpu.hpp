@@ -10,11 +10,11 @@ namespace hal {
 namespace gpu {
 
 void fill(Surface dst, u32 color);
-void blit(Surface dst, Surface src);
-void blit_blend(Surface dst, Surface src, u8 global_alpha);
+void blit(Surface dst, ConstSurface src);
+void blit_blend(Surface dst, ConstSurface src, u8 global_alpha);
 
 void load_palette(u32 const *colors, int count);
-void blit_indexed(Surface dst, Surface src);
+void blit_indexed(Surface dst, ConstSurface src);
 void wait_idle();
 
 } // namespace gpu

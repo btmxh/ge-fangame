@@ -23,9 +23,17 @@ public:
       return dir;
     };
 
-    float angle = -angle_to_8dir(get_relative_angle()) * M_PI_4;
-    boat.blit_rotated(region, region.get_width() / 2, region.get_height() / 2,
-                      angle);
+    // TODO: implement rotation (probably via sprite sheet for performance)
+    // float angle = -angle_to_8dir(get_relative_angle()) * M_PI_4;
+    // boat.blit_rotated(region, region.get_width() / 2, region.get_height() /
+    // 2,
+    //                   angle);
+    //
+    // region is a 64x64 region, but the boat texture is 32x64 only
+    region = region.subsurface((region.get_width() - default_boat_width) / 2,
+                               (region.get_height() - default_boat_height) / 2,
+                               default_boat_width, default_boat_height);
+    boat.blit(region);
   }
 
   float get_angle() const { return angle; }
@@ -57,7 +65,7 @@ public:
     const auto angle = get_angle();
     x += boat_speed * delta_time * std::cos(angle);
     y += boat_speed * delta_time * std::sin(angle);
-    app.log("Boat position: (%.2f, %.2f)", x, y);
+    // app.log("Boat position: (%.2f, %.2f)", x, y);
   }
 
   float get_x() const { return x; }
@@ -66,7 +74,6 @@ public:
 private:
   Texture boat{
       default_boat_color,
-      default_boat_alpha,
       default_boat_width,
       default_boat_height,
   };

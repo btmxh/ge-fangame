@@ -170,7 +170,12 @@ Surface App::begin() {
     }
   }
 
-  return Surface{app_impl_instance->framebuffer, WIDTH, WIDTH, HEIGHT, 0};
+  return Surface{app_impl_instance->framebuffer,
+                 WIDTH,
+                 WIDTH,
+                 HEIGHT,
+                 PixelFormat::RGB565,
+                 0};
 }
 
 void App::end() {

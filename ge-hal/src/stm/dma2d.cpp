@@ -45,7 +45,8 @@ static void setup_background(Surface bg) {
   DMA2D->BGOR = bg.get_stride() - bg.get_width();
 }
 
-static void setup_input(Surface src, u8 global_alpha = 0, u8 alpha_mode = 0) {
+static void setup_input(ConstSurface src, u8 global_alpha = 0,
+                        u8 alpha_mode = 0) {
   uint32_t current_clut =
       DMA2D->FGPFCCR &
       (DMA2D_FGPFCCR_CCM | DMA2D_FGPFCCR_CS | DMA2D_FGPFCCR_START);
@@ -68,14 +69,14 @@ void fill(Surface dst, u32 color) {
   fire();
 }
 
-static void normalize_regions(Surface &dst, Surface &src) {
+static void normalize_regions(Surface &dst, ConstSurface &src) {
   u32 width = std::min(src.get_width(), dst.get_width());
   u32 height = std::min(src.get_height(), dst.get_height());
   src = src.subsurface(0, 0, width, height);
   dst = dst.subsurface(0, 0, width, height);
 }
 
-void blit(Surface dst, Surface src) {
+void blit(Surface dst, ConstSurface src) {
   normalize_regions(dst, src);
   wait_idle();
   set_mode((src.get_pixel_format() == dst.get_pixel_format()) ? Mode::M2M
@@ -85,7 +86,7 @@ void blit(Surface dst, Surface src) {
   fire();
 }
 
-void blit_blend(Surface dst, Surface src, u8 global_alpha) {
+void blit_blend(Surface dst, ConstSurface src, u8 global_alpha) {
   normalize_regions(dst, src);
   wait_idle();
   set_mode(Mode::M2M_BLEND);
@@ -117,7 +118,7 @@ void load_palette(const u32 *colors, usize num_colors) {
   DMA2D->IFCR = DMA2D_IFCR_CCTCIF;
 }
 
-void blit_indexed(Surface dst, Surface src) {
+void blit_indexed(Surface dst, ConstSurface src) {
   normalize_regions(dst, src);
   wait_idle();
   set_mode(Mode::M2M_PFC);

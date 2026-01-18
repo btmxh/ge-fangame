@@ -18,7 +18,6 @@
 #include <default-boat.h>
 
 int main() {
-  using namespace ge;
   ge::App app;
   ge::Font font;
 
@@ -39,10 +38,8 @@ int main() {
   water.set_sky_color(ge::hsv_to_rgb565(150, 200, 255));
   water.set_water_color(ge::hsv_to_rgb565(142, 255, 181));
 
-  ge::Texture crate{crate_color, crate_alpha, crate_width, crate_height};
-  float crate_x = 0.0f, crate_y = 10.0f;
-
-  ge::PerspectiveMapping mapping;
+  ge::Texture crate{crate_color, crate_width, crate_height};
+  // float crate_x = 0.0f, crate_y = 10.0f;
 
   float dt = 0.0f;
 
@@ -56,7 +53,7 @@ int main() {
     auto water_region =
         fb_region.subsurface(0, 80, ge::App::WIDTH, ge::App::HEIGHT - 80);
 
-    sky.set_x_offset((u32)(app.now() / 1000) % ge::Sky::max_x_offset());
+    sky.set_x_offset((ge::u32)(app.now() / 1000) % ge::Sky::max_x_offset());
     sky.render(fb_region.subsurface(0, 0, ge::App::WIDTH, 80));
     water.render(water_region, app.now() * 1e-3);
 
@@ -65,20 +62,6 @@ int main() {
                   uint8_t hue = (uint8_t)(g.x + g.gx);
                   return ge::hsv_to_rgb565(hue, 255, 255);
                 });
-
-    {
-      float dx = crate_x - boat.get_x();
-      float dy = crate_y - boat.get_y();
-      float sx, sy;
-      mapping.transform_xy(dx, dy, sx, sy);
-      // app.log("Crate relative pos: (%.2f, %.2f) -> screen (%.2f, %.2f)", dx,
-      // dy,
-      //         sx, sy);
-      float scale = mapping.scale_at(dy) * 3;
-      // app.log("  scale: %.3f", scale);
-
-      crate.blit_scaled(water_region, sx, sy, scale, scale);
-    }
 
     {
       auto max_side = std::max(default_boat_width, default_boat_height);

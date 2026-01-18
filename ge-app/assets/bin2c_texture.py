@@ -29,8 +29,8 @@ def sanitize_symbol(sym: str) -> str:
     return sym
 
 
-def rgb888_to_rgb565(r: int, g: int, b: int) -> int:
-    return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xF8) >> 3)
+def argb888_to_argb1555(r: int, g: int, b: int, a: bool) -> int:
+    return ((1 if a else 0) << 15) | ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3)
 
 
 def pack_a1(alpha_bits: list[int]) -> bytes:
@@ -88,22 +88,11 @@ def main() -> int:
     px = img.load()
 
     color_u16: list[int] = []
-    alpha_bits: list[int] = []
 
     for y in range(h):
         for x in range(w):
             r, g, b, a = px[x, y]
-            color_u16.append(rgb888_to_rgb565(r, g, b))
-
-            if args.alpha_from == "alpha":
-                bit = 1 if a >= args.alpha_threshold else 0
-            else:
-                lum = (r * 77 + g * 150 + b * 29) >> 8
-                bit = 1 if lum >= args.alpha_threshold else 0
-
-            alpha_bits.append(bit)
-
-    alpha_bytes = pack_a1(alpha_bits)
+            color_u16.append(argb888_to_argb1555(r, g, b, a >= args.alpha_threshold))
 
     os.makedirs(os.path.dirname(out_h) or ".", exist_ok=True)
     guard = make_include_guard(out_h)
@@ -119,7 +108,6 @@ extern "C" {{
 #endif
 
 extern const uint16_t {sym}_color[];
-extern const uint8_t  {sym}_alpha[];
 
 extern const uint32_t {sym}_width;
 extern const uint32_t {sym}_height;
@@ -136,7 +124,6 @@ extern const uint32_t {sym}_height;
 #include <stdint.h>
 
 {format_u16_array(f"{sym}_color", color_u16)}
-{format_u8_array(f"{sym}_alpha", alpha_bytes)}
 
 const uint32_t {sym}_width  = {w};
 const uint32_t {sym}_height = {h};
@@ -149,8 +136,7 @@ const uint32_t {sym}_height = {h};
 
     print(f"Wrote {out_h}, {out_c}")
     print(f"Pixels: {w}x{h}")
-    print(f"RGB565 entries: {len(color_u16)}")
-    print(f"A1 bytes: {len(alpha_bytes)} (ceil({w * h}/8))")
+    print(f"ARGB1555 entries: {len(color_u16)}")
 
     return 0
 

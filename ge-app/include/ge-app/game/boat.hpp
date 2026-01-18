@@ -24,8 +24,8 @@ public:
     };
 
     float angle = -angle_to_8dir(get_relative_angle()) * M_PI_4;
-    boat.blit_rotated(region, region.get_width() / 2,
-                      region.get_height() / 2, angle);
+    boat.blit_rotated(region, region.get_width() / 2, region.get_height() / 2,
+                      angle);
   }
 
   float get_angle() const { return angle; }

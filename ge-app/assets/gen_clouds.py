@@ -1,7 +1,5 @@
-import argparse
 from sys import argv
 from PIL import Image
-import tempfile
 import bin2c  # pyright: ignore[reportImplicitRelativeImport]
 
 

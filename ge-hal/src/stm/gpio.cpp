@@ -31,7 +31,8 @@ void Pin::set_pupd(GPIOPuPd pupd) const {
 void Pin::set_speed(GPIOSpeed speed) const {
   auto reg = gpio();
   reg->OSPEEDR &= ~(3U << (num * 2)); // Clear existing setting
-  reg->OSPEEDR |= (static_cast<uint32_t>(speed) & 3U) << (num * 2); // Set new speed
+  reg->OSPEEDR |= (static_cast<uint32_t>(speed) & 3U)
+                  << (num * 2); // Set new speed
 }
 
 void Pin::set_af(uint8_t af) const {

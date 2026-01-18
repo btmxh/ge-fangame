@@ -18,4 +18,4 @@ using isize = std::intptr_t;
 
 using f32 = float;
 // f64 is not available on the targeted platform
-}
+} // namespace ge

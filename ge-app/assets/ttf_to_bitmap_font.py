@@ -1,6 +1,4 @@
 import argparse
-import os
-import tempfile
 from PIL import Image, ImageDraw, ImageFont
 import bin2c  # pyright: ignore[reportImplicitRelativeImport]
 

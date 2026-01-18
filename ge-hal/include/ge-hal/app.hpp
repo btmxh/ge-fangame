@@ -13,7 +13,7 @@ public:
   static void system_init();
 #endif
 
-  static constexpr int WIDTH = 320, HEIGHT = 240, AUDIO_FREQ = 8000;
+  static constexpr int WIDTH = 240, HEIGHT = 320, AUDIO_FREQ = 8000;
   operator bool();
 
   void begin();

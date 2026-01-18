@@ -13,6 +13,7 @@ if(GE_HAL_STM32)
             ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-hal/stm/sdram.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-hal/stm/spi.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-hal/stm/framebuffer.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-hal/stm/dma2d.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/stm/app.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/stm/gpio.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/stm/time.cpp
@@ -20,6 +21,7 @@ if(GE_HAL_STM32)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/stm/sdram.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/stm/spi.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/stm/framebuffer.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/stm/dma2d.cpp
     )
     target_link_libraries(ge-hal PUBLIC cmsis cmsis_device_f4)
     target_compile_definitions(ge-hal PUBLIC GE_HAL_STM32)

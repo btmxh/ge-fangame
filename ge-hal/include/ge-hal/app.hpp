@@ -7,7 +7,7 @@ namespace ge {
 class App {
 public:
   App();
-  ~App() = default;
+  ~App();
 
 #ifdef GE_HAL_STM32
   static void system_init();

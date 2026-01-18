@@ -84,6 +84,7 @@
               enable = true;
               excludes = [ ".*\\.bin" ];
             };
+            clang-format.enable = true;
             trim-trailing-whitespace.enable = true;
             ruff.enable = true;
             ruff-format.enable = true;

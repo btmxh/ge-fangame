@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ge-hal/fb.hpp"
+#include "ge-hal/surface.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -8,8 +8,7 @@
 namespace ge {
 class Texture {
 public:
-  Texture(const std::uint16_t *color_data, const std::uint8_t *alpha_data,
-          int width, int height)
+  Texture(const u16 *color_data, const u8 *alpha_data, u32 width, u32 height)
       : width{width}, height{height}, color_data(color_data),
         alpha_data(alpha_data) {}
 
@@ -31,8 +30,8 @@ public:
     }
   }
 
-  void blit_scaled(Surface &region, int dst_x0, int dst_y0,
-                   float scale_x, float scale_y) {
+  void blit_scaled(Surface &region, int dst_x0, int dst_y0, float scale_x,
+                   float scale_y) {
     int dst_w = region.get_width();
     int dst_h = region.get_height();
 
@@ -120,11 +119,11 @@ public:
   }
 
 private:
-  int width;
-  int height;
+  u32 width;
+  u32 height;
   // rgb565 color data, one uint16_t per pixel
-  const std::uint16_t *color_data;
+  const u16 *color_data;
   // bitmask alpha (1 = opaque, 0 = transparent), packed 8 pixels per byte
-  const std::uint8_t *alpha_data;
+  const u8 *alpha_data;
 };
 } // namespace ge

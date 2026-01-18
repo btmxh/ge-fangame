@@ -7,7 +7,7 @@
 #include "ge-app/text.hpp"
 #include "ge-app/texture.hpp"
 #include "ge-hal/app.hpp"
-#include "ge-hal/fb.hpp"
+#include "ge-hal/surface.hpp"
 
 #include <cassert>
 
@@ -18,6 +18,7 @@
 #include <default-boat.h>
 
 int main() {
+  using namespace ge;
   ge::App app;
   ge::Font font;
 
@@ -55,7 +56,7 @@ int main() {
     auto water_region =
         fb_region.subsurface(0, 80, ge::App::WIDTH, ge::App::HEIGHT - 80);
 
-    sky.set_x_offset((int)(app.now() * 1e-3) % ge::Sky::max_x_offset());
+    sky.set_x_offset((u32)(app.now() / 1000) % ge::Sky::max_x_offset());
     sky.render(fb_region.subsurface(0, 0, ge::App::WIDTH, 80));
     water.render(water_region, app.now() * 1e-3);
 

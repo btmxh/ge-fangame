@@ -1,7 +1,8 @@
 #pragma once
 
 #include "ge-app/gfx/color.hpp"
-#include "ge-hal/fb.hpp"
+#include "ge-hal/gpu.hpp"
+#include "ge-hal/surface.hpp"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -24,20 +25,10 @@ public:
   void set_water_color(std::uint16_t color) { water_color = color; }
   void set_sky_color(std::uint16_t color) { sky_color = color; }
 
-  static inline uint32_t hash2(uint32_t x, uint32_t y) {
-    uint32_t h = x * 0x8da6b343u ^ y * 0xd8163841u;
-    h ^= h >> 13;
-    h *= 0x85ebca6bu;
-    return h;
-  }
-
   void render(Surface region, float time) {
     (void)time;
-    for (int y = 0; y < region.get_height(); ++y) {
-      for (int x = 0; x < region.get_width(); ++x) {
-        region.set_pixel(x, y, water_color); // base water color
-      }
-    }
+
+    hal::gpu::fill(region, sky_color);
   }
 
 private:

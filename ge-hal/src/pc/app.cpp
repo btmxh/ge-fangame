@@ -1,5 +1,5 @@
 #include "ge-hal/app.hpp"
-#include "ge-hal/fb.hpp"
+#include "ge-hal/surface.hpp"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_audio.h>
@@ -170,8 +170,7 @@ Surface App::begin() {
     }
   }
 
-  return Surface{app_impl_instance->framebuffer, WIDTH, WIDTH, HEIGHT,
-                           0};
+  return Surface{app_impl_instance->framebuffer, WIDTH, WIDTH, HEIGHT, 0};
 }
 
 void App::end() {

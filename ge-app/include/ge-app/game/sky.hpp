@@ -3,7 +3,7 @@
 #include "ge-app/gfx/color.hpp"
 #include "ge-app/texture.hpp"
 #include "ge-hal/app.hpp"
-#include "ge-hal/fb.hpp"
+#include "ge-hal/surface.hpp"
 #include <bg_clouds.h>
 #include <cassert>
 #include <cstdint>

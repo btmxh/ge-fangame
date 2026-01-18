@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ge-hal/fb.hpp"
+#include "ge-hal/surface.hpp"
 #include <cstdint>
 
 namespace ge {
@@ -26,8 +26,8 @@ public:
   int default_advance(int scale) const { return GLYPH_W * scale; }
 
   template <class ColorCallback>
-  void render(const char *text, Surface region, int x, int y,
-              int scale, ColorCallback cb) {
+  void render(const char *text, Surface region, int x, int y, int scale,
+              ColorCallback cb) {
     auto set_pixel = [&, x, y](int dx, int dy, std::uint16_t color) {
       int px = x + dx;
       int py = y + dy;
@@ -74,8 +74,8 @@ public:
     }
   }
 
-  void render_colored(const char *text, Surface region, int x, int y,
-                      int scale, std::uint16_t color) {
+  void render_colored(const char *text, Surface region, int x, int y, int scale,
+                      std::uint16_t color) {
     render(text, region, x, y, scale,
            [color](const GlyphContext &) { return color; });
   }

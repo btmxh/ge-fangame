@@ -121,8 +121,8 @@ extern "C" {{
 extern const uint16_t {sym}_color[];
 extern const uint8_t  {sym}_alpha[];
 
-extern const int {sym}_width;
-extern const int {sym}_height;
+extern const uint32_t {sym}_width;
+extern const uint32_t {sym}_height;
 
 #ifdef __cplusplus
 }}
@@ -138,8 +138,8 @@ extern const int {sym}_height;
 {format_u16_array(f"{sym}_color", color_u16)}
 {format_u8_array(f"{sym}_alpha", alpha_bytes)}
 
-const int {sym}_width  = {w};
-const int {sym}_height = {h};
+const uint32_t {sym}_width  = {w};
+const uint32_t {sym}_height = {h};
 """
 
     with open(out_h, "w", encoding="utf-8") as f:

@@ -2,7 +2,7 @@
 #pragma once
 
 #include "ge-hal/core.hpp"
-#include "ge-hal/fb.hpp"
+#include "ge-hal/surface.hpp"
 
 namespace ge {
 

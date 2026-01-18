@@ -63,6 +63,9 @@ struct LCD {
     wrx.write(false);
     spi.send_blocking(static_cast<u8>(cmd));
 
+    // NOTE: without this, things dont work on Release
+    while(spi.is_busy()) delay_spin(1);
+
     // data mode
     if (data.size() > 0) {
       wrx.write(true);
@@ -71,6 +74,8 @@ struct LCD {
       }
     }
 
+    // NOTE: without this, things dont work on Release
+    while(spi.is_busy()) delay_spin(1);
     // deselect the current peripheral
     csx.write(true);
   }

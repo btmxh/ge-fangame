@@ -57,12 +57,12 @@ as documentation, rather than proper tooling, as these do not cover all use
 cases.
 
 To flash, run:
-```
+```bash
 openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c "program PATH_TO_THE_ELF verify reset exit"
 ```
 
 To debug, run:
-```
+```bash
 openocd -f interface/stlink.cfg -f target/stm32f4x.cfg
 
 # in another terminal

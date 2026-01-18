@@ -24,7 +24,11 @@ int main() {
   ge::Compass compass;
   ge::Boat boat;
 
+  // TODO: flash audio when it is implemented
+  // Currently we skip this step to speed up flashing
+#ifndef GE_HAL_STM32
   app.audio_bgm_play(bgm_ambient, bgm_ambient_len, true);
+#endif
 
   ge::Sky sky{};
   sky.set_sky_color(ge::hsv_to_rgb565(150, 200, 255));

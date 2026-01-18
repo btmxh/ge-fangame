@@ -50,8 +50,12 @@ public:
     auto fb = render_region;
 
     // Fill sky
-    for (int i = 0; i < W * H; ++i)
-      fb.set_pixel(i % W, i / W, sky_color);
+    hal::gpu::fill(render_region, sky_color);
+
+    // temporary: recalculate cloud LUT every frame
+    for (usize i = 0; i < sizeof(CLOUD_COLORS) / sizeof(CLOUD_COLORS[0]); ++i) {
+      cloud_lut[i] = blend_rgb565(sky_color, cloud_color, CLOUD_COLORS[i]);
+    }
 
     assert(H == 80);
     int stride = clouds_len / H;
@@ -62,18 +66,27 @@ public:
       int tex_x = 0;
 
       while (true) {
-        uint8_t count = *row_rle++;
-        uint8_t value = CLOUD_COLORS[*row_rle++];
+        i32 len = *row_rle++;
+        u8 value = *row_rle++;
+        u16 color = cloud_lut[value];
 
-        for (int i = 0; i < count; ++i, ++tex_x) {
-          // Is this texture x inside the visible window?
-          int dx = tex_x - x_offset;
-          if (dx < 0)
-            dx += TEX_W;
+        i32 run_start = tex_x, run_end = tex_x + len;
+        tex_x = run_end;
+        i32 sx = run_start - x_offset;
+        if (sx < 0)
+          sx += TEX_W;
 
-          if (dx < W) {
-            std::uint16_t blended = blend_rgb565(sky_color, cloud_color, value);
-            fb.set_pixel(dx, y, blended);
+        if (sx < W) {
+          int span = std::min(len, W - sx);
+          if (span > 0) {
+            hal::gpu::fill(fb.subsurface(sx, y, span, 1), color);
+          }
+        }
+
+        if (sx + len > TEX_W) {
+          int span = (sx + len) - TEX_W;
+          if (span > 0 && span < W) {
+            hal::gpu::fill(fb.subsurface(0, y, span, 1), color);
           }
         }
 
@@ -86,6 +99,7 @@ public:
 private:
   Texture sun_texture;
   std::uint16_t sky_color = 0xFFFF, cloud_color = 0xFFFF;
+  u16 cloud_lut[sizeof(CLOUD_COLORS) / sizeof(CLOUD_COLORS[0])];
   int x_offset = 0;
   bool rendered[App::NUM_BUFFERS];
 };

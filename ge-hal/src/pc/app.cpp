@@ -81,6 +81,7 @@ public:
   AudioStream bgm;
   AudioStream sfx[MAX_SFX];
   std::uint8_t master_volume = 255;
+  u16 framebuffer[App::WIDTH * App::HEIGHT];
 
   friend class App;
 };
@@ -138,7 +139,7 @@ App::~App() { app_impl_instance.reset(); }
 
 App::operator bool() { return app_impl_instance && !app_impl_instance->quit; }
 
-void App::begin() {
+u16 *App::begin() {
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     if (event.type == SDL_EVENT_QUIT) {
@@ -146,7 +147,9 @@ void App::begin() {
     }
   }
 
-  std::memset(framebuffer, 0, WIDTH * HEIGHT * sizeof(framebuffer[0]));
+  std::memset(app_impl_instance->framebuffer, 0,
+              WIDTH * HEIGHT * sizeof(app_impl_instance->framebuffer[0]));
+  return app_impl_instance->framebuffer;
 }
 
 void App::end() {
@@ -165,8 +168,9 @@ void App::end() {
   auto *impl = app_impl_instance.get();
 
   // upload framebuffer → texture
-  SDL_UpdateTexture(impl->frame_texture, nullptr, framebuffer,
-                    WIDTH * sizeof(framebuffer[0]));
+  SDL_UpdateTexture(impl->frame_texture, nullptr,
+                    app_impl_instance->framebuffer,
+                    WIDTH * sizeof(app_impl_instance->framebuffer[0]));
 
   // letterbox clear
   SDL_SetRenderDrawColor(impl->renderer, 0, 0, 0, 255);

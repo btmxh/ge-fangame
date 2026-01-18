@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  pre-commit-checks:
+    name: Pre-commit Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: devenv
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          skipPush: true
+
+      - name: Run pre-commit checks
+        run: nix flake check
+
+  build-host:
+    name: Build for Host (x86_64-linux)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: devenv
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          skipPush: true
+
+      - name: Build for host (with dummy SDL backend)
+        run: |
+          nix develop --command bash -c '
+            # Configure with headless/offscreen SDL settings
+            export SDL_VIDEODRIVER=dummy
+            export SDL_AUDIODRIVER=dummy
+
+            # Build using CMake
+            cmake -S. -Bbuild
+            cmake --build build --config Release --verbose
+
+            # Verify the binary was created
+            ls -lh build/ge-app/Release/ge-app
+          '
+
+      - name: Upload host build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ge-app-x86_64-linux
+          path: build/ge-app/Release/ge-app
+          retention-days: 7
+
+  build-arm:
+    name: Build for ARM (STM32)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: devenv
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          skipPush: true
+
+      - name: Build for ARM/STM32 (cross-compilation)
+        run: |
+          nix develop --command bash -c '
+            cmake -S. -Bbuild-arm \
+              -DGE_HAL_STM32=ON \
+              -DCMAKE_TOOLCHAIN_FILE=cmake/arm-none-eabi.cmake &&
+            cmake --build build-arm --config Release --verbose &&
+            ls -lh build-arm/ge-app/Release/ge-app
+          '
+
+      - name: Upload ARM build artifact (if exists)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ge-app-arm-stm32
+          path: build-arm/ge-app/Release/ge-app
+          retention-days: 7

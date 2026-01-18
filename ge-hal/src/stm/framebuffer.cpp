@@ -126,13 +126,13 @@ void init_ltdc() {
   RCC->APB1ENR |= RCC_APB1ENR_PWREN;
   RCC->CR &= ~RCC_CR_PLLSAION;
 
-  static constexpr u32 PLLSAIN = 192, PLLSAIR = 3;
+  static constexpr u32 PLLSAIN = 192, PLLSAIR = 4;
   RCC->PLLSAICFGR =
       (PLLSAIN << RCC_PLLSAICFGR_PLLSAIN_Pos) |
       (PLLSAIR << RCC_PLLSAICFGR_PLLSAIR_Pos); // set PLLSAI N and R
   RCC->DCKCFGR &= ~RCC_DCKCFGR_PLLSAIDIVR;     // clear DIVR
   // 00: /2, 01: /4, 10: /8, 11: /16.
-  RCC->DCKCFGR |= (0x02UL << RCC_DCKCFGR_PLLSAIDIVR_Pos); // set DIVR to /8
+  RCC->DCKCFGR |= (0x03UL << RCC_DCKCFGR_PLLSAIDIVR_Pos); // set DIVR to /16
   RCC->CR |= RCC_CR_PLLSAION;
   while (!(RCC->CR & RCC_CR_PLLSAIRDY))
     delay_spin(1); // Wait for lock
@@ -187,6 +187,11 @@ void init_ltdc() {
                ((vsw + vbp + App::HEIGHT - 1) << LTDC_AWCR_AAH_Pos);
   LTDC->TWCR = ((hsw + hbp + App::WIDTH + hfp - 1) << LTDC_TWCR_TOTALW_Pos) |
                ((vsw + vbp + App::HEIGHT + vfp - 1) << LTDC_TWCR_TOTALH_Pos);
+  LTDC->LIPCR = 0;
+  LTDC->IER |= LTDC_IER_RRIE;
+  NVIC_SetPriority(LTDC_IRQn, 0);
+  NVIC_EnableIRQ(LTDC_IRQn);
+
   LTDC->GCR &=
       ~(LTDC_GCR_HSPOL | LTDC_GCR_VSPOL | LTDC_GCR_DEPOL | LTDC_GCR_PCPOL);
 
@@ -219,10 +224,34 @@ void init_ltdc() {
 
   for (int i = 0; i < ge::App::WIDTH * ge::App::HEIGHT; i++) {
     framebuffer_storage[0][i] = 0x001F;
-    framebuffer_storage[1][i] = 0x001F;
+    framebuffer_storage[1][i] = 0xF800;
   }
+}
+
+volatile bool vblank = false;
+
+void swap_buffers(int &buffer_index) {
+  LTDC_Layer1->CFBAR = reinterpret_cast<u32>(pixel_buffer(buffer_index));
+  vblank = false;
+  LTDC->SRCR = LTDC_SRCR_VBR;
+
+  // TODO: switch to something other than __WFI later
+  while (!vblank)
+    __WFI();
+  buffer_index ^= 1;
 }
 
 } // namespace stm
 } // namespace hal
 } // namespace ge
+
+extern "C" void LTDC_IRQHandler() {
+  using namespace ge::hal::stm;
+  if (LTDC->ISR & LTDC_ISR_RRIF) {
+    // Clear the interrupt flag
+    LTDC->ICR = LTDC_ICR_CRRIF;
+
+    // Signal the application
+    vblank = true;
+  }
+}

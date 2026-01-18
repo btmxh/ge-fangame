@@ -6,9 +6,30 @@
 #include <cstdio>
 
 #ifdef GE_HAL_STM32
+#include "ge-hal/stm/framebuffer.hpp"
 #include "ge-hal/stm/gpio.hpp"
 #include "ge-hal/stm/time.hpp"
 #endif
+
+using namespace ge;
+
+// Helper: Simple rectangle drawer
+void draw_bar(u16 *buffer, int x, int width, u16 color) {
+  for (int row = 0; row < ge::App::HEIGHT; row++) {
+    for (int col = x; col < x + width; col++) {
+      if (col >= 0 && col < ge::App::WIDTH) {
+        buffer[row * ge::App::WIDTH + col] = color;
+      }
+    }
+  }
+}
+
+// Helper: Simple Clear Screen (Slow CPU fill, use DMA2D later!)
+void clear_screen(u16 *buffer, u16 color) {
+  for (int i = 0; i < ge::App::WIDTH * ge::App::HEIGHT; i++) {
+    buffer[i] = color;
+  }
+}
 
 int main(int argc, char *argv[]) {
   (void)argc;
@@ -19,22 +40,22 @@ int main(int argc, char *argv[]) {
 #ifdef GE_HAL_STM32
   using namespace ge::hal::stm;
 
-  std::array<Pin, 2> leds = {Pin('G', 13), Pin('G', 14)};
-  for (auto led : leds)
-    led.set_mode(GPIOMode::Output);
-
+  ge::u32 x_pos = 0, speed = 8;
+  int buffer_index = 0;
   while (true) {
-    for (auto led : leds) {
-      led.toggle();
-      delay_timed(1000);
-    }
+    auto start = app.now();
+    auto buffer = pixel_buffer(buffer_index);
 
-    float x = app.now() * 2.0f;
-    app.log("Hello, World! %d\r\n", (int)x);
+    clear_screen(buffer, 0x0000);
+    draw_bar(buffer, x_pos, 20, 0xFFFF);
+    x_pos += speed;
+    if (x_pos > ge::App::WIDTH)
+      x_pos = 0;
 
-    char *sdram = reinterpret_cast<char *>(0xD0000000);
-    snprintf(sdram, 64, "Uptime: %d ms\r\n", (int)app.now());
-    app.log("%s", sdram);
+    swap_buffers(buffer_index);
+
+    auto end = app.now();
+    app.log("VBlank wait time: %lu ms\r\n", end - start);
   }
 #else
   app.audio_bgm_play(bgm_loop, bgm_loop_len, true);

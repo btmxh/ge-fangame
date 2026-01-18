@@ -10,6 +10,8 @@ void init_ltdc();
 
 u16 *pixel_buffer(int buffer_index);
 
+void swap_buffers(int& buffer_index);
+
 }
 } // namespace hal
 } // namespace ge

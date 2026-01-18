@@ -86,16 +86,6 @@ struct LCD {
 
     csx.write(true);
     initialization_sequence();
-    {
-      exec(Command::eGRAM);
-      auto spi16 = spi.switch_to_16bit();
-      csx.write(false);
-      wrx.write(true);
-      for (int i = 0; i < 240 * 320; i++) {
-        spi16.send_blocking(0xF800);
-      }
-      csx.write(true);
-    }
   }
 
   void initialization_sequence() {
@@ -131,7 +121,107 @@ struct LCD {
   }
 };
 
-void init_ltdc() { LCD lcd{}; }
+void init_ltdc() {
+  // clock setup
+  RCC->APB1ENR |= RCC_APB1ENR_PWREN;
+  RCC->CR &= ~RCC_CR_PLLSAION;
+
+  static constexpr u32 PLLSAIN = 192, PLLSAIR = 3;
+  RCC->PLLSAICFGR =
+      (PLLSAIN << RCC_PLLSAICFGR_PLLSAIN_Pos) |
+      (PLLSAIR << RCC_PLLSAICFGR_PLLSAIR_Pos); // set PLLSAI N and R
+  RCC->DCKCFGR &= ~RCC_DCKCFGR_PLLSAIDIVR;     // clear DIVR
+  // 00: /2, 01: /4, 10: /8, 11: /16.
+  RCC->DCKCFGR |= (0x02UL << RCC_DCKCFGR_PLLSAIDIVR_Pos); // set DIVR to /8
+  RCC->CR |= RCC_CR_PLLSAION;
+  while (!(RCC->CR & RCC_CR_PLLSAIRDY))
+    delay_spin(1); // Wait for lock
+
+  // enable LTDC clock
+  RCC->APB2ENR |= RCC_APB2ENR_LTDCEN;
+
+  // config pins
+  auto init_pins = [](char bank, std::initializer_list<u8> nums,
+                      bool af9 = false) {
+    for (auto num : nums) {
+      Pin pin{bank, num};
+      pin.set_mode(GPIOMode::AlternateFunction);
+      pin.set_otype(GPIOOType::PushPull);
+      pin.set_pupd(GPIOPuPd::NoPull);
+      pin.set_speed(GPIOSpeed::High);
+      pin.set_af(af9 ? 9 : 14);
+    }
+  };
+
+  // LCD_Rx
+  init_pins('C', {10});         // R2
+  init_pins('B', {0, 1}, true); // R3, R6
+  init_pins('A', {11, 12});     // R4, R5
+  init_pins('G', {6});          // R7
+  // LCD_Gx
+  init_pins('A', {6});        // G2
+  init_pins('G', {10}, true); // G3
+  init_pins('B', {10, 11});   // G4, G5
+  init_pins('C', {7});        // G6
+  init_pins('D', {3});        // G7
+  // LCD_Bx
+  init_pins('D', {6});        // B2
+  init_pins('G', {11});       // B3
+  init_pins('G', {12}, true); // B4
+  init_pins('A', {3});        // B5
+  init_pins('B', {8, 9});     // B6, B7
+  /// control pins
+  init_pins('A', {4});  // VSYNC
+  init_pins('C', {6});  // HSYNC
+  init_pins('G', {7});  // CLK
+  init_pins('F', {10}); // DE
+
+  // Horizontal and Vertical timing setup
+  u32 hsw = 10, hbp = 30, hfp = 1;
+  u32 vsw = 2, vbp = 1, vfp = 3;
+  LTDC->SSCR =
+      ((hsw - 1) << LTDC_SSCR_HSW_Pos) | ((vsw - 1) << LTDC_SSCR_VSH_Pos);
+  LTDC->BPCR = ((hsw + hbp - 1) << LTDC_BPCR_AHBP_Pos) |
+               ((vsw + vbp - 1) << LTDC_BPCR_AVBP_Pos);
+  LTDC->AWCR = ((hsw + hbp + App::WIDTH - 1) << LTDC_AWCR_AAW_Pos) |
+               ((vsw + vbp + App::HEIGHT - 1) << LTDC_AWCR_AAH_Pos);
+  LTDC->TWCR = ((hsw + hbp + App::WIDTH + hfp - 1) << LTDC_TWCR_TOTALW_Pos) |
+               ((vsw + vbp + App::HEIGHT + vfp - 1) << LTDC_TWCR_TOTALH_Pos);
+  LTDC->GCR &=
+      ~(LTDC_GCR_HSPOL | LTDC_GCR_VSPOL | LTDC_GCR_DEPOL | LTDC_GCR_PCPOL);
+
+  // Layer1 setup
+  LTDC_Layer1->WHPCR =
+      ((hsw + hbp) << LTDC_LxWHPCR_WHSTPOS_Pos) |
+      ((hsw + hbp + App::WIDTH - 1) << LTDC_LxWHPCR_WHSPPOS_Pos);
+  LTDC_Layer1->WVPCR =
+      ((vsw + vbp) << LTDC_LxWVPCR_WVSTPOS_Pos) |
+      ((vsw + vbp + App::HEIGHT - 1) << LTDC_LxWVPCR_WVSPPOS_Pos);
+  LTDC_Layer1->PFCR = 0x02UL << LTDC_LxPFCR_PF_Pos;
+  LTDC_Layer1->CACR = 0xFFUL << LTDC_LxCACR_CONSTA_Pos;
+  LTDC_Layer1->CFBAR = reinterpret_cast<u32>(framebuffer_storage[0]);
+  u32 pitch = App::WIDTH * 2;
+  u32 line_length = App::WIDTH * 2;
+  LTDC_Layer1->CFBLR = (pitch << 16) | (line_length + 3);
+  LTDC_Layer1->CFBLNR = App::HEIGHT << LTDC_LxCFBLNR_CFBLNBR_Pos;
+  LTDC_Layer1->CR |= 1;
+
+  LCD lcd;
+  lcd.exec(LCD::Command::eRGB_INTERFACE, {0xC2});
+  lcd.exec(LCD::Command::eINTERFACE, {0x01, 0x00, 0x06});
+  lcd.exec(LCD::Command::ePIXEL_FORMAT, {0x55});
+
+  // Enable Global LTDC
+  LTDC->GCR |= LTDC_GCR_LTDCEN;
+  LTDC->SRCR = LTDC_SRCR_IMR;
+
+  lcd.csx.write(true);
+
+  for (int i = 0; i < ge::App::WIDTH * ge::App::HEIGHT; i++) {
+    framebuffer_storage[0][i] = 0x001F;
+    framebuffer_storage[1][i] = 0x001F;
+  }
+}
 
 } // namespace stm
 } // namespace hal

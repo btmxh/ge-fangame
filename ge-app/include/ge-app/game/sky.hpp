@@ -11,9 +11,7 @@
 namespace ge {
 class Sky {
 public:
-  Sky(FramebufferRegion render_region)
-      : render_region{render_region},
-        sun_texture{sun_color, sun_alpha, sun_width, sun_height} {}
+  Sky() : sun_texture{sun_color, sun_alpha, sun_width, sun_height} {}
   void invalidate() { needs_rerender = true; }
 
   void set_sky_color(std::uint16_t sky_color) {
@@ -39,7 +37,7 @@ public:
 
   static int max_x_offset() { return CLOUD_TEXTURE_WIDTH; }
 
-  void render() {
+  void render(FramebufferRegion render_region) {
     if (!needs_rerender)
       return;
 
@@ -85,7 +83,6 @@ public:
   }
 
 private:
-  FramebufferRegion render_region;
   Texture sun_texture;
   std::uint16_t sky_color = 0xFFFF, cloud_color = 0xFFFF;
   int x_offset = 0;

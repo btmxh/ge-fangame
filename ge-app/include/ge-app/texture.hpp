@@ -10,8 +10,8 @@ class Texture {
 public:
   Texture(const std::uint16_t *color_data, const std::uint8_t *alpha_data,
           int width, int height)
-      : color_data(color_data), alpha_data(alpha_data), width(width),
-        height(height) {}
+      : width{width}, height{height}, color_data(color_data),
+        alpha_data(alpha_data) {}
 
   void blit(FramebufferRegion &region) {
     int w = std::min(width, region.region_width());

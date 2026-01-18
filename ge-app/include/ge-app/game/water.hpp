@@ -21,8 +21,6 @@ constexpr const T &clamp(const T &v, const T &lo, const T &hi, Compare comp) {
 namespace ge {
 class Water {
 public:
-  Water(FramebufferRegion region) : region(region) {}
-
   void set_water_color(std::uint16_t color) { water_color = color; }
   void set_sky_color(std::uint16_t color) { sky_color = color; }
 
@@ -33,7 +31,7 @@ public:
     return h;
   }
 
-  void render(float time) {
+  void render(FramebufferRegion region, float time) {
     int W = region.region_width(), H = region.region_height();
     float t = time;
 
@@ -100,7 +98,6 @@ public:
   }
 
 private:
-  FramebufferRegion region;
   std::uint16_t water_color = 0x03E0; // initial water color (greenish)
   std::uint16_t sky_color = 0xFFFF;
 };

@@ -10,7 +10,7 @@ namespace ge {
 class Compass {
 public:
   void render(FramebufferRegion &region, float angle) {
-    static const float needle_angle_offset = M_PI_4f;
+    static const float needle_angle_offset = M_PI_4;
     base.blit(region);
     // TODO: this is not pixel-perfect center alignment
     needle.blit_rotated(region, compass_base_width / 2, compass_base_height / 2,

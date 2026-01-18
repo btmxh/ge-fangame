@@ -45,10 +45,19 @@ App::operator bool() { return true; }
 
 static int buffer_index = 0;
 
-u16 *App::begin() { return hal::stm::pixel_buffer(buffer_index); }
+FramebufferRegion App::begin() {
+  auto buffer = hal::stm::pixel_buffer(buffer_index);
+  return FramebufferRegion{buffer, App::WIDTH, App::WIDTH, App::HEIGHT};
+}
+
 void App::end() { hal::stm::swap_buffers(buffer_index); }
 
 std::int64_t App::now() { return hal::stm::systick_get(); }
+
+JoystickState App::get_joystick_state() {
+  // TODO: implement joystick reading
+  return {0.0f, 0.0f};
+}
 
 void App::log(const char *fmt, ...) {
   va_list args;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ge-hal/fb.hpp"
 #include <cstdint>
 
 namespace ge {
@@ -25,15 +26,15 @@ public:
   int default_advance(int scale) const { return GLYPH_W * scale; }
 
   template <class ColorCallback>
-  void render(const char *text, std::uint16_t *fb, int fb_width, int fb_height,
-              int x, int y, int scale, ColorCallback cb) {
+  void render(const char *text, FramebufferRegion region, int x, int y,
+              int scale, ColorCallback cb) {
     auto set_pixel = [&, x, y](int dx, int dy, std::uint16_t color) {
       int px = x + dx;
       int py = y + dy;
-      if ((unsigned)px >= (unsigned)fb_width ||
-          (unsigned)py >= (unsigned)fb_height)
+      if ((unsigned)px >= (unsigned)region.region_width() ||
+          (unsigned)py >= (unsigned)region.region_height())
         return;
-      fb[py * fb_width + px] = color;
+      region.set_pixel(px, py, color);
     };
 
     x = y = 0;
@@ -73,10 +74,9 @@ public:
     }
   }
 
-  void render_colored(const char *text, std::uint16_t *fb, int fb_width,
-                      int fb_height, int x, int y, int scale,
-                      std::uint16_t color) {
-    render(text, fb, fb_width, fb_height, x, y, scale,
+  void render_colored(const char *text, FramebufferRegion region, int x, int y,
+                      int scale, std::uint16_t color) {
+    render(text, region, x, y, scale,
            [color](const GlyphContext &) { return color; });
   }
 

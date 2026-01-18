@@ -13,8 +13,8 @@ function(raw_audio TARGET_NAME RAW_FILE)
     )
 endfunction()
 
-raw_audio(bgm_ambient ${CMAKE_CURRENT_SOURCE_DIR}/ambient-bgm.raw)
-raw_audio(bgm_menu ${CMAKE_CURRENT_SOURCE_DIR}/menu-bgm.raw)
+raw_audio(bgm_ambient ${CMAKE_CURRENT_SOURCE_DIR}/ambient-bgm.bin)
+raw_audio(bgm_menu ${CMAKE_CURRENT_SOURCE_DIR}/menu-bgm.bin)
 
 function(texture TARGET_NAME IMAGE_FILE)
     add_custom_command(

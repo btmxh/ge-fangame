@@ -23,7 +23,7 @@ public:
       return dir;
     };
 
-    float angle = -angle_to_8dir(get_relative_angle()) * M_PI_4f;
+    float angle = -angle_to_8dir(get_relative_angle()) * M_PI_4;
     boat.blit_rotated(region, region.region_width() / 2,
                       region.region_height() / 2, angle);
   }
@@ -71,7 +71,7 @@ private:
       default_boat_height,
   };
 
-  static constexpr float default_angle = M_PI_2f, turn_rate = 1.5f,
+  static constexpr float default_angle = M_PI_2, turn_rate = 1.5f,
                          boat_speed = 1.0; // 1m/s
   float angle = default_angle;
 

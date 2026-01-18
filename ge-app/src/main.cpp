@@ -17,11 +17,6 @@
 #include <crate.h>
 #include <default-boat.h>
 
-#ifndef NDEBUG
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb/stb_image_write.h>
-#endif
-
 int main() {
   ge::App app;
   ge::Font font;
@@ -31,13 +26,11 @@ int main() {
 
   app.audio_bgm_play(bgm_ambient, bgm_ambient_len, true);
 
-  ge::Sky sky{app.framebuffer_region().subregion(0, 0, ge::App::WIDTH, 80)};
+  ge::Sky sky{};
   sky.set_sky_color(ge::hsv_to_rgb565(150, 200, 255));
   sky.set_cloud_color(ge::hsv_to_rgb565(0, 0, 255));
 
-  auto water_region = app.framebuffer_region().subregion(0, 80, ge::App::WIDTH,
-                                                         ge::App::HEIGHT - 80);
-  ge::Water water{water_region};
+  ge::Water water{};
   water.set_sky_color(ge::hsv_to_rgb565(150, 200, 255));
   water.set_water_color(ge::hsv_to_rgb565(142, 255, 181));
 
@@ -49,30 +42,27 @@ int main() {
   float dt = 0.0f;
 
   while (app) {
-    app.begin();
+    auto fb_region = app.begin();
 
     auto start_time = app.now();
 
     auto joystick = app.get_joystick_state();
     boat.update_angle(joystick.x, joystick.y, dt);
     boat.update_position(app, dt);
+    auto water_region =
+        fb_region.subregion(0, 80, ge::App::WIDTH, ge::App::HEIGHT - 80);
 
-    for (int i = 0; i < 1; ++i) {
-      constexpr int W = ge::App::WIDTH;
-      constexpr int H = ge::App::HEIGHT;
-      // render_clouds(app.now() * 1e-3, app.framebuffer, W, 80);
+    // render_clouds(app.now() * 1e-3, app.framebuffer, W, 80);
 
-      sky.set_x_offset((int)(app.now() * 1e-3) % ge::Sky::max_x_offset());
-      sky.render();
-      water.render(app.now() * 1e-3);
+    sky.set_x_offset((int)(app.now() * 1e-3) % ge::Sky::max_x_offset());
+    sky.render(fb_region.subregion(0, 0, ge::App::WIDTH, 80));
+    water.render(water_region, app.now() * 1e-3);
 
-      const char text[] = "Hello, World!";
-      font.render("Hello, World!", app.framebuffer, ge::App::WIDTH,
-                  ge::App::HEIGHT, 10, 10, 1, [](const ge::GlyphContext &g) {
-                    uint8_t hue = (uint8_t)(g.x + g.gx);
-                    return ge::hsv_to_rgb565(hue, 255, 255);
-                  });
-    }
+    font.render("Hello, World!", fb_region, 10, 10, 1,
+                [](const ge::GlyphContext &g) {
+                  uint8_t hue = (uint8_t)(g.x + g.gx);
+                  return ge::hsv_to_rgb565(hue, 255, 255);
+                });
 
     {
       float dx = crate_x - boat.get_x();
@@ -96,9 +86,9 @@ int main() {
     }
 
     {
-      auto compass_region = app.framebuffer_region().subregion(
-          ge::App::WIDTH - compass_base_width - 10, 10, compass_base_width,
-          compass_base_height);
+      auto compass_region =
+          fb_region.subregion(ge::App::WIDTH - compass_base_width - 10, 10,
+                              compass_base_width, compass_base_height);
       compass.render(compass_region, boat.get_relative_angle());
     }
 

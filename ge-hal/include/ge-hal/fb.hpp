@@ -1,14 +1,17 @@
 #pragma once
 
+#include "ge-hal/core.hpp"
 #include <cstdint>
 
 namespace ge {
-class FramebufferRegion {
+class Surface {
 public:
-  FramebufferRegion(std::uint16_t *fb_ptr, int stride, int width, int height)
-      : fb_ptr(fb_ptr), stride(stride), width(width), height(height) {}
+  Surface(std::uint16_t *fb_ptr, int stride, int width, int height,
+          int buffer_index = BUFFER_INDEX_NONE)
+      : fb_ptr(fb_ptr), stride(stride), width(width), height(height),
+        buffer_index{buffer_index} {}
 
-  FramebufferRegion subregion(int x, int y, int w, int h) const {
+  Surface subsurface(int x, int y, int w, int h) const {
     if (x < 0)
       x = 0;
     if (y < 0)
@@ -17,11 +20,12 @@ public:
       w = width - x;
     if (y + h > height)
       h = height - y;
-    return FramebufferRegion(&fb_ptr[y * stride + x], stride, w, h);
+    return Surface(&fb_ptr[y * stride + x], stride, w, h, buffer_index);
   }
 
-  int region_width() const { return width; }
-  int region_height() const { return height; }
+  int get_width() const { return width; }
+  int get_height() const { return height; }
+  int get_buffer_index() const { return buffer_index; }
 
   void set_pixel(int x, int y, std::uint16_t color) {
     if ((unsigned)x >= (unsigned)width || (unsigned)y >= (unsigned)height)
@@ -29,8 +33,11 @@ public:
     fb_ptr[y * stride + x] = color;
   }
 
+  u16 *data() { return fb_ptr; }
+
 private:
+  static constexpr u32 BUFFER_INDEX_NONE = -1;
   std::uint16_t *fb_ptr;
-  int stride, width, height;
+  int stride, width, height, buffer_index;
 };
 } // namespace ge

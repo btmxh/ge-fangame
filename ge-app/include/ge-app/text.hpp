@@ -26,13 +26,13 @@ public:
   int default_advance(int scale) const { return GLYPH_W * scale; }
 
   template <class ColorCallback>
-  void render(const char *text, FramebufferRegion region, int x, int y,
+  void render(const char *text, Surface region, int x, int y,
               int scale, ColorCallback cb) {
     auto set_pixel = [&, x, y](int dx, int dy, std::uint16_t color) {
       int px = x + dx;
       int py = y + dy;
-      if ((unsigned)px >= (unsigned)region.region_width() ||
-          (unsigned)py >= (unsigned)region.region_height())
+      if ((unsigned)px >= (unsigned)region.get_width() ||
+          (unsigned)py >= (unsigned)region.get_height())
         return;
       region.set_pixel(px, py, color);
     };
@@ -74,7 +74,7 @@ public:
     }
   }
 
-  void render_colored(const char *text, FramebufferRegion region, int x, int y,
+  void render_colored(const char *text, Surface region, int x, int y,
                       int scale, std::uint16_t color) {
     render(text, region, x, y, scale,
            [color](const GlyphContext &) { return color; });

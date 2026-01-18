@@ -2,17 +2,22 @@
 
 #include "ge-app/gfx/color.hpp"
 #include "ge-app/texture.hpp"
+#include "ge-hal/app.hpp"
 #include "ge-hal/fb.hpp"
 #include <bg_clouds.h>
 #include <cassert>
 #include <cstdint>
+#include <cstring>
 #include <sun.h>
+#include <utility>
 
 namespace ge {
 class Sky {
 public:
-  Sky() : sun_texture{sun_color, sun_alpha, sun_width, sun_height} {}
-  void invalidate() { needs_rerender = true; }
+  Sky() : sun_texture{sun_color, sun_alpha, sun_width, sun_height} {
+    invalidate();
+  }
+  void invalidate() { std::memset(rendered, 0, sizeof(rendered)); }
 
   void set_sky_color(std::uint16_t sky_color) {
     if (this->sky_color == sky_color)
@@ -37,14 +42,12 @@ public:
 
   static int max_x_offset() { return CLOUD_TEXTURE_WIDTH; }
 
-  void render(FramebufferRegion render_region) {
-    if (!needs_rerender)
+  void render(Surface render_region) {
+    if (std::exchange(rendered[render_region.get_buffer_index()], true))
       return;
 
-    needs_rerender = false;
-
-    const int W = render_region.region_width();
-    const int H = render_region.region_height();
+    const int W = render_region.get_width();
+    const int H = render_region.get_height();
     const int TEX_W = CLOUD_TEXTURE_WIDTH;
     auto fb = render_region;
 
@@ -86,6 +89,6 @@ private:
   Texture sun_texture;
   std::uint16_t sky_color = 0xFFFF, cloud_color = 0xFFFF;
   int x_offset = 0;
-  bool needs_rerender = true;
+  bool rendered[App::NUM_BUFFERS];
 };
 } // namespace ge

@@ -13,9 +13,9 @@ public:
       : width{width}, height{height}, color_data(color_data),
         alpha_data(alpha_data) {}
 
-  void blit(FramebufferRegion &region) {
-    int w = std::min(width, region.region_width());
-    int h = std::min(height, region.region_height());
+  void blit(Surface &region) {
+    int w = std::min(width, region.get_width());
+    int h = std::min(height, region.get_height());
 
     for (int y = 0; y < h; ++y) {
       for (int x = 0; x < w; ++x) {
@@ -31,10 +31,10 @@ public:
     }
   }
 
-  void blit_scaled(FramebufferRegion &region, int dst_x0, int dst_y0,
+  void blit_scaled(Surface &region, int dst_x0, int dst_y0,
                    float scale_x, float scale_y) {
-    int dst_w = region.region_width();
-    int dst_h = region.region_height();
+    int dst_w = region.get_width();
+    int dst_h = region.get_height();
 
     int src_w = width;
     int src_h = height;
@@ -68,8 +68,8 @@ public:
       int dst_cy,     // destination center (screen coords)
       float angle_rad // clockwise or CCW, your choice, just be consistent
   ) {
-    const int W = region.region_width();
-    const int H = region.region_height();
+    const int W = region.get_width();
+    const int H = region.get_height();
 
     // Precompute sin/cos
     float c = std::cos(angle_rad);

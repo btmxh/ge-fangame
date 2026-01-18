@@ -47,19 +47,16 @@ int main() {
 
   while (app) {
     auto fb_region = app.begin();
-
     auto start_time = app.now();
 
     auto joystick = app.get_joystick_state();
     boat.update_angle(joystick.x, joystick.y, dt);
     boat.update_position(app, dt);
     auto water_region =
-        fb_region.subregion(0, 80, ge::App::WIDTH, ge::App::HEIGHT - 80);
-
-    // render_clouds(app.now() * 1e-3, app.framebuffer, W, 80);
+        fb_region.subsurface(0, 80, ge::App::WIDTH, ge::App::HEIGHT - 80);
 
     sky.set_x_offset((int)(app.now() * 1e-3) % ge::Sky::max_x_offset());
-    sky.render(fb_region.subregion(0, 0, ge::App::WIDTH, 80));
+    sky.render(fb_region.subsurface(0, 0, ge::App::WIDTH, 80));
     water.render(water_region, app.now() * 1e-3);
 
     font.render("Hello, World!", fb_region, 10, 10, 1,
@@ -73,34 +70,34 @@ int main() {
       float dy = crate_y - boat.get_y();
       float sx, sy;
       mapping.transform_xy(dx, dy, sx, sy);
-      app.log("Crate relative pos: (%.2f, %.2f) -> screen (%.2f, %.2f)", dx, dy,
-              sx, sy);
+      // app.log("Crate relative pos: (%.2f, %.2f) -> screen (%.2f, %.2f)", dx,
+      // dy,
+      //         sx, sy);
       float scale = mapping.scale_at(dy) * 3;
-      app.log("  scale: %.3f", scale);
+      // app.log("  scale: %.3f", scale);
 
       crate.blit_scaled(water_region, sx, sy, scale, scale);
     }
 
     {
       auto max_side = std::max(default_boat_width, default_boat_height);
-      auto boat_region = water_region.subregion(
-          (water_region.region_width() - max_side) / 2,
-          (water_region.region_height() - max_side) / 2, max_side, max_side);
+      auto boat_region = water_region.subsurface(
+          (water_region.get_width() - max_side) / 2,
+          (water_region.get_height() - max_side) / 2, max_side, max_side);
       boat.render(boat_region);
     }
 
     {
       auto compass_region =
-          fb_region.subregion(ge::App::WIDTH - compass_base_width - 10, 10,
-                              compass_base_width, compass_base_height);
+          fb_region.subsurface(ge::App::WIDTH - compass_base_width - 10, 10,
+                               compass_base_width, compass_base_height);
       compass.render(compass_region, boat.get_relative_angle());
     }
 
     auto end_time = app.now();
 
     std::int64_t frame_time = end_time - start_time;
-    dt = frame_time * 1e-3f;
-    // app.log("Frame time: %lld ms", frame_time);
+    app.log("Frame time: %ld ms", frame_time);
 
     app.end();
   }

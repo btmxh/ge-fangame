@@ -45,9 +45,10 @@ App::operator bool() { return true; }
 
 static int buffer_index = 0;
 
-FramebufferRegion App::begin() {
+Surface App::begin() {
   auto buffer = hal::stm::pixel_buffer(buffer_index);
-  return FramebufferRegion{buffer, App::WIDTH, App::WIDTH, App::HEIGHT};
+  return Surface{buffer, App::WIDTH, App::WIDTH, App::HEIGHT,
+                           buffer_index};
 }
 
 void App::end() { hal::stm::swap_buffers(buffer_index); }
@@ -67,6 +68,8 @@ void App::log(const char *fmt, ...) {
   std::fflush(stdout);
   va_end(args);
 }
+
+void App::sleep(std::int64_t ms) { hal::stm::delay_timed(ms); }
 
 void App::audio_bgm_play(const std::uint8_t *data, std::size_t len, bool loop) {
   (void)data;

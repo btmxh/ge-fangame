@@ -31,68 +31,11 @@ public:
     return h;
   }
 
-  void render(FramebufferRegion region, float time) {
-    int W = region.region_width(), H = region.region_height();
-    float t = time;
-
-    float f1 = 6.78549854395f, s1 = 1.548953589f;
-    float f2 = 1.384593458f, s2 = -1.084594359f;
-
-    uint16_t sun_color = hsv_to_rgb565(40, 30, 255); // warm yellow
-
-    for (int y = 0; y < H; ++y) {
-      float d = (float)y / H; // distance factor
-      float d2 = d * d;       // nonlinear perspective
-
-      float ty = 9000.0f / (y + 100);
-
-      for (int x = 0; x < W; ++x) {
-
-        // ---- waves (geometry only) ----
-        float px = x * 0.0 * ty;
-        float w = sinf(ty * f1 + px + t * s1) +
-                  0.5f * sinf(ty * f2 + px + t * s2 + 13.0f);
-
-        float nx = w * 2.5f;
-
-        float micro = sinf(ty * 4.3434f + x * 0.3438495 + t * 0.5f);
-        nx += micro * 0.15f;
-
-        nx *= d2; // flatten toward horizon
-
-        // ---- normalize ----
-        float nz = 1.0f / sqrtf(nx * nx + 1.0f);
-        nx *= nz;
-
-        // ---- fresnel (EARLY quantized) ----
-        float fresnel = 1.0f - nz;
-        fresnel = fresnel * fresnel;
-
-        // quantize to RGB565-friendly steps
-        fresnel = floorf(fresnel * 32.0f) * (1.0f / 32.0f);
-
-        // decorrelate rows
-        float jitter = (hash2(x, y) & 0x3F) * (1.0f / 255.0f);
-        fresnel = std::clamp(fresnel + jitter, 0.0f, 1.0f);
-
-        uint16_t color =
-            blend_rgb565(water_color, sky_color, (uint8_t)(fresnel * 255));
-
-        // ---- sparkle ----
-        float spec = nx * 0.3f + nz * 0.95f;
-        spec = std::max(spec, 0.0f);
-        spec = spec * spec * spec * spec;
-
-        float sparkle = (spec - 0.92f) / (0.99f - 0.92f);
-        sparkle = std::clamp(sparkle, 0.0f, 1.0f);
-        sparkle *= d2;
-
-        // quantize sparkle (temporal stability)
-        uint8_t a = (uint8_t)(sparkle * 6) * 8;
-
-        color = add_rgb565(color, sun_color, a);
-
-        region.set_pixel(x, y, color);
+  void render(Surface region, float time) {
+    (void)time;
+    for (int y = 0; y < region.get_height(); ++y) {
+      for (int x = 0; x < region.get_width(); ++x) {
+        region.set_pixel(x, y, water_color); // base water color
       }
     }
   }

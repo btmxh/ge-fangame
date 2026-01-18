@@ -145,7 +145,7 @@ App::~App() { app_impl_instance.reset(); }
 
 App::operator bool() { return app_impl_instance && !app_impl_instance->quit; }
 
-FramebufferRegion App::begin() {
+Surface App::begin() {
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     if (event.type == SDL_EVENT_QUIT) {
@@ -170,8 +170,8 @@ FramebufferRegion App::begin() {
     }
   }
 
-  return FramebufferRegion{app_impl_instance->framebuffer, WIDTH, WIDTH,
-                           HEIGHT};
+  return Surface{app_impl_instance->framebuffer, WIDTH, WIDTH, HEIGHT,
+                           0};
 }
 
 void App::end() {
@@ -244,6 +244,8 @@ void App::log(const char *fmt, ...) {
                   args);
   va_end(args);
 }
+
+void App::sleep(std::int64_t ms) { SDL_Delay((Uint32)ms); }
 
 void App::audio_bgm_play(const std::uint8_t *data, std::size_t len, bool loop) {
   app_impl_instance->bgm = {data, len, 0, loop, true};

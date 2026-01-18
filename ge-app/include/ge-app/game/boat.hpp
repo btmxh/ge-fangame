@@ -8,7 +8,7 @@
 namespace ge {
 class Boat {
 public:
-  void render(FramebufferRegion &region) {
+  void render(Surface &region) {
     auto angle_to_8dir = [](float angle) {
       // normalize to [0, 2π)
       angle = std::fmod(angle, 2.0f * M_PI);
@@ -24,8 +24,8 @@ public:
     };
 
     float angle = -angle_to_8dir(get_relative_angle()) * M_PI_4;
-    boat.blit_rotated(region, region.region_width() / 2,
-                      region.region_height() / 2, angle);
+    boat.blit_rotated(region, region.get_width() / 2,
+                      region.get_height() / 2, angle);
   }
 
   float get_angle() const { return angle; }

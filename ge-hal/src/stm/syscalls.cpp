@@ -48,7 +48,7 @@ int _lseek(int fd, int ptr, int dir) {
 void _exit(int status) {
   (void)status;
   for (;;)
-    asm volatile("BKPT #0");
+    __BKPT(0);
 }
 
 void _kill(int pid, int sig) { (void)pid, (void)sig; }

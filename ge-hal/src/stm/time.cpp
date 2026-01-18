@@ -13,7 +13,7 @@ namespace stm {
 
 void delay_spin(volatile u32 count) {
   while (count--)
-    asm("nop");
+    __NOP();
 }
 
 void systick_init(u32 frequency) {

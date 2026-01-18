@@ -5,7 +5,9 @@ in the EP _And so, I’ll keep wishing for that day to come._
 
 ## Build & Run
 
-This project follows standard CMake build procedures.
+This project follows standard CMake build procedures. A `flake.nix` file is
+provided, but the use of Nix in this project is not required. One should still
+use it, however.
 
 ### PC build
 
@@ -16,7 +18,7 @@ First, ensure Python (for automatic asset bundling) and SDL3 is installed on
 your system. Then, configure and build without any extra options.
 
 ```bash
-cmake -S. -Bbuild && cmake --build build
+cmake -S. -Bbuild/pc && cmake --build build/pc
 ```
 
 The output executable is self-contained in a binary directory depending on your
@@ -24,7 +26,54 @@ CMake generator.
 
 ### STM32 build
 
-TODO: this is currently unsupported for the time being.
+> [!NOTE]
+> This project only supports the Discovery kit with STM32F429ZI MCU.
+> Clocks, pins and peripherals are configured based on this kit alone.
+> Once input and audio is supported, wiring instructions will be properly
+> documented in this README file.
+
+To build for STM32, only the `arm-none-eabi-gcc` toolchain is supported. LLVM
+might work but some of the STM32-specific code heavily depends on GNU compiler
+extensions, so maybe Clang will complain about that.
+
+Python is still required for automatic asset bundling here. SDL3 is no longer
+required.
+
+To compile, configure your toolchain and run
+
+```bash
+cmake -S. -Bbuild/stm -DGE_HAL_STM32=ON && cmake --build build/stm
+
+# or if your toolchain was not yet configured, use the template toolchain file
+# in cmake/arm-none-eabi.cmake
+cmake -S. -Bbuild/stm -DGE_HAL_STM32=ON\
+        -DCMAKE_TOOLCHAIN_FILE=cmake/arm-none-eabi.cmake &&
+cmake --build build/stm
+```
+
+Handy scripts are provided in `scripts/` to flash and run. This requires
+`openocd` and `tio` (to read from stdout/USART1). One should treat these scripts
+as documentation, rather than proper tooling, as these do not cover all use
+cases.
+
+To flash, run:
+```
+openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c "program PATH_TO_THE_ELF verify reset exit"
+```
+
+To debug, run:
+```
+openocd -f interface/stlink.cfg -f target/stm32f4x.cfg
+
+# in another terminal
+gdb PATH_TO_THE_ELF
+    # in gdb prompt
+    (gdb) target extended-remote :3333
+    (gdb) monitor reset halt # software reset
+    (gdb) load # reflash the ELF
+```
+
+Make sure to set up proper udev rules if you are on Linux.
 
 ## Copyright
 

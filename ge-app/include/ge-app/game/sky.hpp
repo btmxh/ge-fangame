@@ -61,13 +61,17 @@ public:
     int stride = clouds_len / H;
 
     for (int y = 0; y < H; ++y) {
-      auto row_rle = &clouds[y * stride];
+      auto row_rle = &clouds[CLOUD_ROW_OFFSETS[y]];
 
       int tex_x = 0;
 
       while (true) {
-        i32 len = *row_rle++;
-        u8 value = *row_rle++;
+        u8 elem = *row_rle++;
+        i32 len = elem >> 4;
+        i32 value = elem & 0x0F;
+        len = len < 0xF ? (len + 1) : *row_rle++;
+        // i32 len = *row_rle++;
+        // u8 value = *row_rle++;
         u16 color = cloud_lut[value];
 
         i32 run_start = tex_x, run_end = tex_x + len;

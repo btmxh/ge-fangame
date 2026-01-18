@@ -3,14 +3,17 @@ from PIL import Image
 import bin2c  # pyright: ignore[reportImplicitRelativeImport]
 
 
+def emit_run(out, run_len, run_val):
+    if run_len <= 15:
+        out.append(((run_len - 1) << 4) | run_val)
+    else:
+        out.append((0xF << 4) | run_val)
+        out.append(run_len)
+
+
 def rle_encode_row(pixels, width, offset):
-    """
-    pixels: flat list/bytes of palette indices, row-major
-    returns: bytes containing row-wise RLE
-    """
     out = bytearray()
-    idx = offset
-    row = pixels[idx : idx + width]
+    row = pixels[offset : offset + width]
 
     run_val = row[0]
     run_len = 1
@@ -19,15 +22,11 @@ def rle_encode_row(pixels, width, offset):
         if p == run_val and run_len < 255:
             run_len += 1
         else:
-            out.append(run_len)
-            out.append(run_val)
+            emit_run(out, run_len, run_val)
             run_val = p
             run_len = 1
 
-    # flush last run
-    out.append(run_len)
-    out.append(run_val)
-
+    emit_run(out, run_len, run_val)
     return out
 
 
@@ -37,36 +36,41 @@ if __name__ == "__main__":
     out_h = out_stem + ".h"
     symbol_name = "clouds"
 
+    # --- load grayscale image ---
     img = Image.open(image_path).convert("L")
     w, h = img.size
-    px = list(img.getdata())  # pyright: ignore[reportArgumentType]
+    px = list(img.getdata())  # flat grayscale list
 
-    # quantize to indexed
+    # --- quantize to palette indices ---
     colors = sorted(set(px))
+    if len(colors) > 16:
+        raise RuntimeError("Too many colors for packed RLE (max 16)")
+
     color_idx = {c: i for i, c in enumerate(colors)}
     px = [color_idx[v] for v in px]
 
-    # rle encode each row
-    rows = []
-    for y in range(h):
-        rle_encoded = rle_encode_row(px, w, w * y)
-        rows.append(rle_encoded)
-
-    max_len = max(len(r) for r in rows)
+    # --- encode rows ---
+    row_offsets = []
     data = bytearray()
-    for row in rows:
-        # pad to max_len
-        padded = row + bytes(max_len - len(row))
-        data.extend(padded)
 
-    colors = ",".join(str(c) for c in colors)
+    for y in range(h):
+        row_offsets.append(len(data))
+        data.extend(rle_encode_row(px, w, w * y))
+
+    # --- emit C ---
+    colors_c = ",".join(str(c) for c in colors)
+    offsets_c = ",".join(str(o) for o in row_offsets)
+
     bin2c.main(
         data,
         out_c,
         out_h,
         symbol_name,
         header_additional=f"""
-        static const int CLOUD_COLORS[]={{{colors}}};
         #define CLOUD_TEXTURE_WIDTH {w}
+        #define CLOUD_TEXTURE_HEIGHT {h}
+
+        static const unsigned char CLOUD_COLORS[] = {{{colors_c}}};
+        static const unsigned short CLOUD_ROW_OFFSETS[] = {{{offsets_c}}};
         """,
     )

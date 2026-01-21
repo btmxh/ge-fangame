@@ -10,6 +10,8 @@ struct JoystickState {
   float x, y;
 };
 
+enum class Button { Button1, Button2 };
+
 class App {
 public:
   App();
@@ -30,9 +32,6 @@ public:
 #endif
   operator bool();
 
-  Surface begin();
-  void end();
-
   std::int64_t now();
   void log(const char *fmt, ...);
   void sleep(std::int64_t ms);
@@ -52,5 +51,12 @@ public:
 
   // -------- global --------
   void audio_set_master_volume(std::uint8_t vol); // 0..255
+
+  bool begin_render(Surface &out_surface);
+  void end_render();
+
+  bool button_clicked(Button btn);
+
+  void wait_for_event(); // WFI on STM32
 };
 }; // namespace ge

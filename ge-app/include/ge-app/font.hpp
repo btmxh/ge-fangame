@@ -2,6 +2,7 @@
 
 #include "ge-hal/surface.hpp"
 #include <cstdint>
+#include <cstdio>
 
 namespace ge {
 
@@ -36,33 +37,76 @@ public:
   u32 default_advance() const;
 
   template <class ColorCallback>
-  void render(const char *text, Surface region, int x, int y,
-              ColorCallback cb) {
-    auto set_pixel = [&, x, y](int dx, int dy, std::uint16_t color) {
+  void render(const char *text, u32 max_len, Surface region, int x0, int y0,
+              ColorCallback cb) const {
+    int x = x0, y = y0;
+    const int max_x = region.get_width(), max_y = region.get_height();
+
+    auto set_pixel = [&, x, y](int dx, int dy, u16 color) {
       region.set_pixel(x + dx, y + dy, color);
     };
 
-    x = y = 0;
-    for (auto ch = *text; ch; ch = *++text) {
+    auto measure_word = [&](const char *p) {
+      int w = 0;
+      for (; *p && *p != ' ' && *p != '\n'; ++p) {
+        u8 const *gd;
+        u8 gw, gh, adv;
+        if (get_glyph(*p, gd, gw, gh, adv))
+          w += adv;
+        else
+          w += default_advance();
+      }
+      return w;
+    };
+
+    for (auto ch = *text; ch && max_len; ch = *++text, --max_len) {
+
+      // Hard stop if we're vertically out of bounds
+      if (y + line_height() > max_y)
+        break;
+
+      // Explicit newline
       if (ch == '\n') {
-        x = 0, y += line_height();
+        x = x0;
+        y += line_height();
         continue;
+      }
+
+      // Word wrap on space
+      if (ch == ' ') {
+        int space_adv = default_advance();
+        int word_w = measure_word(text + 1);
+
+        if (x + space_adv + word_w > max_x) {
+          x = x0;
+          y += line_height();
+          continue; // skip leading space
+        }
       }
 
       u8 const *glyph_data;
       u8 glyph_w, glyph_h, advance;
-      if (!get_glyph(ch, glyph_data, glyph_w, glyph_h, advance)) {
-        x += default_advance();
-        continue;
+      bool has_glyph = get_glyph(ch, glyph_data, glyph_w, glyph_h, advance);
+
+      if (!has_glyph)
+        advance = default_advance();
+
+      // Character-level wrap fallback (long words)
+      if (x + advance > max_x) {
+        x = x0;
+        y += line_height();
       }
 
-      for (int gy = 0; gy < glyph_h; ++gy) {
-        for (int gx = 0; gx < glyph_w; ++gx) {
-          int bit = gy * glyph_w + gx;
-          bool pixel_on = (glyph_data[bit >> 3] >> (7 - (bit & 0x7))) & 1;
-          if (pixel_on) {
-            auto color = cb(GlyphContext{ch, gx, gy, glyph_w, glyph_h, x, y});
-            set_pixel(x + gx, y + gy, color);
+      if (has_glyph) {
+        for (int gy = 0; gy < glyph_h; ++gy) {
+          for (int gx = 0; gx < glyph_w; ++gx) {
+            int bit = gy * glyph_w + gx;
+            bool pixel_on = (glyph_data[bit >> 3] >> (7 - (bit & 7))) & 1;
+
+            if (pixel_on) {
+              auto color = cb(GlyphContext{ch, gx, gy, glyph_w, glyph_h, x, y});
+              set_pixel(x + gx, y + gy, color);
+            }
           }
         }
       }
@@ -71,9 +115,10 @@ public:
     }
   }
 
-  void render_colored(const char *text, Surface region, int x, int y,
-                      std::uint16_t color) {
-    render(text, region, x, y, [color](const GlyphContext &) { return color; });
+  void render_colored(const char *text, u32 max_len, Surface region, int x,
+                      int y, std::uint16_t color) const {
+    render(text, max_len, region, x, y,
+           [color](const GlyphContext &) { return color; });
   }
 
 private:

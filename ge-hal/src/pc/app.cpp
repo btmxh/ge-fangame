@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <utility>
 
 namespace ge {
 
@@ -145,40 +146,66 @@ App::~App() { app_impl_instance.reset(); }
 
 App::operator bool() { return app_impl_instance && !app_impl_instance->quit; }
 
-Surface App::begin() {
+static bool button_pending[2] = {false, false};
+
+void App::wait_for_event() {
+  static bool gamepad_button_state[SDL_GAMEPAD_BUTTON_COUNT] = {false};
   SDL_Event event;
-  while (SDL_PollEvent(&event)) {
-    if (event.type == SDL_EVENT_QUIT) {
-      app_impl_instance->quit = true;
-    } else if (event.type == SDL_EVENT_GAMEPAD_ADDED) {
-      if (app_impl_instance->pad == nullptr) {
-        app_impl_instance->pad = SDL_OpenGamepad(event.gdevice.which);
-        if (!app_impl_instance->pad) {
-          log("SDL_OpenGamepad Error: %s", SDL_GetError());
-        } else {
-          log("Gamepad connected: %s",
-              SDL_GetGamepadName(app_impl_instance->pad));
-        }
-      }
-    } else if (event.type == SDL_EVENT_GAMEPAD_REMOVED) {
-      if (app_impl_instance->pad &&
-          SDL_GetGamepadID(app_impl_instance->pad) == event.gdevice.which) {
-        SDL_CloseGamepad(app_impl_instance->pad);
-        app_impl_instance->pad = nullptr;
-        log("Gamepad disconnected");
+  // 10ms should be enough for 100 FPS and 100 updates/s
+  SDL_WaitEventTimeout(&event, 10);
+  switch (event.type) {
+  case SDL_EVENT_QUIT:
+    app_impl_instance->quit = true;
+    break;
+  case SDL_EVENT_GAMEPAD_ADDED:
+    if (app_impl_instance->pad == nullptr) {
+      app_impl_instance->pad = SDL_OpenGamepad(event.gdevice.which);
+      if (!app_impl_instance->pad) {
+        log("SDL_OpenGamepad Error: %s", SDL_GetError());
+      } else {
+        log("Gamepad connected: %s",
+            SDL_GetGamepadName(app_impl_instance->pad));
       }
     }
+    break;
+  case SDL_EVENT_GAMEPAD_REMOVED:
+    if (app_impl_instance->pad &&
+        SDL_GetGamepadID(app_impl_instance->pad) == event.gdevice.which) {
+      SDL_CloseGamepad(app_impl_instance->pad);
+      app_impl_instance->pad = nullptr;
+      log("Gamepad disconnected");
+    }
+    break;
+  case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+    gamepad_button_state[event.gbutton.button] = true;
+    break;
+  case SDL_EVENT_GAMEPAD_BUTTON_UP:
+    if (std::exchange(gamepad_button_state[event.gbutton.button], false)) {
+      // gamepad button released
+      if (event.gbutton.button == SDL_GAMEPAD_BUTTON_LABEL_A) {
+        log("A button pressed");
+        button_pending[0] = true;
+      } else if (event.gbutton.button == SDL_GAMEPAD_BUTTON_LABEL_B) {
+        log("B button pressed");
+        button_pending[1] = true;
+      }
+    }
+    break;
   }
-
-  return Surface{app_impl_instance->framebuffer,
-                 WIDTH,
-                 WIDTH,
-                 HEIGHT,
-                 PixelFormat::RGB565,
-                 0};
 }
 
-void App::end() {
+bool App::begin_render(Surface &out_surface) {
+  out_surface = Surface{app_impl_instance->framebuffer,
+                        WIDTH,
+                        WIDTH,
+                        HEIGHT,
+                        PixelFormat::RGB565,
+                        0};
+  // HACK: currently always return true
+  return true;
+}
+
+void App::end_render() {
   int win_w, win_h;
   SDL_GetWindowSize(app_impl_instance->window, &win_w, &win_h);
 
@@ -206,6 +233,7 @@ void App::end() {
   SDL_FRect dstf{(float)dst_x, (float)dst_y, (float)dst_w, (float)dst_h};
 
   SDL_RenderTexture(impl->renderer, impl->frame_texture, nullptr, &dstf);
+  // TODO: remove VSync if that is problematic
   SDL_RenderPresent(impl->renderer);
 }
 
@@ -239,6 +267,10 @@ JoystickState App::get_joystick_state() {
   y = std::max(std::min(y, 1.0f), -1.0f);
 
   return {x, y};
+}
+
+bool App::button_clicked(Button button) {
+  return std::exchange(button_pending[static_cast<int>(button)], false);
 }
 
 void App::log(const char *fmt, ...) {

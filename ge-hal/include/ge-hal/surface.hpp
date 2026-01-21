@@ -46,6 +46,7 @@ inline constexpr usize pixel_format_bpp(PixelFormat fmt) {
 
 template <class ElemT> class BaseSurface {
 public:
+  BaseSurface(std::nullptr_t = nullptr) {}
   BaseSurface(ElemT *fb_ptr, u32 stride, u32 width, u32 height,
               PixelFormat fmt = PixelFormat::RGB565,
               u32 buffer_index = BUFFER_INDEX_NONE)
@@ -79,6 +80,8 @@ public:
             class = std::enable_if_t<!std::is_const<E>::value>>
   void set_pixel(int x, int y, ColorT color) {
     auto ptr = pixel_at(x, y);
+    if (!ptr)
+      return;
     if (pixel_format_bpp(fmt) >= 8) {
       assert(sizeof(ColorT) * 8 == pixel_format_bpp(fmt));
       *static_cast<ColorT *>(ptr) = color;
@@ -99,8 +102,8 @@ public:
 
 private:
   static constexpr u32 BUFFER_INDEX_NONE = -1;
-  ElemT *fb_ptr;
-  u32 stride, width, height, buffer_index;
+  ElemT *fb_ptr = nullptr;
+  u32 stride = 0, width = 0, height = 0, buffer_index = BUFFER_INDEX_NONE;
   PixelFormat fmt = PixelFormat::RGB565;
 };
 

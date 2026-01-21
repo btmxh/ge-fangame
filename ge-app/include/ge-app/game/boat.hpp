@@ -1,13 +1,15 @@
 #pragma once
 
-#include "default-boat.h"
+#include "assets/out/textures/default-boat.h"
 #include "ge-app/texture.hpp"
 #include "ge-hal/app.hpp"
 #include <cmath>
-#include <iostream>
+
 namespace ge {
 class Boat {
 public:
+  u32 get_width() const { return boat.get_width(); }
+  u32 get_height() const { return boat.get_height(); }
   void render(Surface &region) {
     auto angle_to_8dir = [](float angle) {
       // normalize to [0, 2π)
@@ -30,9 +32,9 @@ public:
     //                   angle);
     //
     // region is a 64x64 region, but the boat texture is 32x64 only
-    region = region.subsurface((region.get_width() - default_boat_width) / 2,
-                               (region.get_height() - default_boat_height) / 2,
-                               default_boat_width, default_boat_height);
+    region = region.subsurface((region.get_width() - boat.get_width()) / 2,
+                               (region.get_height() - boat.get_height()) / 2,
+                               boat.get_width(), boat.get_height());
     boat.blit(region);
   }
 
@@ -73,9 +75,9 @@ public:
 
 private:
   Texture boat{
-      default_boat_color,
-      default_boat_width,
-      default_boat_height,
+      default_boat,
+      default_boat_WIDTH,
+      default_boat_HEIGHT,
   };
 
   static constexpr float default_angle = M_PI_2, turn_rate = 1.5f,

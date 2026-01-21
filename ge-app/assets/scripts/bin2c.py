@@ -2,13 +2,13 @@ import sys
 import os
 
 
-def main(data, out_c, out_h, name, header_additional=""):
+def main(data, out_c, out_h, name, header_additional="", dtype="uint8_t"):
     # -------- generate .c --------
     with open(out_c, "w") as f:
         f.write("#include <stdint.h>\n")
         f.write(f'#include "{os.path.basename(out_h)}"\n\n')
 
-        f.write(f"const uint8_t {name}[] = {{\n")
+        f.write(f"const {dtype} {name}[] = {{\n")
         for i, b in enumerate(data):
             f.write(f"0x{b:02x},")
             if i % 16 == 15:
@@ -28,7 +28,7 @@ def main(data, out_c, out_h, name, header_additional=""):
             f.write('extern "C" {\n')
             f.write("#endif\n\n")
 
-            f.write(f"extern const uint8_t {name}[];\n")
+            f.write(f"extern const {dtype} {name}[];\n")
             f.write(f"extern const uint32_t {name}_len;\n\n")
             if header_additional:
                 f.write(header_additional)

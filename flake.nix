@@ -26,6 +26,7 @@
             ps: with ps; [
               pillow
               types-pillow
+              soundfile
             ]
           );
           inherit (self.checks.${system}.pre-commit-check) shellHook enabledPackages;

@@ -1,20 +1,20 @@
 #pragma once
 
+#include "assets/out/textures/clouds.h"
+#include "assets/out/textures/sun.h"
 #include "ge-app/gfx/color.hpp"
 #include "ge-app/texture.hpp"
 #include "ge-hal/app.hpp"
 #include "ge-hal/surface.hpp"
-#include <bg_clouds.h>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
-#include <sun.h>
 #include <utility>
 
 namespace ge {
 class Sky {
 public:
-  Sky() : sun_texture{sun_color, sun_width, sun_height} { invalidate(); }
+  Sky() : sun_texture{sun, sun_WIDTH, sun_HEIGHT} { invalidate(); }
   void invalidate() { std::memset(rendered, 0, sizeof(rendered)); }
 
   void set_sky_color(std::uint16_t sky_color) {
@@ -58,10 +58,10 @@ public:
     }
 
     assert(H == 80);
-    int stride = clouds_len / H;
+    int stride = bg_clouds_len / H;
 
     for (int y = 0; y < H; ++y) {
-      auto row_rle = &clouds[CLOUD_ROW_OFFSETS[y]];
+      auto row_rle = &bg_clouds[CLOUD_ROW_OFFSETS[y]];
 
       int tex_x = 0;
 

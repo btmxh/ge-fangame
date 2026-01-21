@@ -8,8 +8,9 @@
 namespace ge {
 class Texture : public ConstSurface {
 public:
-  Texture(const u16 *color_data, u32 width, u32 height)
-      : ConstSurface{color_data, width, width, height, PixelFormat::ARGB1555} {}
+  Texture(const u16 *color_data, u32 width, u32 height,
+          PixelFormat format = PixelFormat::ARGB1555)
+      : ConstSurface{color_data, width, width, height, format} {}
 
   void blit(Surface &region) { hal::gpu::blit_blend(region, *this, 0xFF); }
 

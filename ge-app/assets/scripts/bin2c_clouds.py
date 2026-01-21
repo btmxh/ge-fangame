@@ -1,3 +1,4 @@
+import sys
 from sys import argv
 from PIL import Image
 import bin2c  # pyright: ignore[reportImplicitRelativeImport]
@@ -31,10 +32,11 @@ def rle_encode_row(pixels, width, offset):
 
 
 if __name__ == "__main__":
-    image_path, out_stem = argv[1:3]
-    out_c = out_stem + ".c"
-    out_h = out_stem + ".h"
-    symbol_name = "clouds"
+    if len(sys.argv) != 5:
+        print(
+            f"Usage: {argv[0]} <input image> <output c file> <output h file> <symbol>"
+        )
+    image_path, out_c, out_h, symbol = argv[1:5]
 
     # --- load grayscale image ---
     img = Image.open(image_path).convert("L")
@@ -65,7 +67,7 @@ if __name__ == "__main__":
         data,
         out_c,
         out_h,
-        symbol_name,
+        symbol,
         header_additional=f"""
         #define CLOUD_TEXTURE_WIDTH {w}
         #define CLOUD_TEXTURE_HEIGHT {h}

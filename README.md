@@ -119,4 +119,5 @@ See the corresponding `README.md` in `ge-app/assets`.
 
 ## License
 
-This project is in the public domain.
+All code and self-made assets in this project is in the public domain. Other
+borrowed works like fonts are released under their respective licenses.

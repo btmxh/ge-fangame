@@ -1,5 +1,6 @@
 /.cache
 /build
+__pycache__
 /.direnv
 .envrc
 /.pre-commit-config.yaml

@@ -26,7 +26,12 @@ if(GE_HAL_STM32)
     target_link_libraries(ge-hal PUBLIC cmsis cmsis_device_f4)
     target_compile_definitions(ge-hal PUBLIC GE_HAL_STM32)
 else()
-    target_sources(ge-hal PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/pc/app.cpp)
+    target_sources(
+        ge-hal
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/pc/app.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/pc/gpu.cpp
+    )
     find_package(SDL3 REQUIRED)
     target_link_libraries(ge-hal PUBLIC SDL3::SDL3)
     target_compile_definitions(ge-hal PUBLIC GE_HAL_PC)

@@ -2,8 +2,14 @@
 #pragma once
 
 #include "ge-hal/core.hpp"
+#include "ge-hal/surface.hpp"
 
 namespace ge {
+
+struct JoystickState {
+  float x, y;
+};
+
 class App {
 public:
   App();
@@ -14,13 +20,24 @@ public:
 #endif
 
   static constexpr int WIDTH = 240, HEIGHT = 320, AUDIO_FREQ = 8000;
+#ifdef GE_HAL_PC
+  // On PC, double buffering is automatically handled by SDL,
+  // so we only need one buffer.
+  static constexpr int NUM_BUFFERS = 1;
+#else
+  // On STM32, we use double buffering to avoid tearing.
+  static constexpr int NUM_BUFFERS = 2;
+#endif
   operator bool();
 
-  u16 *begin();
+  Surface begin();
   void end();
 
   std::int64_t now();
   void log(const char *fmt, ...);
+  void sleep(std::int64_t ms);
+
+  JoystickState get_joystick_state();
 
   void audio_bgm_play(const std::uint8_t *data, std::size_t length, bool loop);
 

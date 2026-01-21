@@ -36,19 +36,29 @@ App::App() {
   stdout_usart = hal::stm::USART_CONFIG_DEBUG.init(115200);
   hal::stm::init_sdram();
   hal::stm::init_ltdc();
-  hal::stm::DMA2DDevice::init();
+  hal::stm::init_dma2d();
 }
 
 App::~App() = default;
 
 App::operator bool() { return true; }
 
-static int buffer_index = 0;
+static u32 buffer_index = 0;
 
-u16 *App::begin() { return hal::stm::pixel_buffer(buffer_index); }
+Surface App::begin() {
+  auto buffer = hal::stm::pixel_buffer(buffer_index);
+  return Surface{buffer,      App::WIDTH,          App::WIDTH,
+                 App::HEIGHT, PixelFormat::RGB565, buffer_index};
+}
+
 void App::end() { hal::stm::swap_buffers(buffer_index); }
 
 std::int64_t App::now() { return hal::stm::systick_get(); }
+
+JoystickState App::get_joystick_state() {
+  // TODO: implement joystick reading
+  return {0.0f, 0.0f};
+}
 
 void App::log(const char *fmt, ...) {
   va_list args;
@@ -58,6 +68,8 @@ void App::log(const char *fmt, ...) {
   std::fflush(stdout);
   va_end(args);
 }
+
+void App::sleep(std::int64_t ms) { hal::stm::delay_timed(ms); }
 
 void App::audio_bgm_play(const std::uint8_t *data, std::size_t len, bool loop) {
   (void)data;

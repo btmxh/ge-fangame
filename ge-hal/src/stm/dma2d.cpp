@@ -1,156 +1,132 @@
 #include "ge-hal/stm/dma2d.hpp"
+#include "ge-hal/gpu.hpp"
+#include "ge-hal/stm/time.hpp"
+#include "ge-hal/surface.hpp"
+#include <algorithm>
 
 namespace ge {
 namespace hal {
+
 namespace stm {
+void init_dma2d() { RCC->AHB1ENR |= RCC_AHB1ENR_DMA2DEN; }
+} // namespace stm
 
-void DMA2DDevice::fill(Surface dst, Rect rect, u32 color) {
-  wait_idle();
-
-  // Mode: Register-to-Memory (0x3)
-  DMA2D->CR = 0x00030000UL;
-  DMA2D->OCOLR = color;
-
-  // Output Config
-  DMA2D->OPFCCR = static_cast<u32>(dst.fmt);
-
-  // Geometry
-  u32 bpp = (dst.fmt == PixelFormat::RGB888) ? 3
-            : (dst.fmt == PixelFormat::ARGB8888)
-                ? 4
-                : 2; // Rough assumption for common types
-
-  // For RGB565 (standard), BytesPerPixel is 2.
-  if (dst.fmt == PixelFormat::RGB565)
-    bpp = 2;
-
-  u32 offset = (rect.y * dst.width + rect.x) * bpp;
-  DMA2D->OMAR = reinterpret_cast<u32>(dst.pixels) + offset;
-
-  DMA2D->NLR = (rect.w << 16) | rect.h;
-  DMA2D->OOR = dst.width - rect.w;
-
-  // Fire
-  DMA2D->CR |= DMA2D_CR_START;
+namespace gpu {
+void wait_idle() {
+  while (DMA2D->CR & DMA2D_CR_START)
+    stm::delay_spin(1);
 }
 
-void DMA2DDevice::blit(Surface dst, Surface src, int x, int y) {
-  Rect full_src = {0, 0, src.width, src.height};
-  blit_ex(dst, src, full_src, x, y);
+enum class Mode : u8 {
+  R2M = 0x3,
+  M2M = 0x0,
+  M2M_PFC = 0x1,
+  M2M_BLEND = 0x2,
+};
+
+static void set_mode(Mode mode) {
+  auto cr = DMA2D->CR;
+  cr &= ~DMA2D_CR_MODE_Msk;
+  cr = static_cast<u32>(mode) << DMA2D_CR_MODE_Pos;
+  DMA2D->CR = cr;
 }
 
-void DMA2DDevice::blit_ex(Surface dst, Surface src, Rect src_rect, int x,
-                          int y) {
-  wait_idle();
-
-  // Determine Mode: Pure Copy vs Conversion
-  if (src.fmt == dst.fmt) {
-    DMA2D->CR = 0x00000000UL; // M2M (Fastest)
-  } else {
-    DMA2D->CR = 0x00010000UL; // M2M_PFC (Convert)
-  }
-
-  // Output Setup
-  DMA2D->OPFCCR = static_cast<u32>(dst.fmt);
-  u32 dst_offset = (y * dst.width + x) * 2; // Assuming RGB565 dst
-  DMA2D->OMAR = reinterpret_cast<u32>(dst.pixels) + dst_offset;
-  DMA2D->OOR = dst.width - src_rect.w;
-  DMA2D->NLR = (src_rect.w << 16) | src_rect.h;
-
-  // Foreground Setup (Source)
-  DMA2D->FGPFCCR = static_cast<u32>(src.fmt);
-
-  // Calculate Source Offset based on BPP
-  u32 src_bpp = 2; // Default 16-bit
-  if (src.fmt == PixelFormat::ARGB8888)
-    src_bpp = 4;
-  else if (src.fmt == PixelFormat::L8)
-    src_bpp = 1;
-
-  u32 src_mem_offset = (src_rect.y * src.width + src_rect.x) * src_bpp;
-  DMA2D->FGMAR = reinterpret_cast<u32>(src.pixels) + src_mem_offset;
-
-  // Source Stride
-  DMA2D->FGOR = src.width - src_rect.w;
-
-  // Fire
-  DMA2D->CR |= DMA2D_CR_START;
+static void setup_output(Surface dst) {
+  DMA2D->OPFCCR = static_cast<u32>(dst.get_pixel_format());
+  DMA2D->OMAR = reinterpret_cast<u32>(dst.data());
+  DMA2D->OOR = dst.get_stride() - dst.get_width();
+  DMA2D->NLR = (dst.get_width() << DMA2D_NLR_PL_Pos) |
+               (dst.get_height() << DMA2D_NLR_NL_Pos);
 }
 
-void DMA2DDevice::blit_blend(Surface dst, Surface src, int x, int y,
-                             u8 global_alpha) {
-  wait_idle();
+static void setup_background(Surface bg) {
+  DMA2D->BGPFCCR = static_cast<u32>(bg.get_pixel_format());
+  DMA2D->BGMAR = reinterpret_cast<u32>(bg.data());
+  DMA2D->BGOR = bg.get_stride() - bg.get_width();
+}
 
-  // Mode: M2M with Blending (0x2)
-  DMA2D->CR = 0x00020000UL;
-
-  // Output Setup
-  DMA2D->OPFCCR = static_cast<u32>(dst.fmt);
-  u32 dst_offset = (y * dst.width + x) * 2;
-  DMA2D->OMAR = reinterpret_cast<u32>(dst.pixels) + dst_offset;
-  DMA2D->OOR = dst.width - src.width;
-  DMA2D->NLR = (src.width << 16) | src.height;
-
-  // Foreground (Sprite) Setup
-  // Alpha Mode: 0=NoMod, 1=Replace, 2=Combine (Multiply)
-  u32 am = (global_alpha < 255) ? 2 : 0;
+static void setup_input(ConstSurface src, u8 global_alpha = 0,
+                        u8 alpha_mode = 0) {
+  uint32_t current_clut =
+      DMA2D->FGPFCCR &
+      (DMA2D_FGPFCCR_CCM | DMA2D_FGPFCCR_CS | DMA2D_FGPFCCR_START);
   DMA2D->FGPFCCR =
-      static_cast<u32>(src.fmt) | (am << 16) | (global_alpha << 24);
-
-  DMA2D->FGMAR = reinterpret_cast<u32>(src.pixels);
-  DMA2D->FGOR = 0; // Assuming full sprite copy
-
-  // Background (Current Screen) Setup
-  // Must match Output Format usually
-  DMA2D->BGPFCCR = static_cast<u32>(dst.fmt);
-  DMA2D->BGMAR = DMA2D->OMAR; // Read from same place we write
-  DMA2D->BGOR = DMA2D->OOR;
-
-  // Fire
-  DMA2D->CR |= DMA2D_CR_START;
+      current_clut |
+      (static_cast<u32>(src.get_pixel_format()) << DMA2D_FGPFCCR_CM_Pos) |
+      (alpha_mode << DMA2D_FGPFCCR_AM_Pos) |
+      (global_alpha << DMA2D_FGPFCCR_ALPHA_Pos);
+  DMA2D->FGMAR = reinterpret_cast<u32>(src.data());
+  DMA2D->FGOR = src.get_stride() - src.get_width();
 }
 
-void DMA2DDevice::load_palette(Palette pal) {
+static void fire() { DMA2D->CR |= DMA2D_CR_START; }
+
+void fill(Surface dst, u32 color) {
+  wait_idle();
+  set_mode(Mode::R2M);
+  DMA2D->OCOLR = color;
+  setup_output(dst);
+  fire();
+}
+
+static void normalize_regions(Surface &dst, ConstSurface &src) {
+  u32 width = std::min(src.get_width(), dst.get_width());
+  u32 height = std::min(src.get_height(), dst.get_height());
+  src = src.subsurface(0, 0, width, height);
+  dst = dst.subsurface(0, 0, width, height);
+}
+
+void blit(Surface dst, ConstSurface src) {
+  normalize_regions(dst, src);
+  wait_idle();
+  set_mode((src.get_pixel_format() == dst.get_pixel_format()) ? Mode::M2M
+                                                              : Mode::M2M_PFC);
+  setup_output(dst);
+  setup_input(src);
+  fire();
+}
+
+void blit_blend(Surface dst, ConstSurface src, u8 global_alpha) {
+  normalize_regions(dst, src);
+  wait_idle();
+  set_mode(Mode::M2M_BLEND);
+  setup_output(dst);
+  setup_input(src, global_alpha,
+              // Alpha Mode: 0=NoMod, 1=Replace, 2=Combine (Multiply)
+              (global_alpha < 255) ? u8{2} : u8{0});
+  setup_background(dst);
+  fire();
+}
+
+void load_palette(const u32 *colors, usize num_colors) {
   wait_idle();
 
   // 1. Point to Colors
-  DMA2D->FGCMAR = reinterpret_cast<u32>(pal.colors);
+  DMA2D->FGCMAR = reinterpret_cast<u32>(colors);
 
   // 2. Configure Load
-  // Size = count - 1. Mode = ARGB8888 (1).
-  DMA2D->FGPFCCR = ((pal.count - 1) << 8) | (0x01 << 4);
+  // Size = count - 1. Mode = ARGB8888 (0).
+  DMA2D->FGPFCCR = ((num_colors - 1) << DMA2D_FGPFCCR_CS_Pos) |
+                   (0x00 << DMA2D_FGPFCCR_CCM_Pos);
 
   // 3. Start Load
   DMA2D->FGPFCCR |= DMA2D_FGPFCCR_START;
 
   // 4. Wait strictly for CLUT load to finish
   while (!(DMA2D->ISR & DMA2D_ISR_CTCIF))
-    ;
+    stm::delay_spin(1);
   DMA2D->IFCR = DMA2D_IFCR_CCTCIF;
 }
 
-void DMA2DDevice::blit_indexed(Surface dst, Surface src, int x, int y) {
+void blit_indexed(Surface dst, ConstSurface src) {
+  normalize_regions(dst, src);
   wait_idle();
-
-  // Mode: M2M with PFC (0x1) - Converts L8 -> RGB565 via CLUT
-  DMA2D->CR = 0x00010000UL;
-
-  // Output Setup
-  DMA2D->OPFCCR = static_cast<u32>(dst.fmt);
-  u32 dst_offset = (y * dst.width + x) * 2;
-  DMA2D->OMAR = reinterpret_cast<u32>(dst.pixels) + dst_offset;
-  DMA2D->OOR = dst.width - src.width;
-  DMA2D->NLR = (src.width << 16) | src.height;
-
-  // Foreground Setup (L8)
-  DMA2D->FGPFCCR = static_cast<u32>(PixelFormat::L8); // 0x5
-  DMA2D->FGMAR = reinterpret_cast<u32>(src.pixels);
-  DMA2D->FGOR = 0;
-
-  // Fire
-  DMA2D->CR |= DMA2D_CR_START;
+  set_mode(Mode::M2M_PFC);
+  setup_output(dst);
+  setup_input(src);
+  fire();
 }
 
-} // namespace stm
+} // namespace gpu
 } // namespace hal
 } // namespace ge

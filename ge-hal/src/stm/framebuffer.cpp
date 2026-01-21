@@ -64,7 +64,8 @@ struct LCD {
     spi.send_blocking(static_cast<u8>(cmd));
 
     // NOTE: without this, things dont work on Release
-    while(spi.is_busy()) delay_spin(1);
+    while (spi.is_busy())
+      delay_spin(1);
 
     // data mode
     if (data.size() > 0) {
@@ -75,7 +76,8 @@ struct LCD {
     }
 
     // NOTE: without this, things dont work on Release
-    while(spi.is_busy()) delay_spin(1);
+    while (spi.is_busy())
+      delay_spin(1);
     // deselect the current peripheral
     csx.write(true);
   }
@@ -235,7 +237,7 @@ void init_ltdc() {
 
 volatile bool vblank = false;
 
-void swap_buffers(int &buffer_index) {
+void swap_buffers(u32 &buffer_index) {
   LTDC_Layer1->CFBAR = reinterpret_cast<u32>(pixel_buffer(buffer_index));
   vblank = false;
   LTDC->SRCR = LTDC_SRCR_VBR;

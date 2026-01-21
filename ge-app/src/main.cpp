@@ -1,66 +1,86 @@
+#include "ge-app/assets/bgm.hpp"
+#include "ge-app/font.hpp"
+#include "ge-app/game/boat.hpp"
+#include "ge-app/game/compass.hpp"
+#include "ge-app/game/sky.hpp"
+#include "ge-app/game/water.hpp"
+#include "ge-app/gfx/color.hpp"
 #include "ge-hal/app.hpp"
+#include "ge-hal/surface.hpp"
 
-#include <bgm_loop.h>
+#include <cassert>
 
-#ifdef GE_HAL_STM32
-#include "ge-hal/stm/dma2d.hpp"
-#endif
+#include "assets/out/textures/crate.h"
 
-using namespace ge;
+int main() {
+  using namespace ge;
+  ge::App app;
+  ge::Font font = ge::Font::bold_font();
 
-int main(int argc, char *argv[]) {
-  (void)argc;
-  (void)argv;
+  ge::Compass compass;
+  ge::Boat boat;
 
-  ge::App app{};
-
-  // this ifndef is not really necessary, but this improves loading time as
-  // audio has yet to be implemented on STM32
+  // TODO: flash audio when it is implemented
+  // Currently we skip this step to speed up flashing
 #ifndef GE_HAL_STM32
-  app.audio_bgm_play(bgm_loop, bgm_loop_len, true);
+  auto ambient_bgm = assets::Bgm::ambient();
+  app.audio_bgm_play(ambient_bgm.data, ambient_bgm.length, true);
 #endif
-  ge::u32 x_pos = 0, speed = 8;
+
+  ge::Sky sky{};
+  sky.set_sky_color(ge::hsv_to_rgb565(150, 200, 255));
+  sky.set_cloud_color(ge::hsv_to_rgb565(0, 0, 255));
+
+  ge::Water water{};
+  water.set_sky_color(ge::hsv_to_rgb565(150, 200, 255));
+  water.set_water_color(ge::hsv_to_rgb565(142, 255, 181));
+
+  ge::Texture crate_tex{crate, crate_WIDTH, crate_HEIGHT};
+  // float crate_x = 0.0f, crate_y = 10.0f;
+
+  float dt = 0.0f;
+
   while (app) {
-    constexpr int W = ge::App::WIDTH;
-    constexpr int H = ge::App::HEIGHT;
-    auto fb = app.begin();
+    auto fb_region = app.begin();
+    auto start_time = app.now();
 
-    auto start = app.now();
-    for (int y = 0; y < H; ++y) {
-      u8 blue = 80 + (y * 120) / H;     // 80..200
-      u8 green = 60 + (y * 100) / H;    // 60..160
-      u16 color = ((green >> 2) << 5) | // G (6 bits)
-                  (blue >> 3);          // B (5 bits)
-      // TODO: abstract the DMA2D usage into ge-hal
-#ifdef GE_HAL_STM32
-      hal::stm::DMA2DDevice::fill({fb, W, H, hal::stm::PixelFormat::RGB565},
-                                  {0, y, W, 1}, color);
-#else
-      for (int x = 0; x < W; ++x) {
-        fb[y * W + x] = color;
-      }
-#endif
-    }
-#ifdef GE_HAL_STM32
-    hal::stm::DMA2DDevice::fill({fb, W, H, hal::stm::PixelFormat::RGB565},
-                                {static_cast<int>(x_pos), 0, 20, H}, 0xFFFF);
-#else
-    for (u32 row = 0; row < H; row++) {
-      for (u32 col = x_pos; col < x_pos + 20; col++) {
-        if (col >= 0 && col < W) {
-          fb[row * W + col] = 0xFFFF;
-        }
-      }
-    }
-#endif
-    auto end = app.now();
+    auto joystick = app.get_joystick_state();
+    boat.update_angle(joystick.x, joystick.y, dt);
+    boat.update_position(app, dt);
+    auto water_region =
+        fb_region.subsurface(0, 80, ge::App::WIDTH, ge::App::HEIGHT - 80);
 
-    x_pos += speed;
-    if (x_pos > ge::App::WIDTH)
-      x_pos = 0;
+    sky.set_x_offset((ge::u32)(app.now() / 1000) % ge::Sky::max_x_offset());
+    sky.render(fb_region.subsurface(0, 0, ge::App::WIDTH, 80));
+    water.render(water_region, app.now() * 1e-3);
+
+    font.render("Hello, World!", fb_region, 10, 10,
+                [](const ge::GlyphContext &g) {
+                  uint8_t hue = (uint8_t)(g.x + g.gx);
+                  return ge::hsv_to_rgb565(hue, 255, 255);
+                });
+
+    {
+      auto max_side = std::max(boat.get_width(), boat.get_height());
+      auto boat_region = water_region.subsurface(
+          (water_region.get_width() - max_side) / 2,
+          (water_region.get_height() - max_side) / 2, max_side, max_side);
+      boat.render(boat_region);
+    }
+
+    {
+      auto compass_region =
+          fb_region.subsurface(ge::App::WIDTH - compass.get_width() - 10, 10,
+                               compass.get_width(), compass.get_height());
+      compass.render(compass_region, boat.get_relative_angle());
+    }
+
+    auto end_time = app.now();
+
+    std::int64_t frame_time = end_time - start_time;
+    app.log("Frame time: %ld ms", frame_time);
+
     app.end();
-
-    app.log("Frame time (excluding vblank) %ld ms", end - start);
   }
   return 0;
 }

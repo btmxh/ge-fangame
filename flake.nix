@@ -22,7 +22,13 @@
         system:
         let
           pkgs = import nixpkgs { inherit system; };
-          python = pkgs.python3.withPackages (ps: with ps; [ pillow ]);
+          python = pkgs.python3.withPackages (
+            ps: with ps; [
+              pillow
+              types-pillow
+              soundfile
+            ]
+          );
           inherit (self.checks.${system}.pre-commit-check) shellHook enabledPackages;
         in
         {
@@ -37,7 +43,6 @@
               gcc
 
               python
-              # python3.withPackages (ps: with ps; [ numpy ])
             ];
 
             buildInputs =
@@ -57,11 +62,13 @@
               openocd
               gdb
               tio
+              ffmpeg
 
               # tooling
               clang-tools
               nixd
               nixfmt-rfc-style
+              ty
 
               # cmake
               gersemi
@@ -79,7 +86,11 @@
             nixfmt.enable = true;
             statix.enable = true;
             check-yaml.enable = true;
-            end-of-file-fixer.enable = true;
+            end-of-file-fixer = {
+              enable = true;
+              excludes = [ ".*\\.bin" ];
+            };
+            clang-format.enable = true;
             trim-trailing-whitespace.enable = true;
             ruff.enable = true;
             ruff-format.enable = true;

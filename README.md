@@ -97,14 +97,16 @@ These tracks are rearranged for use as background music (BGM) in this fangame.
 The use of both _Kitto_ and _Glow Embrace_ are protected under Cover Corp's
 [Derivative Works Guidelines](https://hololivepro.com/en/terms/). However,
 Nishino Kana's _Moshimo Unmei No Hito ga Iru No Nara_ is not covered by any
-derivative works policy, and therefore this GitHub repo will use a different
-BGM rearrangement for that part of the game.
+derivative works policy, and that the sole programmer does not have enough time
+to rearrange yet another song, and therefore this GitHub repo will skip this track
+completely (Nishino Kana deserves more than this!).
 
 Character sprites and backgrounds are hand-drawn by the author, but based on
 the three _hololive_ VTubers' design: Shirakami Fubuki, Tsunomaki Watame, and
 Nakiri Ayame (once again, details about why these three VTubers are chosen
 are intentionally omitted). The use of these characters are also protected
-under the same Derivative Works Guidelines.
+under the same Derivative Works Guidelines. However, currently there is only
+plans to use Fubuki's model due to time constraints.
 
 > [!NOTE]
 > While this project is _legally_ a _hololive_ fangame, **DO NOT** expect it to
@@ -113,16 +115,7 @@ under the same Derivative Works Guidelines.
 
 ## Credits
 
-Since I can't really draw and rearrange music, most of the assets that I "made"
-for this project are heavily based on existing works by other people. This will
-be updated as I add more assets to the project.
-
-- `ambient-bgm.fur`: Ambient BGM loop rearranged from _Glow Embrace_ by
-  Shirakami Fubuki.
-  - Piano notes are arranged based on
-    [this piano cover](https://www.youtube.com/watch?v=CIZMn2jcgmQ).
-  - Noises are arranged based on
-    [this drum cover](https://www.youtube.com/watch?v=B5z_OdGznFk).
+See the corresponding `README.md` in `ge-app/assets`.
 
 ## License
 

@@ -42,12 +42,9 @@ function(bin2c_generic BIN2C SYMBOL_NAME RESOURCE_FILE)
     add_custom_command(
         OUTPUT ${HEADER_FILE} ${SOURCE_FILE}
         COMMAND
-            ${Python3_EXECUTABLE} ${SCRIPT_FILE} ${RESOURCE_FILE_ABSOLUTE}
-            ${SOURCE_FILE} ${HEADER_FILE} ${SYMBOL_NAME} ${ADDITIONAL_ARGS}
-        DEPENDS
-            ${RESOURCE_FILE}
-            ${SCRIPT_FILE}
-            ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/scripts/bin2c.py
+            ${Python3_EXECUTABLE} ${SCRIPT_FILE} ${RESOURCE_FILE_ABSOLUTE} ${SOURCE_FILE} ${HEADER_FILE} ${SYMBOL_NAME}
+            ${ADDITIONAL_ARGS}
+        DEPENDS ${RESOURCE_FILE} ${SCRIPT_FILE} ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/scripts/bin2c.py
         VERBATIM
     )
 
@@ -69,7 +66,15 @@ endfunction()
 function(bitmap_font SYMBOL_NAME FONT_FILE FONT_SIZE)
     get_filename_component(_dir ${FONT_FILE} DIRECTORY)
     get_filename_component(_name ${FONT_FILE} NAME_WE)
-    bin2c_generic(bin2c_bitmap_font.py ${SYMBOL_NAME} ${FONT_FILE} OUTPUT_BASE "${_dir}/${_name}_${FONT_SIZE}px" ARGS ${FONT_SIZE})
+    bin2c_generic(
+        bin2c_bitmap_font.py
+        ${SYMBOL_NAME}
+        ${FONT_FILE}
+        OUTPUT_BASE
+        "${_dir}/${_name}_${FONT_SIZE}px"
+        ARGS
+        ${FONT_SIZE}
+    )
 endfunction()
 
 raw_audio(bgm_ambient out/sounds/ambient-bgm.wav)

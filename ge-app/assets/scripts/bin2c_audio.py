@@ -14,7 +14,9 @@ def main(inp_wav: str, out_c: str, out_h: str, sym: str):
 
 if __name__ == "__main__":
     if len(sys.argv) < 5:
-        print("usage: bin2c_audio.py <input.wav> <output.c> <output.h> <symbol> [additional_args...]")
+        print(
+            "usage: bin2c_audio.py <input.wav> <output.c> <output.h> <symbol> [additional_args...]"
+        )
         sys.exit(1)
 
     inp_wav, out_c, out_h, sym = sys.argv[1:5]

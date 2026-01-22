@@ -43,31 +43,32 @@ public:
 
     for (u32 i = 0; i < item_count; i++) {
       u32 y_pos = start_y + i * item_height;
-      
+
       // Draw selection indicator
+      u32 padding = 4;
+      auto item_region =
+          region.subsurface(padding, y_pos - padding,
+                            region.get_width() - padding * 2, item_height);
+
       if (i == selected_index) {
+        auto color = 0x0000;
         // Draw a simple border around selected item
-        u32 padding = 4;
-        auto item_region = region.subsurface(
-            padding, y_pos - padding,
-            region.get_width() - padding * 2, item_height);
-        
         // Draw border by drawing 4 lines
         hal::gpu::fill(item_region.subsurface(0, 0, item_region.get_width(), 2),
-                       0xFFFF);
+                       color);
         hal::gpu::fill(item_region.subsurface(0, item_region.get_height() - 2,
                                               item_region.get_width(), 2),
-                       0xFFFF);
-        hal::gpu::fill(item_region.subsurface(0, 0, 2, item_region.get_height()),
-                       0xFFFF);
+                       color);
+        hal::gpu::fill(
+            item_region.subsurface(0, 0, 2, item_region.get_height()), color);
         hal::gpu::fill(item_region.subsurface(item_region.get_width() - 2, 0, 2,
                                               item_region.get_height()),
-                       0xFFFF);
+                       color);
       }
 
       // Just render text at left aligned position, let renderer handle it
-      u16 color = (i == selected_index) ? 0xFFFF : 0xBDF7; // white or gray
-      font.render_colored(items[i].label, -1, region, 10, y_pos, color);
+      u16 color = (i == selected_index) ? 0x0000 : 0xBDF7; // white or gray
+      font.render_colored(items[i].label, -1, item_region, 10, 2, color);
     }
   }
 
@@ -78,8 +79,8 @@ public:
     // Use joystick Y axis to move selection
     // Only trigger on significant movement to avoid jitter
     if (joy_y < -JOY_THRESHOLD_MOVE && !joy_moved) {
-      selected_index = (selected_index > 0) ? selected_index - 1 
-                                             : item_count - 1;
+      selected_index =
+          (selected_index > 0) ? selected_index - 1 : item_count - 1;
       joy_moved = true;
     } else if (joy_y > JOY_THRESHOLD_MOVE && !joy_moved) {
       selected_index = (selected_index + 1) % item_count;

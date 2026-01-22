@@ -2,14 +2,23 @@
 
 #include "ge-app/font.hpp"
 #include "ge-app/scenes/scene.hpp"
+#include "ge-app/texture.hpp"
 #include "ge-app/ui/menu.hpp"
 #include "ge-hal/app.hpp"
 #include "ge-hal/gpu.hpp"
 #include "ge-hal/surface.hpp"
 
+#include "assets/out/textures/menu-bg.h"
+
 namespace ge {
 
-enum class MenuAction { None = 0, StartGame = 1, Options = 2, Credits = 3, ExitGame = 4 };
+enum class MenuAction {
+  None = 0,
+  StartGame = 1,
+  Options = 2,
+  Credits = 3,
+  ExitGame = 4
+};
 
 class MenuScene : public Scene {
 public:
@@ -24,25 +33,19 @@ public:
 
   void tick(float dt) override {
     auto joystick = app.get_joystick_state();
-    menu.move_selection(joystick.y);
+    menu.move_selection(-joystick.y);
   }
 
   void render(Surface &fb_region) override {
-    // Clear screen with dark background
-    hal::gpu::fill(fb_region, 0x0000);
+    hal::gpu::blit(fb_region, menu_bg_texture);
 
-    // Render title (centered, just eyeball it)
-    const auto &bold_font = Font::bold_font();
-    bold_font.render_colored(title, -1, fb_region, 60, 40, 0xFFFF);
-
-    // Render subtitle (centered, just eyeball it)
-    const auto &regular_font = Font::regular_font();
-    regular_font.render_colored(subtitle, -1, fb_region, 80, 65, 0xBDF7);
+    Font::regular_font().render_colored(subtitle, -1, fb_region, 40, 45,
+                                        0xFFFF);
 
     // Render menu
     auto menu_region = fb_region.subsurface(0, 100, fb_region.get_width(),
-                                           fb_region.get_height() - 100);
-    menu.render(menu_region, regular_font);
+                                            fb_region.get_height() - 100);
+    menu.render(menu_region, Font::regular_font());
   }
 
   void on_button_clicked(Button btn) override {
@@ -61,8 +64,10 @@ public:
 private:
   ui::Menu menu;
   ui::MenuItem menu_items[4];
-  const char *title = "Glow Embrace";
-  const char *subtitle = "A Fangame";
+  const char *subtitle = "A Fangame by CTB Girls' Dorm.";
+
+  Texture menu_bg_texture{menu_bg, menu_bg_WIDTH, menu_bg_HEIGHT,
+                          PixelFormat::RGB565};
 };
 
 } // namespace ge

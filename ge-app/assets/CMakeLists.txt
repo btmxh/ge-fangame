@@ -81,6 +81,7 @@ raw_image_alpha(compass_base out/textures/compass-base.png)
 raw_image_alpha(compass_needle out/textures/compass-needle.png)
 raw_image_alpha(crate out/textures/crate.png)
 raw_image(water_texture out/textures/watertexture.png)
+raw_image(menu_bg out/textures/menu-bg.png)
 
 bitmap_font(font_pixeloid_9px src/fonts/Pixeloid/TTF/PixeloidSans.ttf 9)
 bitmap_font(font_pixeloid_9px_bold src/fonts/Pixeloid/TTF/PixeloidSans-Bold.ttf 9)

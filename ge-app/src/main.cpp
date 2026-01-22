@@ -85,7 +85,7 @@ private:
   SceneType current_scene_type = SceneType::Menu;
   Scene *current_scene = nullptr;
   MenuSceneImpl menu_scene_impl;
-  
+
   // Storage for GameScene (placement new)
   alignas(GameScene) char game_scene_storage[sizeof(GameScene)];
   bool game_scene_initialized = false;

@@ -1,0 +1,189 @@
+# Fishing System Implementation
+
+This document describes the fishing system implementation for the GE-Fangame project.
+
+## Overview
+
+The game now includes a fishing mode that allows players to cast a fishing line, wait for fish to bite, and catch them. The fishing system is integrated into the existing game modes and can be activated by switching to Fishing mode.
+
+## Architecture
+
+### Components
+
+1. **Fishing System** (`ge-app/include/ge-app/game/fishing.hpp`)
+   - Manages fishing state machine (Idle, Casting, Fishing, FishBiting, Caught)
+   - Handles joystick flick detection for casting
+   - Implements line drawing using Bresenham's algorithm
+   - Renders bobber with floating and wiggle animations
+   - Manages fish bite timing and player interaction
+
+2. **GameScene Integration** (`ge-app/include/ge-app/scenes/game_scene.hpp`)
+   - Added fishing system to GameScene
+   - Integrated fishing updates in Fishing mode
+   - Renders fishing line and bobber when fishing is active
+   - Delegates Button A clicks to fishing system
+
+### Fishing States
+
+1. **Idle**: Not fishing, waiting for joystick flick
+2. **Casting**: Brief animation period after casting
+3. **Fishing**: Line in water, waiting for fish to bite
+4. **FishBiting**: Fish is biting, player must react quickly
+5. **Caught**: Fish caught, ready to be reeled in with Button A
+
+## Key Features
+
+### Joystick Flick Detection
+
+- Tracks joystick magnitude change over time to detect "flicking" motion
+- Velocity threshold: 3.0 units/second
+- Minimum joystick magnitude: 0.4
+- Cast distance based on joystick magnitude (up to 80 pixels)
+- Cast direction based on joystick angle
+
+### Visual Feedback
+
+1. **Fishing Line**: Drawn using Bresenham's line algorithm in cyan color
+2. **Bobber**: 3x3 pixel red square with animations:
+   - Floating effect: Sinusoidal up/down motion (±2 pixels)
+   - Wiggle effect: Circular motion that increases when fish bites
+   - Small wiggle (amplitude: 1px) during normal fishing
+   - Large wiggle (amplitude: 5px) when fish is biting
+
+### Fishing Mechanics
+
+1. **Casting**:
+   - Flick the joystick to cast in desired direction
+   - Distance proportional to joystick magnitude
+   - 0.5 second casting animation
+
+2. **Waiting**:
+   - Fish can bite after 2 seconds minimum
+   - 30% chance per second for fish to bite
+   - Automatic timeout after 15 seconds (fish gets away)
+
+3. **Catching**:
+   - Player has 3 seconds to press Button A after fish bites
+   - 0.5 second reaction time required before catching is possible
+   - Visual feedback: Increased wiggle intensity
+
+4. **Rewards**:
+   - Random fish or loot printed to stdout
+   - Possible catches:
+     - Tropical Fish
+     - Golden Fish (RARE!)
+     - Sea Bass
+     - Tuna
+     - Old Boot (loot)
+     - Treasure Chest (RARE loot!)
+     - Salmon
+     - Pufferfish
+     - Clownfish
+     - Sardine
+
+### Input Controls
+
+- **Joystick**: Flick to cast fishing line
+- **Button 2**: Switch between game modes (Steering/Fishing/Management)
+- **Button 1**: Catch fish when it bites (in Caught state)
+
+## Implementation Details
+
+### Constants
+
+```cpp
+static constexpr float MIN_DELTA_TIME = 0.001f;          // Minimum time step
+static constexpr float FLICK_THRESHOLD = 3.0f;           // Velocity for flick
+static constexpr float MIN_JOYSTICK_MAG = 0.4f;          // Min joystick magnitude
+static constexpr float CAST_DURATION = 0.5f;             // Cast animation time
+static constexpr float BITE_CHANCE_PER_SECOND = 0.3f;    // Fish bite probability
+static constexpr float MIN_FISHING_TIME = 2.0f;          // Min wait before bite
+static constexpr float MAX_FISHING_TIME = 15.0f;         // Max wait (timeout)
+static constexpr float BITE_WINDOW = 3.0f;               // Time to catch fish
+static constexpr float CATCH_REACTION_TIME = 0.5f;       // Required reaction time
+```
+
+### Line Drawing Algorithm
+
+The fishing line uses Bresenham's line algorithm for efficient pixel-perfect line rendering:
+- Draws from boat center to bobber position
+- Handles coordinate transformation from relative to screen space
+- Clips to screen boundaries automatically
+
+### Bobber Animation
+
+Bobber position is calculated using:
+```cpp
+wiggle_x = sin(wiggle_time * wiggle_freq) * wiggle_amplitude
+wiggle_y = cos(wiggle_time * wiggle_freq * 0.7) * wiggle_amplitude
+float_offset = sin(wiggle_time * 2.0) * 2.0
+```
+
+### Performance Optimizations
+
+1. **No Dynamic Allocation**: All state stored in class members
+2. **Efficient Line Drawing**: Uses integer arithmetic (Bresenham)
+3. **Minimal State**: Only 5 states in state machine
+4. **Frame-based Updates**: All animations use delta time
+
+## Files Modified
+
+- `ge-app/include/ge-app/scenes/game_scene.hpp`: Added fishing integration
+  - Added `#include "ge-app/game/fishing.hpp"`
+  - Added `Fishing fishing;` member
+  - Updated `tick()` to handle fishing mode
+  - Updated `render()` to draw fishing elements
+  - Updated `on_button_clicked()` to handle fishing actions
+
+## Files Added
+
+- `ge-app/include/ge-app/game/fishing.hpp`: Complete fishing system implementation
+
+## Usage
+
+1. **Switch to Fishing Mode**: Press Button 2 to cycle to Fishing mode
+2. **Cast Line**: Flick the joystick in the desired direction
+3. **Wait**: Watch the bobber wiggle while waiting for a fish
+4. **React**: When fish bites (increased wiggle + log message), press Button A quickly
+5. **Success**: Fish name printed to stdout
+6. **Timeout**: If fish gets away, recast the line
+
+## Future Enhancements
+
+Potential improvements for the fishing system:
+
+1. **Inventory System**: Store caught fish in an inventory
+2. **Fish Stats**: Track species, size, rarity, value
+3. **Fishing Rod Upgrades**: Different rods with different cast distances
+4. **Bait System**: Use different baits to attract specific fish
+5. **Fish AI**: More sophisticated fish behavior patterns
+6. **Sound Effects**: Audio feedback for casting, bites, catches
+7. **Visual Effects**: Splash animations, ripples in water
+8. **Fishing Spots**: Special locations with better fish
+9. **Time/Weather Effects**: Fish behavior changes based on conditions
+10. **Mini-game**: Button timing challenge when reeling in fish
+
+## Testing
+
+The implementation should be tested to verify:
+
+- [ ] Mode switching works correctly
+- [ ] Joystick flick detection is responsive
+- [ ] Fishing line renders correctly
+- [ ] Bobber floats and wiggles appropriately
+- [ ] Fish bite timing is reasonable
+- [ ] Button A catches fish when pressed in time
+- [ ] Fish names are printed to stdout
+- [ ] Timeout works when fish not caught
+- [ ] State transitions are smooth
+- [ ] Boat still drifts in fishing mode
+
+Note: Due to build environment constraints, full testing requires the Nix development environment or manual setup of SDL3 and build tools. Testing on actual STM32 hardware is recommended for final verification.
+
+## Known Limitations
+
+1. **Random Number Generation**: Currently uses `rand()` which is not thread-safe. For production, consider using C++11 random facilities.
+2. **No Inventory**: Caught fish are only printed to stdout, not stored.
+3. **Simple Flick Detection**: Velocity-based detection may need tuning based on hardware.
+4. **Fixed Bobber Texture**: Uses simple 3x3 red square instead of sprite.
+5. **No Sound**: Fishing events are silent (only visual feedback).

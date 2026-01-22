@@ -148,17 +148,18 @@ private:
   void update_idle(const JoystickState &joystick, float dt) {
     // Detect joystick flick
     float mag = std::sqrt(joystick.x * joystick.x + joystick.y * joystick.y);
-    
+
     // Track previous joystick state to detect velocity
     if (dt > MIN_DELTA_TIME) { // Avoid division by very small numbers
       float velocity = (mag - prev_joystick_mag) / dt;
-      
+
       // If joystick moved fast enough, start casting
       if (velocity > FLICK_THRESHOLD && mag > MIN_JOYSTICK_MAG) {
-        start_cast(joystick.x, joystick.y, mag);
+        // Y is reverse
+        start_cast(joystick.x, -joystick.y, mag);
       }
     }
-    
+
     prev_joystick_mag = mag;
   }
 
@@ -169,7 +170,7 @@ private:
     // Calculate cast direction and distance
     float angle = std::atan2(joy_y, joy_x);
     // Use joystick magnitude as strength (0-1 range typically)
-    float distance = strength * 60.0f; // Scale to reasonable pixel range
+    float distance = strength * 60.0f;    // Scale to reasonable pixel range
     distance = std::min(distance, 80.0f); // Cap at 80 pixels
 
     // Position relative to boat (center of screen)
@@ -179,7 +180,7 @@ private:
 
   void update_casting(float dt) {
     casting_timer += dt;
-    
+
     if (casting_timer >= CAST_DURATION) {
       state = FishingState::Fishing;
       fishing_timer = 0.0f;
@@ -194,8 +195,9 @@ private:
     // Random chance for fish to bite (check every frame)
     if (fishing_timer > MIN_FISHING_TIME) {
       float bite_chance = BITE_CHANCE_PER_SECOND * dt;
-      float random_value = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-      
+      float random_value =
+          static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+
       if (random_value < bite_chance) {
         // Fish is biting!
         state = FishingState::FishBiting;
@@ -245,18 +247,11 @@ private:
   void catch_fish(App &app) {
     // Random fish names
     const char *fish_names[] = {
-        "Tropical Fish",
-        "Golden Fish (RARE!)",
-        "Sea Bass",
-        "Tuna",
-        "Old Boot (loot)",
-        "Treasure Chest (RARE loot!)",
-        "Salmon",
-        "Pufferfish",
-        "Clownfish",
-        "Sardine"
-    };
-    
+        "Tropical Fish", "Golden Fish (RARE!)", "Sea Bass",
+        "Tuna",          "Old Boot (loot)",     "Treasure Chest (RARE loot!)",
+        "Salmon",        "Pufferfish",          "Clownfish",
+        "Sardine"};
+
     constexpr int num_fish = sizeof(fish_names) / sizeof(fish_names[0]);
     int caught_index = rand() % num_fish;
     
@@ -276,8 +271,7 @@ private:
     caught_fish = false;
   }
 
-  void draw_line(Surface &region, i32 x0, i32 y0, i32 x1, i32 y1,
-                 u16 color) {
+  void draw_line(Surface &region, i32 x0, i32 y0, i32 x1, i32 y1, u16 color) {
     // Bresenham's line algorithm
     i32 dx = std::abs(x1 - x0);
     i32 dy = std::abs(y1 - y0);
@@ -289,7 +283,7 @@ private:
       // Draw pixel (convert from center coordinates to screen coordinates)
       i32 screen_x = x0 + region.get_width() / 2;
       i32 screen_y = y0 + region.get_height() / 2;
-      
+
       if (screen_x >= 0 && screen_x < static_cast<i32>(region.get_width()) &&
           screen_y >= 0 && screen_y < static_cast<i32>(region.get_height())) {
         region.set_pixel<u16>(screen_x, screen_y, color);
@@ -313,7 +307,7 @@ private:
   void draw_bobber(Surface &region, i32 x, i32 y) {
     // Draw a 3x3 bobber (red color)
     const u16 BOBBER_COLOR = 0xF800; // Red in RGB565
-    
+
     // Convert to screen coordinates
     i32 screen_x = x + region.get_width() / 2;
     i32 screen_y = y + region.get_height() / 2;
@@ -323,8 +317,8 @@ private:
       for (i32 dx = -1; dx <= 1; dx++) {
         i32 px = screen_x + dx;
         i32 py = screen_y + dy;
-        if (px >= 0 && px < static_cast<i32>(region.get_width()) &&
-            py >= 0 && py < static_cast<i32>(region.get_height())) {
+        if (px >= 0 && px < static_cast<i32>(region.get_width()) && py >= 0 &&
+            py < static_cast<i32>(region.get_height())) {
           region.set_pixel<u16>(px, py, BOBBER_COLOR);
         }
       }
@@ -332,22 +326,22 @@ private:
   }
 
   FishingState state;
-  
+
   // Cast parameters
   i32 cast_x = 0;
   i32 cast_y = 0;
-  
+
   // Timers
   float casting_timer = 0.0f;
   float fishing_timer = 0.0f;
   float fish_bite_timer = 0.0f;
   float reeling_timer = 0.0f;
   float wiggle_time = 0.0f;
-  
+
   // Wiggle parameters
   float wiggle_amplitude = 1.0f;
   float wiggle_freq = 2.0f;
-  
+
   // Joystick tracking
   float prev_joystick_mag = 0.0f;
   

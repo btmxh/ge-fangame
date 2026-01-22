@@ -237,15 +237,20 @@ void init_ltdc() {
 
 volatile bool vblank = false;
 
-void swap_buffers(u32 &buffer_index) {
+bool begin_frame(u32 &buffer_index) {
+  // Check if vblank occurred
+  if (!vblank) {
+    // No vblank yet, don't render this iteration
+    return false;
+  }
+
+  // Vblank occurred, swap to the next buffer and prepare for rendering
   LTDC_Layer1->CFBAR = reinterpret_cast<u32>(pixel_buffer(buffer_index));
   vblank = false;
   LTDC->SRCR = LTDC_SRCR_VBR;
-
-  // TODO: switch to something other than __WFI later
-  while (!vblank)
-    __WFI();
   buffer_index ^= 1;
+
+  return true; // Signal that we should render this frame
 }
 
 } // namespace stm

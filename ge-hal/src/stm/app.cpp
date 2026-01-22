@@ -45,13 +45,14 @@ App::operator bool() { return true; }
 
 static u32 buffer_index = 0;
 
-Surface App::begin() {
+bool App::begin_render(Surface &out_surface) {
   auto buffer = hal::stm::pixel_buffer(buffer_index);
-  return Surface{buffer,      App::WIDTH,          App::WIDTH,
-                 App::HEIGHT, PixelFormat::RGB565, buffer_index};
+  out_surface = Surface{buffer,      App::WIDTH,          App::WIDTH,
+                        App::HEIGHT, PixelFormat::RGB565, buffer_index};
+  return true;
 }
 
-void App::end() { hal::stm::swap_buffers(buffer_index); }
+void App::end_render() { hal::stm::swap_buffers(buffer_index); }
 
 std::int64_t App::now() { return hal::stm::systick_get(); }
 
@@ -70,6 +71,25 @@ void App::log(const char *fmt, ...) {
 }
 
 void App::sleep(std::int64_t ms) { hal::stm::delay_timed(ms); }
+
+void App::wait_for_event() {
+  // TODO: implement WFI (Wait For Interrupt) for power saving
+  // For now, this is a no-op
+}
+
+void App::loop() {
+  i64 last_tick = now();
+  while (*this) {
+    i64 current = now();
+    float dt = (current - last_tick) * 1e-3f;
+    tick(dt);
+    last_tick = current;
+    Surface fb_region;
+    begin_render(fb_region);
+    render(fb_region);
+    end_render();
+  }
+}
 
 void App::audio_bgm_play(const std::uint8_t *data, std::size_t len, bool loop) {
   (void)data;
@@ -91,5 +111,23 @@ void App::audio_sfx_play(const std::uint8_t *data, std::size_t len,
 void App::audio_sfx_stop_all() {}
 
 void App::audio_set_master_volume(std::uint8_t vol) { (void)vol; }
+
+bool App::button_clicked(Button btn) {
+  (void)btn;
+  // TODO: implement button reading from GPIO
+  return false;
+}
+
+bool App::button_held(Button btn) {
+  (void)btn;
+  // TODO: implement button reading from GPIO
+  return false;
+}
+
+bool App::button_finished_hold(Button btn) {
+  (void)btn;
+  // TODO: implement button reading from GPIO
+  return false;
+}
 
 } // namespace ge

@@ -14,8 +14,10 @@ enum class MenuAction { None = 0, StartGame = 1, ExitGame = 2 };
 class MenuScene : public Scene {
 public:
   MenuScene(App &app) : Scene{app} {
-    menu.add_item("Start Game", static_cast<int>(MenuAction::StartGame));
-    menu.add_item("Exit", static_cast<int>(MenuAction::ExitGame));
+    // Initialize menu items array
+    menu_items[0] = {"Start Game", static_cast<int>(MenuAction::StartGame), 0};
+    menu_items[1] = {"Exit", static_cast<int>(MenuAction::ExitGame), 0};
+    menu.set_items(menu_items, 2);
     
     // Pre-calculate text widths for title and subtitle
     const auto &bold_font = Font::bold_font();
@@ -80,6 +82,7 @@ private:
   }
 
   ui::Menu menu;
+  ui::MenuItem menu_items[2];
   const char *title = "Glow Embrace";
   const char *subtitle = "A Fangame";
   u32 title_width = 0;

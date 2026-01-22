@@ -15,6 +15,7 @@ The game now starts with a main menu instead of jumping directly into gameplay. 
    - Handles rendering of menu items with selection indicator
    - Manages joystick navigation with configurable thresholds
    - Caches text widths for optimal performance
+   - **No dynamic allocation**: Uses user-provided arrays to avoid heap allocation
 
 2. **MenuScene** (`ge-app/include/ge-app/scenes/menu_scene.hpp`)
    - Main menu scene with title, subtitle, and menu options
@@ -41,6 +42,7 @@ The game now starts with a main menu instead of jumping directly into gameplay. 
 1. **Text Width Caching**: Menu items cache their text widths on first render
 2. **Pre-calculated Layouts**: Title and subtitle widths are calculated once in the constructor
 3. **Efficient Rendering**: Only renders necessary elements, no redundant calculations
+4. **No Dynamic Allocation**: Menu uses pointer to user-provided array instead of heap allocation
 
 ### Type Safety
 
@@ -64,8 +66,10 @@ To use the menu component in a different scene:
 class MyScene : public Scene {
 public:
   MyScene(App &app) : Scene{app} {
-    menu.add_item("Option 1", 1);
-    menu.add_item("Option 2", 2);
+    // Initialize menu items in a static array (no dynamic allocation)
+    menu_items[0] = {"Option 1", 1, 0};
+    menu_items[1] = {"Option 2", 2, 0};
+    menu.set_items(menu_items, 2);
   }
 
   void tick(float dt) override {
@@ -86,14 +90,13 @@ public:
 
 private:
   ui::Menu menu;
+  ui::MenuItem menu_items[2];
 };
 ```
 
 ## Files Modified
 
 - `ge-app/CMakeLists.txt`: Added new header files
-- `ge-app/include/ge-app/font.hpp`: Added get_glyph_width() method
-- `ge-app/src/ge-app/font.cpp`: Implemented get_glyph_width() method
 - `ge-app/src/main.cpp`: Added scene management and menu integration
 - `ge-hal/include/ge-hal/app.hpp`: Added request_quit() method
 - `ge-hal/src/pc/app.cpp`: Implemented request_quit() for PC platform

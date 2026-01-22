@@ -5,7 +5,6 @@
 #include "ge-hal/core.hpp"
 #include "ge-hal/gpu.hpp"
 #include "ge-hal/surface.hpp"
-#include <vector>
 
 namespace ge {
 namespace ui {
@@ -20,20 +19,27 @@ class Menu {
 public:
   Menu() = default;
 
+  // Initialize menu with user-provided array of items
+  Menu(MenuItem *items, u32 item_count)
+      : items(items), item_count(item_count) {}
+
+  void set_items(MenuItem *items, u32 item_count) {
+    this->items = items;
+    this->item_count = item_count;
+    selected_index = 0;
+  }
+
   // Joystick navigation thresholds
   static constexpr float JOY_THRESHOLD_MOVE = 0.5f;
   static constexpr float JOY_THRESHOLD_CENTER = 0.3f;
 
-  void add_item(const char *label, int id) {
-    items.push_back({label, id, 0});
-  }
-
   void render(Surface &region, const Font &font) {
-    if (items.empty())
+    if (!items || item_count == 0)
       return;
 
     // Cache text widths on first render if not already cached
-    for (auto &item : items) {
+    for (u32 i = 0; i < item_count; i++) {
+      auto &item = items[i];
       if (item.text_width == 0) {
         const char *c = item.label;
         while (*c) {
@@ -51,10 +57,10 @@ public:
 
     // Calculate item height and spacing
     u32 item_height = font.line_height() + 8; // 8px padding
-    u32 total_height = static_cast<u32>(items.size()) * item_height;
+    u32 total_height = item_count * item_height;
     u32 start_y = (region.get_height() - total_height) / 2;
 
-    for (u32 i = 0; i < static_cast<u32>(items.size()); i++) {
+    for (u32 i = 0; i < item_count; i++) {
       u32 y_pos = start_y + i * item_height;
       
       // Draw selection indicator
@@ -88,17 +94,17 @@ public:
   }
 
   void move_selection(float joy_y) {
-    if (items.empty())
+    if (!items || item_count == 0)
       return;
 
     // Use joystick Y axis to move selection
     // Only trigger on significant movement to avoid jitter
     if (joy_y < -JOY_THRESHOLD_MOVE && !joy_moved) {
       selected_index = (selected_index > 0) ? selected_index - 1 
-                                             : static_cast<u32>(items.size()) - 1;
+                                             : item_count - 1;
       joy_moved = true;
     } else if (joy_y > JOY_THRESHOLD_MOVE && !joy_moved) {
-      selected_index = (selected_index + 1) % static_cast<u32>(items.size());
+      selected_index = (selected_index + 1) % item_count;
       joy_moved = true;
     } else if (joy_y > -JOY_THRESHOLD_CENTER && joy_y < JOY_THRESHOLD_CENTER) {
       // Reset joy_moved when joystick returns to center
@@ -107,7 +113,7 @@ public:
   }
 
   int get_selected_id() const {
-    if (selected_index < static_cast<u32>(items.size())) {
+    if (items && selected_index < item_count) {
       return items[selected_index].id;
     }
     return -1;
@@ -116,7 +122,8 @@ public:
   u32 get_selected_index() const { return selected_index; }
 
 private:
-  std::vector<MenuItem> items;
+  MenuItem *items = nullptr;
+  u32 item_count = 0;
   u32 selected_index = 0;
   bool joy_moved = false;
 };

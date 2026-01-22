@@ -33,6 +33,9 @@ struct ButtonState {
 } button_states[NUM_BUTTONS];
 
 constexpr hal::stm::Pin button_pins[NUM_BUTTONS] = {BUTTON1_PIN, BUTTON2_PIN};
+
+// Forward declaration for interrupt access
+App* app_instance = nullptr;
 } // anonymous namespace
 
 static void enable_fpu() {
@@ -52,15 +55,19 @@ void App::system_init() {
 }
 
 App::App() {
+  app_instance = this;
+  
   stdout_usart = hal::stm::USART_CONFIG_DEBUG.init(115200);
   hal::stm::init_sdram();
   hal::stm::init_ltdc();
   hal::stm::init_dma2d();
 
-  // Initialize button GPIO pins as inputs with pull-up resistors
+  // Initialize button GPIO pins as inputs with pull-up resistors and enable interrupts
   for (const auto& pin : button_pins) {
     pin.set_mode(hal::stm::GPIOMode::Input);
     pin.set_pupd(hal::stm::GPIOPuPd::PullUp);
+    // Enable interrupt on both edges (press and release)
+    pin.enable_exti(hal::stm::EXTITrigger::RisingFalling);
   }
 }
 
@@ -89,47 +96,51 @@ void App::log(const char *fmt, ...) {
 
 void App::sleep(std::int64_t ms) { hal::stm::delay_timed(ms); }
 
+// Handle button state change (called from interrupt)
+static void handle_button_interrupt(int button_index) {
+  bool pressed = !button_pins[button_index].read();
+  auto &bs = button_states[button_index];
+  
+  // Detect button down event
+  if (pressed && !bs.last_state) {
+    bs.last_down = app_instance->now();
+    bs.last_up = -1;
+    bs.handled_hold = false;
+    needs_rerender = true;
+  }
+  
+  // Detect button up event
+  if (!pressed && bs.last_state) {
+    bs.last_up = app_instance->now();
+    if (bs.last_down >= 0) {
+      i64 held_time = bs.last_up - bs.last_down;
+      if (held_time < BUTTON_HOLD_THRESHOLD_MS) {
+        app_instance->on_button_clicked(static_cast<Button>(button_index));
+      } else {
+        app_instance->on_button_finished_hold(static_cast<Button>(button_index));
+      }
+    }
+    bs.handled_hold = false;
+    needs_rerender = true;
+  }
+  
+  bs.last_state = pressed;
+}
+
 void App::tick(float dt) {
-  // Read button states and trigger callbacks
+  // Only check for hold events (press/release are handled by interrupts)
   for (int i = 0; i < NUM_BUTTONS; ++i) {
-    // Buttons are active-low (pull-up resistors, pressed = LOW)
-    bool pressed = !button_pins[i].read();
     auto &bs = button_states[i];
     
-    // Detect button down event
-    if (pressed && !bs.last_state) {
-      bs.last_down = now();
-      bs.last_up = -1;
-      bs.handled_hold = false;
-      needs_rerender = true; // Button state changed, need to rerender
-    }
-    
-    // Detect button up event
-    if (!pressed && bs.last_state) {
-      bs.last_up = now();
-      if (bs.last_down >= 0) {
-        i64 held_time = bs.last_up - bs.last_down;
-        if (held_time < BUTTON_HOLD_THRESHOLD_MS) {
-          on_button_clicked(static_cast<Button>(i));
-        } else {
-          on_button_finished_hold(static_cast<Button>(i));
-        }
-      }
-      bs.handled_hold = false;
-      needs_rerender = true; // Button state changed, need to rerender
-    }
-    
     // Check for hold event
-    if (pressed && bs.last_down >= 0 && !bs.handled_hold) {
+    if (bs.last_state && bs.last_down >= 0 && !bs.handled_hold) {
       i64 held_time = now() - bs.last_down;
       if (held_time >= BUTTON_HOLD_THRESHOLD_MS) {
         on_button_held(static_cast<Button>(i));
         bs.handled_hold = true;
-        needs_rerender = true; // Button state changed, need to rerender
+        needs_rerender = true;
       }
     }
-    
-    bs.last_state = pressed;
   }
 }
 
@@ -181,3 +192,24 @@ void App::audio_sfx_stop_all() {}
 void App::audio_set_master_volume(std::uint8_t vol) { (void)vol; }
 
 } // namespace ge
+
+// EXTI interrupt handlers for button pins
+extern "C" {
+
+// EXTI0 interrupt handler (Button 1 on PA0)
+void EXTI0_IRQHandler() {
+  if (EXTI->PR & (1U << 0)) {
+    EXTI->PR = (1U << 0);  // Clear pending bit
+    ge::handle_button_interrupt(0);
+  }
+}
+
+// EXTI1 interrupt handler (Button 2 on PA1)
+void EXTI1_IRQHandler() {
+  if (EXTI->PR & (1U << 1)) {
+    EXTI->PR = (1U << 1);  // Clear pending bit
+    ge::handle_button_interrupt(1);
+  }
+}
+
+}

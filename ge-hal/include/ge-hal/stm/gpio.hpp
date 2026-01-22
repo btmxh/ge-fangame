@@ -20,6 +20,12 @@ enum class GPIOPuPd { NoPull = 0, PullUp = 1, PullDown = 2 };
 
 enum class GPIOSpeed { Low = 0, Medium = 1, High = 2, VeryHigh = 3 };
 
+enum class EXTITrigger {
+  Rising = 0,
+  Falling = 1,
+  RisingFalling = 2
+};
+
 struct Pin {
   u8 bank : 4; // A-G
   u8 num : 4;  // 0-15
@@ -36,6 +42,10 @@ struct Pin {
   void write(bool val) const;
   bool read() const;
   bool toggle() const;
+  
+  // EXTI interrupt configuration
+  void enable_exti(EXTITrigger trigger) const;
+  void disable_exti() const;
 };
 } // namespace stm
 } // namespace hal

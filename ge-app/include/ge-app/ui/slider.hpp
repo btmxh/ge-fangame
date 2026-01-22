@@ -38,13 +38,18 @@ public:
 
   float get_value() const { return current_value; }
 
-  // Returns value as 0-255 range for volume control
-  u8 get_value_as_volume() const {
+  // Helper to get normalized value (0.0-1.0) safely
+  float get_normalized_value() const {
     float range = max_value - min_value;
     if (range == 0.0f) {
-      return 0; // Avoid division by zero
+      return 1.0f; // If min equals max, consider it fully set
     }
-    float normalized = (current_value - min_value) / range;
+    return (current_value - min_value) / range;
+  }
+
+  // Returns value as 0-255 range for volume control
+  u8 get_value_as_volume() const {
+    float normalized = get_normalized_value();
     return static_cast<u8>(normalized * 255.0f);
   }
 
@@ -75,8 +80,7 @@ public:
                    bar_color);
 
     // Calculate fill width based on current value
-    float range = max_value - min_value;
-    float normalized = (range == 0.0f) ? 0.0f : (current_value - min_value) / range;
+    float normalized = get_normalized_value();
     u32 fill_width = static_cast<u32>(normalized * (bar_width - 4));
 
     // Draw slider fill

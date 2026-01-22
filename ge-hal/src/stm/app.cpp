@@ -48,7 +48,6 @@ void handle_button_interrupt(int button_index) {
     bs.last_down = app_instance->now();
     bs.last_up = -1;
     bs.handled_hold = false;
-    needs_rerender = true;
   }
   
   // Detect button up event
@@ -63,7 +62,6 @@ void handle_button_interrupt(int button_index) {
       }
     }
     bs.handled_hold = false;
-    needs_rerender = true;
   }
   
   bs.last_state = pressed;
@@ -107,7 +105,6 @@ App::~App() = default;
 App::operator bool() { return true; }
 
 static u32 buffer_index = 0;
-static bool needs_rerender = true;
 
 std::int64_t App::now() { return hal::stm::systick_get(); }
 
@@ -138,7 +135,6 @@ void App::tick(float dt) {
       if (held_time >= BUTTON_HOLD_THRESHOLD_MS) {
         on_button_held(static_cast<Button>(i));
         bs.handled_hold = true;
-        needs_rerender = true;
       }
     }
   }
@@ -152,21 +148,15 @@ void App::loop() {
     tick(dt);
     last_tick = current;
     
-    // Master-loop architecture: only render when needed
-    if (needs_rerender) {
-      auto buffer = hal::stm::pixel_buffer(buffer_index);
-      Surface fb_region{buffer,      App::WIDTH,          App::WIDTH,
-                        App::HEIGHT, PixelFormat::RGB565, buffer_index};
-      render(fb_region);
-      hal::stm::swap_buffers(buffer_index);
-      needs_rerender = false;
-    }
+    // Render every frame (vblank-based)
+    auto buffer = hal::stm::pixel_buffer(buffer_index);
+    Surface fb_region{buffer,      App::WIDTH,          App::WIDTH,
+                      App::HEIGHT, PixelFormat::RGB565, buffer_index};
+    render(fb_region);
+    hal::stm::swap_buffers(buffer_index);  // Waits for vblank
     
     // TODO: Process audio when needed
     // if (needs_audio_processing) process_audio();
-    
-    // Wait for interrupt to save power
-    __WFI();
   }
 }
 

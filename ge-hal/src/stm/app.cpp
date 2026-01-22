@@ -39,7 +39,7 @@ App* app_instance = nullptr;
 } // anonymous namespace
 
 // Handle button state change (called from interrupt)
-static void handle_button_interrupt(int button_index) {
+void handle_button_interrupt(int button_index) {
   bool pressed = !button_pins[button_index].read();
   auto &bs = button_states[button_index];
   

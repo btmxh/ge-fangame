@@ -2,6 +2,7 @@
 
 #include "ge-app/font.hpp"
 #include "ge-hal/app.hpp"
+#include "ge-hal/core.hpp"
 #include "ge-hal/gpu.hpp"
 #include "ge-hal/surface.hpp"
 #include <vector>
@@ -28,10 +29,10 @@ public:
 
     // Calculate item height and spacing
     u32 item_height = font.line_height() + 8; // 8px padding
-    u32 total_height = items.size() * item_height;
+    u32 total_height = static_cast<u32>(items.size()) * item_height;
     u32 start_y = (region.get_height() - total_height) / 2;
 
-    for (size_t i = 0; i < items.size(); i++) {
+    for (u32 i = 0; i < static_cast<u32>(items.size()); i++) {
       u32 y_pos = start_y + i * item_height;
       
       // Draw selection indicator
@@ -77,10 +78,11 @@ public:
     // Use joystick Y axis to move selection
     // Only trigger on significant movement to avoid jitter
     if (joy_y < -0.5f && !joy_moved) {
-      selected_index = (selected_index > 0) ? selected_index - 1 : items.size() - 1;
+      selected_index = (selected_index > 0) ? selected_index - 1 
+                                             : static_cast<u32>(items.size()) - 1;
       joy_moved = true;
     } else if (joy_y > 0.5f && !joy_moved) {
-      selected_index = (selected_index + 1) % items.size();
+      selected_index = (selected_index + 1) % static_cast<u32>(items.size());
       joy_moved = true;
     } else if (joy_y > -0.3f && joy_y < 0.3f) {
       // Reset joy_moved when joystick returns to center
@@ -89,17 +91,17 @@ public:
   }
 
   int get_selected_id() const {
-    if (selected_index < items.size()) {
+    if (selected_index < static_cast<u32>(items.size())) {
       return items[selected_index].id;
     }
     return -1;
   }
 
-  size_t get_selected_index() const { return selected_index; }
+  u32 get_selected_index() const { return selected_index; }
 
 private:
   std::vector<MenuItem> items;
-  size_t selected_index = 0;
+  u32 selected_index = 0;
   bool joy_moved = false;
 };
 

@@ -2,6 +2,7 @@
 
 #include "ge-hal/core.hpp"
 #include <algorithm>
+#include <cmath>
 
 namespace ge {
 
@@ -24,14 +25,14 @@ public:
     if (is_steering) {
       float angle_diff = std::abs(current_angle - last_angle);
       // Normalize angle difference to [0, PI]
-      while (angle_diff > 3.14159f) {
-        angle_diff -= 2.0f * 3.14159f;
+      while (angle_diff > M_PI) {
+        angle_diff -= 2.0f * M_PI;
       }
       angle_diff = std::abs(angle_diff);
 
       // Drain stamina based on how much the angle changed
       if (angle_diff > 0.1f) { // Only drain if turning significantly
-        float drain = STAMINA_DRAIN_ON_TURN * (angle_diff / 3.14159f) * dt;
+        float drain = STAMINA_DRAIN_ON_TURN * (angle_diff / M_PI) * dt;
         stamina = std::max(0.0f, stamina - drain);
       }
     }

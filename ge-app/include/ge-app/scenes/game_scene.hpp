@@ -271,7 +271,10 @@ public:
       return; // Ignore held buttons when dialog has focus
     }
 
-    if (btn == Button::Button2) {
+    if (btn == Button::Button1 && mode_indicator.get_current_mode() == GameMode::Steering) {
+      // Hold Button A to accelerate in Steering mode
+      is_accelerating = true;
+    } else if (btn == Button::Button2) {
       clock.begin_sped_up();
       clock.set_multiplier(app, mode_indicator.get_current_mode());
     }
@@ -282,7 +285,10 @@ public:
       return; // Ignore held buttons when dialog has focus
     }
 
-    if (btn == Button::Button2) {
+    if (btn == Button::Button1) {
+      // Release acceleration
+      is_accelerating = false;
+    } else if (btn == Button::Button2) {
       clock.end_sped_up();
       clock.set_multiplier(app, mode_indicator.get_current_mode());
     }

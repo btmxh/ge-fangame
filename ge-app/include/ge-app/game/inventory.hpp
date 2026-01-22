@@ -10,11 +10,12 @@ struct FishItem {
   const char *name;
   FishRarity rarity;
   i64 caught_time; // Timestamp when caught (in milliseconds)
+  float weight;    // Weight in kg for cargo calculation
 
-  FishItem() : name(nullptr), rarity(FishRarity::Common), caught_time(0) {}
+  FishItem() : name(nullptr), rarity(FishRarity::Common), caught_time(0), weight(0.0f) {}
 
-  FishItem(const char *name, FishRarity rarity, i64 caught_time)
-      : name(name), rarity(rarity), caught_time(caught_time) {}
+  FishItem(const char *name, FishRarity rarity, i64 caught_time, float weight)
+      : name(name), rarity(rarity), caught_time(caught_time), weight(weight) {}
 
   bool is_empty() const { return name == nullptr; }
 };
@@ -26,12 +27,12 @@ public:
   Inventory() : item_count(0) {}
 
   // Add a fish to the inventory
-  bool add_fish(const char *name, FishRarity rarity, i64 caught_time) {
+  bool add_fish(const char *name, FishRarity rarity, i64 caught_time, float weight) {
     if (item_count >= MAX_ITEMS) {
       return false; // Inventory full
     }
 
-    items[item_count] = FishItem(name, rarity, caught_time);
+    items[item_count] = FishItem(name, rarity, caught_time, weight);
     item_count++;
     return true;
   }
@@ -63,6 +64,28 @@ public:
       }
     }
     return count;
+  }
+
+  // Get total cargo weight in kg
+  float get_total_weight() const {
+    float total = 0.0f;
+    for (u32 i = 0; i < item_count; i++) {
+      total += items[i].weight;
+    }
+    return total;
+  }
+
+  // Remove fish at index (for consuming)
+  bool remove_fish(u32 index) {
+    if (index >= item_count) {
+      return false;
+    }
+    // Shift items down
+    for (u32 i = index; i < item_count - 1; i++) {
+      items[i] = items[i + 1];
+    }
+    item_count--;
+    return true;
   }
 
 private:

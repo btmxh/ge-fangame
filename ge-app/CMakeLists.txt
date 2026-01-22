@@ -16,6 +16,7 @@ target_sources(
         ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/scenes/status_scene.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/scenes/inventory_scene.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/game/inventory.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/game/player_stats.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/ui/menu.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/ui/slider.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/ui/option_selector.hpp

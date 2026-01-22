@@ -172,12 +172,13 @@ private:
 
   class StatusSceneImpl : public StatusScene {
   public:
-    // Note: Directly accesses game_scene_impl for shared game state (Clock, Inventory, ModeIndicator)
+    // Note: Directly accesses game_scene_impl for shared game state (Clock, Inventory, ModeIndicator, PlayerStats)
     // This is by design as these objects are owned by GameScene and need to be shared
     StatusSceneImpl(MainApp &app)
         : StatusScene(app, app.game_scene_impl.get_clock(),
                       app.game_scene_impl.get_inventory(),
-                      app.game_scene_impl.get_mode_indicator()),
+                      app.game_scene_impl.get_mode_indicator(),
+                      app.game_scene_impl.get_player_stats()),
           main_app(app) {}
 
     void on_back_action() override { main_app.switch_to_management_menu(); }
@@ -188,10 +189,11 @@ private:
 
   class InventorySceneImpl : public InventoryScene {
   public:
-    // Note: Directly accesses game_scene_impl for shared inventory state
-    // This is by design as Inventory is owned by GameScene
+    // Note: Directly accesses game_scene_impl for shared inventory and player stats
+    // This is by design as these are owned by GameScene
     InventorySceneImpl(MainApp &app)
-        : InventoryScene(app, app.game_scene_impl.get_inventory()),
+        : InventoryScene(app, app.game_scene_impl.get_inventory_mutable(),
+                        app.game_scene_impl.get_player_stats_mutable()),
           main_app(app) {}
 
     void on_back_action() override { main_app.switch_to_management_menu(); }

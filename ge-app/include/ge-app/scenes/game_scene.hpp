@@ -7,6 +7,7 @@
 #include "ge-app/game/dock.hpp"
 #include "ge-app/game/fishing.hpp"
 #include "ge-app/game/inventory.hpp"
+#include "ge-app/game/player_stats.hpp"
 #include "ge-app/game/sky.hpp"
 #include "ge-app/game/water.hpp"
 #include "ge-app/gfx/color.hpp"
@@ -123,15 +124,24 @@ public:
     if (mode_indicator.get_current_mode() == GameMode::Steering) {
       if (!dialog_box.has_input_focus()) {
         boat.update_angle(joystick.x, joystick.y, world_dt);
+        
+        // Update player stats (stamina drains when steering)
+        player_stats.update(world_dt, boat.get_angle(), true);
       }
-      boat.update_position(app, world_dt);
+      // Check if Button A is held for acceleration
+      float cargo_weight = inventory.get_total_weight();
+      boat.update_position(app, world_dt, is_accelerating, cargo_weight);
     } else if (mode_indicator.get_current_mode() == GameMode::Fishing) {
       // Update fishing system
       if (!dialog_box.has_input_focus()) {
         fishing.update(app, dialog_box, world_dt, joystick);
       }
       // Keep boat drifting slowly in fishing mode
-      boat.update_position(app, world_dt);
+      float cargo_weight = inventory.get_total_weight();
+      boat.update_position(app, world_dt, false, cargo_weight);
+      
+      // Update player stats (no stamina drain in fishing mode)
+      player_stats.update(world_dt, boat.get_angle(), false);
     }
   }
 
@@ -252,6 +262,9 @@ public:
   const GameModeIndicator &get_mode_indicator() const {
     return mode_indicator;
   }
+  const PlayerStats &get_player_stats() const { return player_stats; }
+  Inventory &get_inventory_mutable() { return inventory; }
+  PlayerStats &get_player_stats_mutable() { return player_stats; }
 
   void on_button_held(Button btn) override {
     if (dialog_box.has_input_focus()) {
@@ -284,7 +297,8 @@ private:
   Sky sky;
   Water water;
   Fishing fishing;
-  Inventory inventory; // Player inventory
+  Inventory inventory;     // Player inventory
+  PlayerStats player_stats; // Player food and stamina
 
   DialogBox dialog_box;
   DialogMessage msg[3] = {
@@ -312,5 +326,6 @@ private:
   const ge::Font &font = ge::Font::bold_font();
 
   i64 last_frame_world_time = -1;
+  bool is_accelerating = false; // Track if Button A is held for acceleration
 };
 } // namespace ge

@@ -251,24 +251,25 @@ private:
   }
 
   void catch_fish(App &app, DialogBox &dialog) {
-    // Fish data with names and rarities
+    // Fish data with names, rarities, and weights
     struct FishData {
       const char *name;
       FishRarity rarity;
-      int weight; // For weighted random selection
+      int weight;      // For weighted random selection
+      float fish_weight; // Physical weight in kg
     };
 
     const FishData fish_table[] = {
-        {"Tropical Fish", FishRarity::Common, 30},
-        {"Sea Bass", FishRarity::Common, 25},
-        {"Sardine", FishRarity::Common, 20},
-        {"Tuna", FishRarity::Uncommon, 15},
-        {"Salmon", FishRarity::Uncommon, 15},
-        {"Pufferfish", FishRarity::Uncommon, 10},
-        {"Clownfish", FishRarity::Rare, 8},
-        {"Golden Fish", FishRarity::Rare, 5},
-        {"Old Boot (loot)", FishRarity::Uncommon, 7},
-        {"Treasure Chest", FishRarity::Legendary, 2}};
+        {"Tropical Fish", FishRarity::Common, 30000, 0.5f},
+        {"Sea Bass", FishRarity::Common, 25000, 2.0f},
+        {"Sardine", FishRarity::Common, 20000, 0.3f},
+        {"Tuna", FishRarity::Uncommon, 15000, 10.0f},
+        {"Salmon", FishRarity::Uncommon, 15000, 5.0f},
+        {"Pufferfish", FishRarity::Uncommon, 10000, 1.5f},
+        {"Clownfish", FishRarity::Rare, 8000, 0.2f},
+        {"Golden Fish", FishRarity::Legendary, 1, 0.1f}, // 1 in ~130,000 (insanely rare!)
+        {"Old Boot (loot)", FishRarity::Uncommon, 7000, 3.0f},
+        {"Treasure Chest", FishRarity::Legendary, 2000, 25.0f}};
 
     constexpr int num_fish = sizeof(fish_table) / sizeof(fish_table[0]);
 
@@ -296,7 +297,7 @@ private:
 
     // Add to inventory if available
     if (inventory != nullptr) {
-      if (inventory->add_fish(caught.name, caught.rarity, app.now())) {
+      if (inventory->add_fish(caught.name, caught.rarity, app.now(), caught.fish_weight)) {
         char msg_buf[128];
         snprintf(msg_buf, sizeof(msg_buf), "Caught: %s!\nInventory: %u/%u",
                  caught.name, inventory->get_item_count(),

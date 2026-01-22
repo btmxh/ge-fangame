@@ -4,6 +4,7 @@
 #include "ge-app/game/clock.hpp"
 #include "ge-app/game/inventory.hpp"
 #include "ge-app/game/mode_indicator.hpp"
+#include "ge-app/game/player_stats.hpp"
 #include "ge-app/scenes/scene.hpp"
 #include "ge-hal/app.hpp"
 #include "ge-hal/gpu.hpp"
@@ -15,9 +16,10 @@ namespace ge {
 class StatusScene : public Scene {
 public:
   StatusScene(App &app, const Clock &clock, const Inventory &inventory,
-              const GameModeIndicator &mode_indicator)
+              const GameModeIndicator &mode_indicator, 
+              const PlayerStats &player_stats)
       : Scene{app}, clock(clock), inventory(inventory),
-        mode_indicator(mode_indicator) {}
+        mode_indicator(mode_indicator), player_stats(player_stats) {}
 
   void tick(float dt) override {
     // No input handling needed for status screen
@@ -91,6 +93,30 @@ public:
     font.render_colored(inv_buf, -1, fb_region, 10, y_pos, 0xF81F);
     y_pos += line_height + 10;
 
+    // Food and Stamina Status Bars
+    font.render_colored("Status:", -1, fb_region, 10, y_pos, 0xFFFF);
+    y_pos += line_height;
+
+    // Food bar
+    float food_percent = player_stats.get_food_percent();
+    snprintf(inv_buf, sizeof(inv_buf), "  Food: %.0f%%", food_percent);
+    font.render_colored(inv_buf, -1, fb_region, 10, y_pos, 0xFBE0); // Yellow
+    y_pos += line_height;
+
+    // Draw food bar
+    draw_status_bar(fb_region, 20, y_pos, 100, 8, food_percent, 0xFBE0);
+    y_pos += 12;
+
+    // Stamina bar
+    float stamina_percent = player_stats.get_stamina_percent();
+    snprintf(inv_buf, sizeof(inv_buf), "  Stamina: %.0f%%", stamina_percent);
+    font.render_colored(inv_buf, -1, fb_region, 10, y_pos, 0x07FF); // Cyan
+    y_pos += line_height;
+
+    // Draw stamina bar
+    draw_status_bar(fb_region, 20, y_pos, 100, 8, stamina_percent, 0x07FF);
+    y_pos += 12;
+
     // Instructions
     font.render_colored("Press B to return", -1, fb_region, 10,
                         fb_region.get_height() - line_height - 10, 0x7BEF);
@@ -109,9 +135,33 @@ public:
   }
 
 private:
+  // Helper to draw a status bar
+  void draw_status_bar(Surface &region, u32 x, u32 y, u32 width, u32 height,
+                       float percent, u16 color) {
+    // Border
+    for (u32 i = 0; i < width; i++) {
+      region.set_pixel<u16>(x + i, y, 0xFFFF);
+      region.set_pixel<u16>(x + i, y + height - 1, 0xFFFF);
+    }
+    for (u32 i = 0; i < height; i++) {
+      region.set_pixel<u16>(x, y + i, 0xFFFF);
+      region.set_pixel<u16>(x + width - 1, y + i, 0xFFFF);
+    }
+
+    // Fill bar based on percentage
+    u32 fill_width = static_cast<u32>((width - 2) * (percent / 100.0f));
+    for (u32 j = 1; j < height - 1; j++) {
+      for (u32 i = 1; i < width - 1; i++) {
+        u16 pixel_color = (i - 1) < fill_width ? color : 0x0000;
+        region.set_pixel<u16>(x + i, y + j, pixel_color);
+      }
+    }
+  }
+
   const Clock &clock;
   const Inventory &inventory;
   const GameModeIndicator &mode_indicator;
+  const PlayerStats &player_stats;
 };
 
 } // namespace ge

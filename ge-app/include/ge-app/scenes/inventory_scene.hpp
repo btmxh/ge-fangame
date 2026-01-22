@@ -2,43 +2,56 @@
 
 #include "ge-app/font.hpp"
 #include "ge-app/game/inventory.hpp"
+#include "ge-app/game/player_stats.hpp"
 #include "ge-app/scenes/scene.hpp"
 #include "ge-hal/app.hpp"
 #include "ge-hal/gpu.hpp"
 #include "ge-hal/surface.hpp"
 #include <algorithm>
 #include <cstdio>
+#include <cstring>
 
 namespace ge {
 
 class InventoryScene : public Scene {
 public:
-  InventoryScene(App &app, const Inventory &inventory)
-      : Scene{app}, inventory(inventory), scroll_offset(0) {}
+  InventoryScene(App &app, Inventory &inventory, PlayerStats &player_stats)
+      : Scene{app}, inventory(inventory), player_stats(player_stats), 
+        scroll_offset(0), selected_index(0) {}
 
   void tick(float dt) override {
     auto joystick = app.get_joystick_state();
 
-    // Handle scrolling with joystick
+    // Handle navigation with joystick
     static constexpr float MOVE_THRESHOLD = 0.5f;
     static constexpr float CENTER_THRESHOLD = 0.3f;
 
-    if (joystick.y < -MOVE_THRESHOLD && !joy_moved) {
-      // Move up
-      if (scroll_offset > 0) {
-        scroll_offset--;
+    if (inventory.get_item_count() > 0) {
+      if (joystick.y < -MOVE_THRESHOLD && !joy_moved) {
+        // Move up
+        if (selected_index > 0) {
+          selected_index--;
+          // Adjust scroll if needed
+          if (selected_index < scroll_offset) {
+            scroll_offset = selected_index;
+          }
+        }
+        joy_moved = true;
+      } else if (joystick.y > MOVE_THRESHOLD && !joy_moved) {
+        // Move down
+        if (selected_index < inventory.get_item_count() - 1) {
+          selected_index++;
+          // Adjust scroll if needed
+          const u32 max_visible_items = 8;
+          if (selected_index >= scroll_offset + max_visible_items) {
+            scroll_offset = selected_index - max_visible_items + 1;
+          }
+        }
+        joy_moved = true;
+      } else if (joystick.y > -CENTER_THRESHOLD &&
+                 joystick.y < CENTER_THRESHOLD) {
+        joy_moved = false;
       }
-      joy_moved = true;
-    } else if (joystick.y > MOVE_THRESHOLD && !joy_moved) {
-      // Move down
-      u32 max_scroll = get_max_scroll();
-      if (scroll_offset < max_scroll) {
-        scroll_offset++;
-      }
-      joy_moved = true;
-    } else if (joystick.y > -CENTER_THRESHOLD &&
-               joystick.y < CENTER_THRESHOLD) {
-      joy_moved = false;
     }
   }
 
@@ -79,13 +92,21 @@ public:
         // Get color based on rarity
         u16 color = get_rarity_color(item.rarity);
 
-        // Format: "1. Tropical Fish (Common)"
+        // Highlight selected item
+        bool is_selected = (i == selected_index);
+        if (is_selected) {
+          // Draw selection indicator
+          font.render_colored(">", -1, fb_region, 2, y_pos, 0xFFFF);
+        }
+
+        // Format: "1. Tropical Fish (Common) 0.5kg"
         char item_buf[64];
         const char *rarity_str = get_rarity_string(item.rarity);
-        snprintf(item_buf, sizeof(item_buf), "%u. %s (%s)", i + 1, item.name,
-                 rarity_str);
+        snprintf(item_buf, sizeof(item_buf), "%u. %s (%s) %.1fkg", i + 1, item.name,
+                 rarity_str, item.weight);
 
-        font.render_colored(item_buf, -1, fb_region, 10, y_pos, color);
+        font.render_colored(item_buf, -1, fb_region, is_selected ? 16 : 10, 
+                           y_pos, color);
         y_pos += line_height;
       }
 
@@ -100,12 +121,49 @@ public:
     }
 
     // Instructions
-    font.render_colored("Press B to return", -1, fb_region, 10,
+    font.render_colored("A: Eat Fish  B: Return", -1, fb_region, 10,
                         fb_region.get_height() - line_height - 10, 0x7BEF);
   }
 
   void on_button_clicked(Button btn) override {
-    if (btn == Button::Button2) {
+    if (btn == Button::Button1) {
+      // Eat selected fish
+      if (inventory.get_item_count() > 0 && selected_index < inventory.get_item_count()) {
+        const auto &item = inventory.get_item(selected_index);
+        
+        // Check if it's a poisonous or non-food item
+        bool is_edible = true;
+        float food_value = 10.0f; // Base food value
+        
+        // Pufferfish is poisonous
+        if (strstr(item.name, "Pufferfish") != nullptr) {
+          is_edible = false;
+        }
+        // Boots and chests are not edible
+        if (strstr(item.name, "Boot") != nullptr || 
+            strstr(item.name, "Chest") != nullptr) {
+          is_edible = false;
+        }
+        
+        if (is_edible) {
+          // Consume the fish - food value based on weight
+          food_value = item.weight * 20.0f; // 1kg = 20 food
+          player_stats.consume_fish(food_value);
+          
+          // Remove from inventory
+          inventory.remove_fish(selected_index);
+          
+          // Adjust selected_index if needed
+          if (selected_index >= inventory.get_item_count() && selected_index > 0) {
+            selected_index--;
+          }
+          // Adjust scroll if needed
+          if (scroll_offset >= inventory.get_item_count()) {
+            scroll_offset = get_max_scroll();
+          }
+        }
+      }
+    } else if (btn == Button::Button2) {
       // Return to management menu
       on_back_action();
     }
@@ -117,8 +175,10 @@ public:
   }
 
 private:
-  const Inventory &inventory;
+  Inventory &inventory;
+  PlayerStats &player_stats;
   u32 scroll_offset;
+  u32 selected_index;
   bool joy_moved = false;
 
   u32 get_max_scroll() const {

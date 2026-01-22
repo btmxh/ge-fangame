@@ -11,7 +11,9 @@ enum class SceneType { Menu, Game };
 
 class MainApp : public ge::App {
 public:
-  MainApp() : ge::App(), menu_scene_impl(*this) { switch_to_menu(); }
+  MainApp() : ge::App(), menu_scene_impl(*this), game_scene{*this} {
+    switch_to_menu();
+  }
 
   void tick(float dt) override {
     App::tick(dt);
@@ -51,12 +53,7 @@ public:
 
   void switch_to_game() {
     current_scene_type = SceneType::Game;
-    // Construct game scene in-place when switching to it
-    if (!game_scene_initialized) {
-      new (&game_scene_storage) GameScene(*this);
-      game_scene_initialized = true;
-    }
-    current_scene = reinterpret_cast<GameScene *>(&game_scene_storage);
+    current_scene = &game_scene;
   }
 
 private:
@@ -85,19 +82,12 @@ private:
   SceneType current_scene_type = SceneType::Menu;
   Scene *current_scene = nullptr;
   MenuSceneImpl menu_scene_impl;
-
-  // Storage for GameScene (placement new)
-  alignas(GameScene) char game_scene_storage[sizeof(GameScene)];
-  bool game_scene_initialized = false;
+  GameScene game_scene;
 };
 } // namespace ge
 
 int main() {
   ge::MainApp app;
   app.loop();
-
   return 0;
-
-  // ge::Texture crate_tex{crate, crate_WIDTH, crate_HEIGHT};
-  // float crate_x = 0.0f, crate_y = 10.0f;
 }

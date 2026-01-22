@@ -125,15 +125,15 @@ The Settings scene allows players to configure game options:
 1. **Music Volume Slider**: Adjusts background music volume (0-100%)
    - Directly updates the app's master volume in real-time
    - Visual slider with fill bar showing current level
-   
+
 2. **SFX Volume Slider**: Adjusts sound effects volume (0-100%)
    - Separate control for sound effects
    - Visual slider with fill bar showing current level
-   
+
 3. **Button Layout Toggle**: Flip A/B button mapping
    - Options: "Normal (A/B)" or "Flipped (B/A)"
    - Uses arrow navigation to switch between options
-   
+
 4. **Back to Menu**: Returns to main menu
 
 **UI Components Used:**

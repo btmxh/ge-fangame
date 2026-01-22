@@ -157,7 +157,7 @@ When reporting issues, please include:
 
 To make these scenes fully functional:
 1. Implement SFX volume control in audio system
-2. Implement button remapping in input system  
+2. Implement button remapping in input system
 3. Add settings persistence (save to flash on STM32, config file on PC)
 4. Replace placeholder credits with actual contributors
 5. Consider adding more settings (brightness, difficulty, etc.)

@@ -75,15 +75,15 @@ This document illustrates the navigation flow between all scenes in the game.
 1. **Music Volume Slider** (0-100%)
    - Joystick X: Adjust volume
    - Real-time audio update
-   
+
 2. **SFX Volume Slider** (0-100%)
    - Joystick X: Adjust volume
    - (UI ready, audio system integration pending)
-   
+
 3. **Button Flip Toggle**
    - Joystick X: Switch between Normal/Flipped
    - (UI ready, input system integration pending)
-   
+
 4. **Back to Menu**
    - Button 1: Return to Main Menu
 

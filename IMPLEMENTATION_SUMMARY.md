@@ -6,7 +6,7 @@ This PR successfully implements the Settings and Credits scenes as requested in 
 
 ### Problem Statement Requirements
 - ✅ Implement settings scene with music slider
-- ✅ Implement settings scene with SFX slider  
+- ✅ Implement settings scene with SFX slider
 - ✅ Implement settings scene with flip button A/B option
 - ✅ Implement credits scene with placeholders
 

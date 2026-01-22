@@ -13,13 +13,11 @@
 
 namespace ge {
 
+class GameScene;
+
 class StatusScene : public Scene {
 public:
-  StatusScene(App &app, const Clock &clock, const Inventory &inventory,
-              const GameModeIndicator &mode_indicator, 
-              const PlayerStats &player_stats)
-      : Scene{app}, clock(clock), inventory(inventory),
-        mode_indicator(mode_indicator), player_stats(player_stats) {}
+  StatusScene(GameScene &parent);
 
   void tick(float dt) override {
     // No input handling needed for status screen
@@ -131,10 +129,7 @@ public:
     return Scene::on_button_clicked(btn); // Check sub-scenes
   }
 
-  // Virtual method to be overridden to handle back action
-  virtual void on_back_action() {
-    // This will be handled by MainApp
-  }
+  void on_back_action();
 
 private:
   // Helper to draw a status bar
@@ -160,6 +155,7 @@ private:
     }
   }
 
+  GameScene &parent;
   const Clock &clock;
   const Inventory &inventory;
   const GameModeIndicator &mode_indicator;

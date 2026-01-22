@@ -13,11 +13,11 @@
 
 namespace ge {
 
+class GameScene;
+
 class InventoryScene : public Scene {
 public:
-  InventoryScene(App &app, Inventory &inventory, PlayerStats &player_stats)
-      : Scene{app}, inventory(inventory), player_stats(player_stats), 
-        scroll_offset(0), selected_index(0) {}
+  InventoryScene(GameScene &parent);
 
   void tick(float dt) override {
     auto joystick = app.get_joystick_state();
@@ -65,8 +65,9 @@ public:
 
     // Title
     char title_buf[64];
-    snprintf(title_buf, sizeof(title_buf), "=== Inventory (%u/%u) ===",
-             inventory.get_item_count(), Inventory::MAX_ITEMS);
+    snprintf(title_buf, sizeof(title_buf),
+             "=== Inventory (%u/%u) ===", inventory.get_item_count(),
+             Inventory::MAX_ITEMS);
     font.render_colored(title_buf, -1, fb_region, 10, y_pos, 0xFFFF);
     y_pos += line_height + 8;
 
@@ -102,11 +103,11 @@ public:
         // Format: "1. Tropical Fish (Common) 0.5kg"
         char item_buf[64];
         const char *rarity_str = get_rarity_string(item.rarity);
-        snprintf(item_buf, sizeof(item_buf), "%u. %s (%s) %.1fkg", i + 1, item.name,
-                 rarity_str, item.weight);
+        snprintf(item_buf, sizeof(item_buf), "%u. %s (%s) %.1fkg", i + 1,
+                 item.name, rarity_str, item.weight);
 
-        font.render_colored(item_buf, -1, fb_region, is_selected ? 16 : 10, 
-                           y_pos, color);
+        font.render_colored(item_buf, -1, fb_region, is_selected ? 16 : 10,
+                            y_pos, color);
         y_pos += line_height;
       }
 
@@ -128,33 +129,35 @@ public:
   bool on_button_clicked(Button btn) override {
     if (btn == Button::Button1) {
       // Eat selected fish
-      if (inventory.get_item_count() > 0 && selected_index < inventory.get_item_count()) {
+      if (inventory.get_item_count() > 0 &&
+          selected_index < inventory.get_item_count()) {
         const auto &item = inventory.get_item(selected_index);
-        
+
         // Check if it's a poisonous or non-food item
         bool is_edible = true;
         float food_value = 10.0f; // Base food value
-        
+
         // Pufferfish is poisonous
         if (strstr(item.name, "Pufferfish") != nullptr) {
           is_edible = false;
         }
         // Boots and chests are not edible
-        if (strstr(item.name, "Boot") != nullptr || 
+        if (strstr(item.name, "Boot") != nullptr ||
             strstr(item.name, "Chest") != nullptr) {
           is_edible = false;
         }
-        
+
         if (is_edible) {
           // Consume the fish - food value based on weight
           food_value = item.weight * 20.0f; // 1kg = 20 food
           player_stats.consume_fish(food_value);
-          
+
           // Remove from inventory
           inventory.remove_fish(selected_index);
-          
+
           // Adjust selected_index if needed
-          if (selected_index >= inventory.get_item_count() && selected_index > 0) {
+          if (selected_index >= inventory.get_item_count() &&
+              selected_index > 0) {
             selected_index--;
           }
           // Adjust scroll if needed
@@ -172,12 +175,10 @@ public:
     return Scene::on_button_clicked(btn); // Check sub-scenes
   }
 
-  // Virtual method to be overridden to handle back action
-  virtual void on_back_action() {
-    // This will be handled by MainApp
-  }
+  void on_back_action();
 
 private:
+  GameScene &parent;
   Inventory &inventory;
   PlayerStats &player_stats;
   u32 scroll_offset;

@@ -6,8 +6,10 @@
 namespace ge {
 class Scene {
 public:
-  Scene(App &app) : app{app}, active_scenes(nullptr), num_active_scenes(0), is_active(true) {}
-  
+  Scene(App &app)
+      : app{app}, active_scenes(nullptr), num_active_scenes(0),
+        is_active(true) {}
+
   // Set sub-scenes (memory managed externally by implementation)
   void set_sub_scenes(Scene **scenes, u32 count) {
     active_scenes = scenes;
@@ -20,7 +22,8 @@ public:
 
   // Virtual methods with sub-scene support
   virtual void tick(float dt) {
-    if (!is_active) return;
+    if (!is_active)
+      return;
     // Tick sub-scenes first
     for (u32 i = 0; i < num_active_scenes; ++i) {
       if (active_scenes[i] && active_scenes[i]->get_active()) {
@@ -30,7 +33,8 @@ public:
   }
 
   virtual void render(Surface &fb_region) {
-    if (!is_active) return;
+    if (!is_active)
+      return;
     // Render sub-scenes in order (bottom to top)
     for (u32 i = 0; i < num_active_scenes; ++i) {
       if (active_scenes[i] && active_scenes[i]->get_active()) {
@@ -41,7 +45,8 @@ public:
 
   // Input events return true if captured/handled
   virtual bool on_button_clicked(Button btn) {
-    if (!is_active) return false;
+    if (!is_active)
+      return false;
     // Check sub-scenes in reverse order (top to bottom)
     for (i32 i = static_cast<i32>(num_active_scenes) - 1; i >= 0; --i) {
       if (active_scenes[i] && active_scenes[i]->get_active()) {
@@ -54,7 +59,8 @@ public:
   }
 
   virtual bool on_button_held(Button btn) {
-    if (!is_active) return false;
+    if (!is_active)
+      return false;
     for (i32 i = static_cast<i32>(num_active_scenes) - 1; i >= 0; --i) {
       if (active_scenes[i] && active_scenes[i]->get_active()) {
         if (active_scenes[i]->on_button_held(btn)) {
@@ -66,7 +72,8 @@ public:
   }
 
   virtual bool on_button_finished_hold(Button btn) {
-    if (!is_active) return false;
+    if (!is_active)
+      return false;
     for (i32 i = static_cast<i32>(num_active_scenes) - 1; i >= 0; --i) {
       if (active_scenes[i] && active_scenes[i]->get_active()) {
         if (active_scenes[i]->on_button_finished_hold(btn)) {
@@ -76,6 +83,8 @@ public:
     }
     return false;
   }
+
+  App &get_app() { return app; }
 
 protected:
   App &app;

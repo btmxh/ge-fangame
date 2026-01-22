@@ -9,6 +9,8 @@
 
 namespace ge {
 
+class GameScene;
+
 enum class ManagementAction {
   None = 0,
   ViewStatus = 1,
@@ -18,13 +20,7 @@ enum class ManagementAction {
 
 class ManagementMenuScene : public Scene {
 public:
-  ManagementMenuScene(App &app) : Scene{app} {
-    // Initialize menu items array
-    menu_items[0] = {"View Status", static_cast<int>(ManagementAction::ViewStatus)};
-    menu_items[1] = {"View Inventory", static_cast<int>(ManagementAction::ViewInventory)};
-    menu_items[2] = {"Back to Game", static_cast<int>(ManagementAction::BackToGame)};
-    menu.set_items(menu_items, 3);
-  }
+  ManagementMenuScene(GameScene &parent);
 
   void tick(float dt) override {
     auto joystick = app.get_joystick_state();
@@ -59,14 +55,12 @@ public:
     return Scene::on_button_clicked(btn); // Check sub-scenes
   }
 
-  // Virtual method that can be overridden to handle menu actions
-  virtual void on_menu_action(ManagementAction action) {
-    // This will be handled by MainApp
-  }
+  void on_menu_action(ManagementAction action);
 
 private:
   ui::Menu menu;
   ui::MenuItem menu_items[3];
+  GameScene &parent;
 };
 
 } // namespace ge

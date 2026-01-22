@@ -2,9 +2,8 @@
 
 #include "ge-app/game/inventory.hpp"
 #include "ge-app/scenes/dialog_scene.hpp"
-#include "ge-app/texture.hpp"
 #include "ge-hal/app.hpp"
-#include "ge-hal/gpu.hpp"
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 
@@ -48,7 +47,7 @@ public:
       // Stay in this state until player presses button to reel in
       break;
     case FishingState::Reeling:
-      update_reeling(app, dialog_box, dt);
+      update_reeling(app, dialog_scene, dt);
       break;
     }
 
@@ -244,7 +243,7 @@ private:
         catch_fish(app, dialog);
       } else {
         // Early retraction or bait lost - no fish
-        dialog.show_message(app, "Fishing", "Nothing caught.");
+        dialog.show_message("Fishing", "Nothing caught.");
       }
       reset();
     }
@@ -255,7 +254,7 @@ private:
     struct FishData {
       const char *name;
       FishRarity rarity;
-      int weight;      // For weighted random selection
+      int weight;        // For weighted random selection
       float fish_weight; // Physical weight in kg
     };
 
@@ -267,7 +266,8 @@ private:
         {"Salmon", FishRarity::Uncommon, 15000, 5.0f},
         {"Pufferfish", FishRarity::Uncommon, 10000, 1.5f},
         {"Clownfish", FishRarity::Rare, 8000, 0.2f},
-        {"Golden Fish", FishRarity::Legendary, 1, 0.1f}, // 1 in ~130,000 (insanely rare!)
+        {"Golden Fish", FishRarity::Legendary, 1,
+         0.1f}, // 1 in ~130,000 (insanely rare!)
         {"Old Boot (loot)", FishRarity::Uncommon, 7000, 3.0f},
         {"Treasure Chest", FishRarity::Legendary, 2000, 25.0f}};
 
@@ -297,20 +297,20 @@ private:
 
     // Add to inventory if available
     if (inventory != nullptr) {
-      if (inventory->add_fish(caught.name, caught.rarity, app.now(), caught.fish_weight)) {
+      if (inventory->add_fish(caught.name, caught.rarity, app.now(),
+                              caught.fish_weight)) {
         char msg_buf[128];
         snprintf(msg_buf, sizeof(msg_buf), "Caught: %s!\nInventory: %u/%u",
                  caught.name, inventory->get_item_count(),
                  Inventory::MAX_ITEMS);
-        dialog.show_message(app, "Fishing", msg_buf);
+        dialog.show_message("Fishing", msg_buf);
       } else {
         // Inventory full
-        dialog.show_message(app, "Fishing",
-                            "Inventory full!\nCannot store fish.");
+        dialog.show_message("Fishing", "Inventory full!\nCannot store fish.");
       }
     } else {
       // No inventory set, just show caught message
-      dialog.show_message(app, "Fishing", caught.name);
+      dialog.show_message("Fishing", caught.name);
     }
   }
 

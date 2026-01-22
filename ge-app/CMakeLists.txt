@@ -27,6 +27,9 @@ target_sources(
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ge-app/font.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ge-app/game/water.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ge-app/assets/bgm.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ge-app/scenes/management_menu_scene.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ge-app/scenes/status_scene.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ge-app/scenes/inventory_scene.cpp
 )
 
 target_include_directories(ge-app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

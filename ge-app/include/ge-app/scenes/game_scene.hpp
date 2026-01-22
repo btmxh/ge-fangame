@@ -5,6 +5,7 @@
 #include "ge-app/game/clock.hpp"
 #include "ge-app/game/compass.hpp"
 #include "ge-app/game/dock.hpp"
+#include "ge-app/game/fishing.hpp"
 #include "ge-app/game/sky.hpp"
 #include "ge-app/game/water.hpp"
 #include "ge-app/gfx/color.hpp"
@@ -105,11 +106,16 @@ public:
       world_dt = (current_frame_world_time - last_frame_world_time) * 1e-3f;
     }
     last_frame_world_time = current_frame_world_time;
+    
+    auto joystick = app.get_joystick_state();
+    
     if (mode_indicator.get_current_mode() == GameMode::Steering) {
-      auto joystick = app.get_joystick_state();
       boat.update_angle(joystick.x, joystick.y, world_dt);
+      boat.update_position(app, world_dt);
+    } else if (mode_indicator.get_current_mode() == GameMode::Fishing) {
+      // Update fishing system
+      fishing.update(app, world_dt, joystick);
     }
-    boat.update_position(app, world_dt);
   }
 
   void render(Surface &fb_region) override {
@@ -132,6 +138,13 @@ public:
           (water_region.get_width() - max_side) / 2,
           (water_region.get_height() - max_side) / 2, max_side, max_side);
       boat.render(boat_region);
+    }
+    // Render fishing line and bobber if in fishing mode
+    if (mode_indicator.get_current_mode() == GameMode::Fishing && fishing.is_active()) {
+      // Calculate boat center position in water region
+      i32 boat_center_x = 0; // Center of water region (relative coordinates)
+      i32 boat_center_y = 0;
+      fishing.render(water_region, boat_center_x, boat_center_y);
     }
     {
       auto compass_region =
@@ -168,6 +181,12 @@ public:
       mode_indicator.switch_mode();
       clock.set_multiplier(app, mode_indicator.get_current_mode());
     } else if (btn == Button::Button1) {
+      // Handle fishing button press
+      if (mode_indicator.get_current_mode() == GameMode::Fishing) {
+        fishing.on_button_clicked(app, btn);
+      }
+      
+      // Handle dialog
       if (current_msg < sizeof(msg) / sizeof(msg[0])) {
         if (dialog_box.message_complete(app, msg[current_msg])) {
           // advance to next message
@@ -203,6 +222,7 @@ private:
   Timer main_timer;
   Sky sky;
   Water water;
+  Fishing fishing;
 
   DialogBox dialog_box;
   DialogMessage msg[3] = {

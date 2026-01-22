@@ -49,13 +49,14 @@ def main(inp_img: str, out_c: str, out_h: str, sym: str, mode: str):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) not in (5, 6):
+    if len(sys.argv) < 5:
         print(
-            "usage: bin2c_image.py <input.png> <output.c> <output.h> <symbol> [rgb565|argb1555]"
+            "usage: bin2c_image.py <input.png> <output.c> <output.h> <symbol> [mode] [additional_args...]"
         )
         sys.exit(1)
 
     inp_img, out_c, out_h, sym = sys.argv[1:5]
-    mode = sys.argv[5] if len(sys.argv) == 6 else "rgb565"
+    mode = sys.argv[5] if len(sys.argv) >= 6 else "rgb565"
+    # Additional args beyond mode are ignored for now but accepted for consistency
 
     main(inp_img, out_c, out_h, sym, mode)

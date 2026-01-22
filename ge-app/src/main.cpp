@@ -65,6 +65,12 @@ private:
     void on_menu_action(MenuAction action) override {
       if (action == MenuAction::StartGame) {
         main_app.switch_to_game();
+      } else if (action == MenuAction::Options) {
+        // Placeholder for options menu
+        main_app.log("Options selected (not implemented yet)");
+      } else if (action == MenuAction::Credits) {
+        // Placeholder for credits screen
+        main_app.log("Credits selected (not implemented yet)");
       } else if (action == MenuAction::ExitGame) {
         main_app.request_quit();
       }

@@ -19,8 +19,8 @@ The game now starts with a main menu instead of jumping directly into gameplay. 
 
 2. **MenuScene** (`ge-app/include/ge-app/scenes/menu_scene.hpp`)
    - Main menu scene with title, subtitle, and menu options
-   - Currently provides "Start Game" and "Exit" options
-   - Can be extended with additional menu items
+   - Provides "Start Game", "Options", "Credits", and "Exit" options
+   - Demonstrates menu navigation with multiple items
 
 3. **Scene Management** (`ge-app/src/main.cpp`)
    - MainApp now supports switching between different scenes
@@ -69,7 +69,9 @@ public:
     // Initialize menu items in a static array (no dynamic allocation)
     menu_items[0] = {"Option 1", 1, 0};
     menu_items[1] = {"Option 2", 2, 0};
-    menu.set_items(menu_items, 2);
+    menu_items[2] = {"Option 3", 3, 0};
+    menu_items[3] = {"Option 4", 4, 0};
+    menu.set_items(menu_items, 4);
   }
 
   void tick(float dt) override {
@@ -90,7 +92,7 @@ public:
 
 private:
   ui::Menu menu;
-  ui::MenuItem menu_items[2];
+  ui::MenuItem menu_items[4];
 };
 ```
 

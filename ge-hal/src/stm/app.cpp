@@ -17,13 +17,14 @@ ge::hal::stm::UARTHandle stdout_usart = nullptr;
 
 namespace ge {
 
+namespace {
 // Button GPIO pins (to be configured based on actual hardware)
-static constexpr hal::stm::Pin BUTTON1_PIN{'A', 0};
-static constexpr hal::stm::Pin BUTTON2_PIN{'A', 1};
-static constexpr int NUM_BUTTONS = 2;
+constexpr hal::stm::Pin BUTTON1_PIN{'A', 0};
+constexpr hal::stm::Pin BUTTON2_PIN{'A', 1};
+constexpr int NUM_BUTTONS = 2;
 
 // Button state tracking for event detection
-static constexpr i64 BUTTON_HOLD_THRESHOLD_MS = 1000;
+constexpr i64 BUTTON_HOLD_THRESHOLD_MS = 1000;
 struct ButtonState {
   bool last_state = false; // false = not pressed, true = pressed
   i64 last_down = -1;
@@ -31,7 +32,8 @@ struct ButtonState {
   bool handled_hold = false;
 } button_states[NUM_BUTTONS];
 
-static constexpr hal::stm::Pin button_pins[NUM_BUTTONS] = {BUTTON1_PIN, BUTTON2_PIN};
+constexpr hal::stm::Pin button_pins[NUM_BUTTONS] = {BUTTON1_PIN, BUTTON2_PIN};
+} // anonymous namespace
 
 static void enable_fpu() {
   SCB->CPACR |=
@@ -56,10 +58,10 @@ App::App() {
   hal::stm::init_dma2d();
 
   // Initialize button GPIO pins as inputs with pull-up resistors
-  BUTTON1_PIN.set_mode(hal::stm::GPIOMode::Input);
-  BUTTON1_PIN.set_pupd(hal::stm::GPIOPuPd::PullUp);
-  BUTTON2_PIN.set_mode(hal::stm::GPIOMode::Input);
-  BUTTON2_PIN.set_pupd(hal::stm::GPIOPuPd::PullUp);
+  for (const auto& pin : button_pins) {
+    pin.set_mode(hal::stm::GPIOMode::Input);
+    pin.set_pupd(hal::stm::GPIOPuPd::PullUp);
+  }
 }
 
 App::~App() = default;

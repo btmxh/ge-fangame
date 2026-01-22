@@ -9,12 +9,13 @@
 namespace ge {
 
 enum class FishingState {
-  Idle,       // Not fishing
-  Casting,    // Joystick flick animation - line extending
-  Fishing,    // Line in water, waiting for fish
-  FishBiting, // Fish is biting, wiggle intensifies
-  Caught,     // Fish caught, ready to reel in
-  Reeling     // Reeling in the catch - bobber returning to boat
+  Idle,           // Not fishing
+  Casting,        // Joystick flick animation - line extending
+  Fishing,        // Line in water, waiting for fish
+  FishBiting,     // Fish is biting, wiggle intensifies
+  Caught,         // Fish caught, ready to reel in
+  BaitLost,       // Fish got away after eating all the bait
+  Reeling         // Reeling in - bobber returning to boat
 };
 
 class Fishing {
@@ -37,6 +38,9 @@ public:
       break;
     case FishingState::Caught:
       // Stay in this state until player presses button
+      break;
+    case FishingState::BaitLost:
+      // Stay in this state until player presses button to reel in
       break;
     case FishingState::Reeling:
       update_reeling(app, dt);
@@ -97,6 +101,12 @@ public:
         state = FishingState::Reeling;
         reeling_timer = 0.0f;
         caught_fish = true; // Mark that we caught a fish
+      } else if (state == FishingState::BaitLost) {
+        // Reel in after losing bait
+        app.log("Reeling in empty line...");
+        state = FishingState::Reeling;
+        reeling_timer = 0.0f;
+        caught_fish = false; // No fish caught
       } else if (state == FishingState::Fishing || state == FishingState::FishBiting) {
         // Allow early retraction - player won't get anything
         app.log("Reeling in early...");
@@ -204,7 +214,7 @@ private:
     // Player has limited time to catch
     if (fish_bite_timer > BITE_WINDOW) {
       app.log("The fish ate all the bait and got away!");
-      reset();
+      state = FishingState::BaitLost;
     } else if (fish_bite_timer > CATCH_REACTION_TIME) {
       // Allow catching after a small delay (reaction time needed)
       state = FishingState::Caught;

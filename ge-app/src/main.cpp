@@ -1,5 +1,7 @@
+#include "ge-app/scenes/credits_scene.hpp"
 #include "ge-app/scenes/game_scene.hpp"
 #include "ge-app/scenes/menu_scene.hpp"
+#include "ge-app/scenes/settings_scene.hpp"
 #include "ge-hal/app.hpp"
 #include "ge-hal/surface.hpp"
 
@@ -7,11 +9,13 @@
 
 namespace ge {
 
-enum class SceneType { Menu, Game };
+enum class SceneType { Menu, Game, Settings, Credits };
 
 class MainApp : public ge::App {
 public:
-  MainApp() : ge::App(), menu_scene_impl(*this), game_scene{*this} {
+  MainApp()
+      : ge::App(), menu_scene_impl(*this), game_scene{*this},
+        settings_scene_impl(*this), credits_scene_impl(*this) {
     switch_to_menu();
   }
 
@@ -56,6 +60,16 @@ public:
     current_scene = &game_scene;
   }
 
+  void switch_to_settings() {
+    current_scene_type = SceneType::Settings;
+    current_scene = &settings_scene_impl;
+  }
+
+  void switch_to_credits() {
+    current_scene_type = SceneType::Credits;
+    current_scene = &credits_scene_impl;
+  }
+
 private:
   class MenuSceneImpl : public MenuScene {
   public:
@@ -65,11 +79,9 @@ private:
       if (action == MenuAction::StartGame) {
         main_app.switch_to_game();
       } else if (action == MenuAction::Options) {
-        // Placeholder for options menu
-        main_app.log("Options selected (not implemented yet)");
+        main_app.switch_to_settings();
       } else if (action == MenuAction::Credits) {
-        // Placeholder for credits screen
-        main_app.log("Credits selected (not implemented yet)");
+        main_app.switch_to_credits();
       } else if (action == MenuAction::ExitGame) {
         main_app.request_quit();
       }
@@ -79,10 +91,32 @@ private:
     MainApp &main_app;
   };
 
+  class SettingsSceneImpl : public SettingsScene {
+  public:
+    SettingsSceneImpl(MainApp &app) : SettingsScene(app), main_app(app) {}
+
+    void on_back_action() override { main_app.switch_to_menu(); }
+
+  private:
+    MainApp &main_app;
+  };
+
+  class CreditsSceneImpl : public CreditsScene {
+  public:
+    CreditsSceneImpl(MainApp &app) : CreditsScene(app), main_app(app) {}
+
+    void on_back_action() override { main_app.switch_to_menu(); }
+
+  private:
+    MainApp &main_app;
+  };
+
   SceneType current_scene_type = SceneType::Menu;
   Scene *current_scene = nullptr;
   MenuSceneImpl menu_scene_impl;
   GameScene game_scene;
+  SettingsSceneImpl settings_scene_impl;
+  CreditsSceneImpl credits_scene_impl;
 };
 } // namespace ge
 

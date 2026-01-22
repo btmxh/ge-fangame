@@ -23,7 +23,8 @@ class Fishing {
 public:
   Fishing() : state(FishingState::Idle) {}
 
-  void update(App &app, float dt, const JoystickState &joystick) {
+  void update(App &app, DialogBox &dialog_box, float dt,
+              const JoystickState &joystick) {
     switch (state) {
     case FishingState::Idle:
       update_idle(joystick, dt);
@@ -44,7 +45,7 @@ public:
       // Stay in this state until player presses button to reel in
       break;
     case FishingState::Reeling:
-      update_reeling(app, dt);
+      update_reeling(app, dialog_box, dt);
       break;
     }
 
@@ -96,7 +97,7 @@ public:
     draw_bobber(region, bobber_x, bobber_y);
   }
 
-  void on_button_clicked(App &app, Button btn) {
+  void on_button_clicked(App &app, DialogBox &dialog, Button btn) {
     if (btn == Button::Button1) {
       if (state == FishingState::Caught) {
         // Start reeling in the fish!
@@ -105,14 +106,12 @@ public:
         caught_fish = true; // Mark that we caught a fish
       } else if (state == FishingState::BaitLost) {
         // Reel in after losing bait
-        fishing_dialog.show_message("Fishing", "Reeling in empty line...", app.now());
         state = FishingState::Reeling;
         reeling_timer = 0.0f;
         caught_fish = false; // No fish caught
       } else if (state == FishingState::Fishing ||
                  state == FishingState::FishBiting) {
         // Allow early retraction - player won't get anything
-        fishing_dialog.show_message("Fishing", "Reeling in early...", app.now());
         state = FishingState::Reeling;
         reeling_timer = 0.0f;
         caught_fish = false; // No fish caught
@@ -123,10 +122,6 @@ public:
   bool is_active() const { return state != FishingState::Idle; }
 
   FishingState get_state() const { return state; }
-
-  // Get the fishing dialog box for rendering
-  DialogBox& get_dialog_box() { return fishing_dialog; }
-  const DialogBox& get_dialog_box() const { return fishing_dialog; }
 
 private:
   // Constants
@@ -206,13 +201,11 @@ private:
         fish_bite_timer = 0.0f;
         wiggle_amplitude = 5.0f; // Increased wiggle
         wiggle_freq = 8.0f;      // Faster wiggle
-        fishing_dialog.show_message("Fishing", "Fish is biting! Press A to catch it!", app.now());
       }
     }
 
     // If fishing too long without bite, reset
     if (fishing_timer > MAX_FISHING_TIME) {
-      fishing_dialog.show_message("Fishing", "The fish got away. Recast your line!", app.now());
       reset();
     }
   }
@@ -220,7 +213,7 @@ private:
   void update_fish_biting(App &app, float dt) {
     fish_bite_timer += dt;
 
-      if (fish_bite_timer > CATCH_REACTION_TIME) {
+    if (fish_bite_timer > CATCH_REACTION_TIME) {
       // Allow catching after a small delay (reaction time needed)
       state = FishingState::Caught;
       fish_caught_timer = 0.0f;
@@ -238,23 +231,23 @@ private:
     }
   }
 
-  void update_reeling(App &app, float dt) {
+  void update_reeling(App &app, DialogBox &dialog, float dt) {
     reeling_timer += dt;
 
     if (reeling_timer >= REEL_DURATION) {
       // Animation complete
       if (caught_fish) {
         // Player caught a fish!
-        catch_fish(app);
+        catch_fish(app, dialog);
       } else {
         // Early retraction or bait lost - no fish
-        fishing_dialog.show_message("Fishing", "Nothing caught.", app.now());
+        dialog.show_message(app, "Fishing", "Nothing caught.");
       }
       reset();
     }
   }
 
-  void catch_fish(App &app) {
+  void catch_fish(App &app, DialogBox &dialog) {
     // Random fish names
     const char *fish_names[] = {
         "Tropical Fish", "Golden Fish (RARE!)", "Sea Bass",
@@ -264,10 +257,10 @@ private:
 
     constexpr int num_fish = sizeof(fish_names) / sizeof(fish_names[0]);
     int caught_index = rand() % num_fish;
-    
+
     // Store the caught fish message
     caught_fish_name = fish_names[caught_index];
-    fishing_dialog.show_message("Fishing", caught_fish_name, app.now());
+    dialog.show_message(app, "Fishing", caught_fish_name);
   }
 
   void reset() {
@@ -359,9 +352,6 @@ private:
   // Catch tracking
   bool caught_fish = false;
   const char *caught_fish_name = nullptr;
-  
-  // Dialog box for fishing messages
-  DialogBox fishing_dialog;
 };
 
 } // namespace ge

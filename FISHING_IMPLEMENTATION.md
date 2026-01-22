@@ -118,7 +118,7 @@ The game now includes a fishing mode that allows players to cast a fishing line,
 
 - **Joystick**: Flick to cast fishing line
 - **Button 2**: Switch between game modes (Steering/Fishing/Management)
-- **Button 1**: 
+- **Button 1**:
   - **When dialog has focus**: Dismiss dialog (or fast-forward if typing)
   - Catch fish when in Caught state (triggers reeling animation with fish)
   - Reel in empty line when in BaitLost state (triggers reeling animation, no catch)
@@ -218,7 +218,7 @@ float_offset = sin(wiggle_time * 2.0) * 2.0
   - Updated `tick()` to handle fishing mode
   - Updated `render()` to draw fishing elements and dialogs
   - Updated `on_button_clicked()` to handle fishing actions and dialog input focus
-  
+
 - `ge-app/include/ge-app/gfx/dialog_box.hpp`: Enhanced DialogBox API
   - Added input focus system
   - Added `show_message()`, `has_input_focus()`, `dismiss()` methods
@@ -237,18 +237,18 @@ float_offset = sin(wiggle_time * 2.0) * 2.0
 1. **Switch to Fishing Mode**: Press Button 2 to cycle to Fishing mode
 2. **Cast Line**: Flick the joystick in the desired direction
    - Watch the animated line extend to the target position with smooth easing (0.25s)
-3. **Wait or Retract Early**: 
+3. **Wait or Retract Early**:
    - Watch the bobber float and wiggle while waiting for a fish
    - Press Button A anytime to retract early (shows dialog: "Reeling in early...")
-4. **React to Fish Bite**: 
+4. **React to Fish Bite**:
    - When fish bites, dialog appears: "Fish is biting! Press A to catch it!"
    - Press Button A to dismiss dialog, then press again to catch
    - Must catch within 3.5 seconds or fish escapes
-5. **Bait Lost**: 
+5. **Bait Lost**:
    - If timeout, dialog shows: "The fish ate all the bait and got away!"
    - Press Button A to dismiss, then press again to reel in empty line
 6. **Reel In**: Watch the bobber animate back to the boat (0.8s)
-7. **Result Dialog**: 
+7. **Result Dialog**:
    - Success: Fish name displayed (e.g., "Golden Fish (RARE!)")
    - No catch: "Nothing caught."
    - Press Button A to dismiss and continue fishing

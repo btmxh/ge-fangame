@@ -112,11 +112,15 @@ public:
     auto joystick = app.get_joystick_state();
 
     if (mode_indicator.get_current_mode() == GameMode::Steering) {
-      boat.update_angle(joystick.x, joystick.y, world_dt);
+      if (!dialog_box.has_input_focus()) {
+        boat.update_angle(joystick.x, joystick.y, world_dt);
+      }
       boat.update_position(app, world_dt);
     } else if (mode_indicator.get_current_mode() == GameMode::Fishing) {
       // Update fishing system
-      fishing.update(app, dialog_box, world_dt, joystick);
+      if (!dialog_box.has_input_focus()) {
+        fishing.update(app, dialog_box, world_dt, joystick);
+      }
       // Keep boat drifting slowly in fishing mode
       boat.update_position(app, world_dt);
     }
@@ -183,11 +187,17 @@ public:
     // app.log("Frame time: %ld ms", frame_time);
   }
   void on_button_clicked(Button btn) override {
-    if (btn == Button::Button2) {
-      mode_indicator.switch_mode();
-      clock.set_multiplier(app, mode_indicator.get_current_mode());
-    } else if (btn == Button::Button1) {
-      if (dialog_box.has_input_focus()) {
+    if (dialog_box.has_input_focus()) {
+      if (btn == Button::Button2) {
+        dialog_box.dismiss();
+        // tutorial messages
+        if (++current_msg < sizeof(msg) / sizeof(msg[0])) {
+          dialog_box.show_message(app, msg[current_msg].title,
+                                  msg[current_msg].desc);
+        } else {
+          current_msg = sizeof(msg) / sizeof(msg[0]); // No more messages
+        }
+      } else if (btn == Button::Button1) {
         if (dialog_box.message_complete(app)) {
           dialog_box.dismiss();
           // tutorial messages
@@ -203,10 +213,14 @@ public:
 
         return;
       }
+    }
 
+    if (btn == Button::Button2) {
+      mode_indicator.switch_mode();
+      clock.set_multiplier(app, mode_indicator.get_current_mode());
+    } else if (btn == Button::Button1) {
       // Handle fishing dialog dismissal first (input focus)
       if (mode_indicator.get_current_mode() == GameMode::Fishing) {
-        app.log("Fishing button pressed");
         // No dialog focus, handle fishing actions
         fishing.on_button_clicked(app, dialog_box, btn);
       }
@@ -214,6 +228,10 @@ public:
   }
 
   void on_button_held(Button btn) override {
+    if (dialog_box.has_input_focus()) {
+      return; // Ignore held buttons when dialog has focus
+    }
+
     if (btn == Button::Button2) {
       clock.begin_sped_up();
       clock.set_multiplier(app, mode_indicator.get_current_mode());
@@ -221,6 +239,10 @@ public:
   }
 
   void on_button_finished_hold(Button btn) override {
+    if (dialog_box.has_input_focus()) {
+      return; // Ignore held buttons when dialog has focus
+    }
+
     if (btn == Button::Button2) {
       clock.end_sped_up();
       clock.set_multiplier(app, mode_indicator.get_current_mode());

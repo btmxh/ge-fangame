@@ -64,9 +64,5 @@ public:
 
   bool begin_render(Surface &out_surface);
   void end_render();
-
-  bool button_clicked(Button btn);
-  bool button_held(Button btn);
-  bool button_finished_hold(Button btn);
 };
 }; // namespace ge

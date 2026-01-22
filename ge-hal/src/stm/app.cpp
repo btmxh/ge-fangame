@@ -7,6 +7,7 @@
 
 #include "ge-hal/stm/dma2d.hpp"
 #include "ge-hal/stm/framebuffer.hpp"
+#include "ge-hal/stm/gpio.hpp"
 #include "ge-hal/stm/sdram.hpp"
 #include "ge-hal/stm/time.hpp"
 #include "stm32f429xx.h"
@@ -15,6 +16,19 @@
 ge::hal::stm::UARTHandle stdout_usart = nullptr;
 
 namespace ge {
+
+// Button GPIO pins (to be configured based on actual hardware)
+static constexpr hal::stm::Pin BUTTON1_PIN{'A', 0};
+static constexpr hal::stm::Pin BUTTON2_PIN{'A', 1};
+
+// Button state tracking for event detection
+static constexpr i64 BUTTON_HOLD_THRESHOLD_MS = 1000;
+struct ButtonState {
+  bool last_state = false; // false = not pressed, true = pressed
+  i64 last_down = -1;
+  i64 last_up = -1;
+  bool handled_hold = false;
+} button_states[2];
 
 static void enable_fpu() {
   SCB->CPACR |=
@@ -37,6 +51,12 @@ App::App() {
   hal::stm::init_sdram();
   hal::stm::init_ltdc();
   hal::stm::init_dma2d();
+
+  // Initialize button GPIO pins as inputs with pull-up resistors
+  BUTTON1_PIN.set_mode(hal::stm::GPIOMode::Input);
+  BUTTON1_PIN.set_pupd(hal::stm::GPIOPuPd::PullUp);
+  BUTTON2_PIN.set_mode(hal::stm::GPIOMode::Input);
+  BUTTON2_PIN.set_pupd(hal::stm::GPIOPuPd::PullUp);
 }
 
 App::~App() = default;
@@ -77,6 +97,49 @@ void App::wait_for_event() {
   // For now, this is a no-op
 }
 
+void App::tick(float dt) {
+  // Read button states and trigger callbacks
+  static const hal::stm::Pin* button_pins[] = {&BUTTON1_PIN, &BUTTON2_PIN};
+  
+  for (int i = 0; i < 2; ++i) {
+    // Buttons are active-low (pull-up resistors, pressed = LOW)
+    bool pressed = !button_pins[i]->read();
+    auto &bs = button_states[i];
+    
+    // Detect button down event
+    if (pressed && !bs.last_state) {
+      bs.last_down = now();
+      bs.last_up = -1;
+      bs.handled_hold = false;
+    }
+    
+    // Detect button up event
+    if (!pressed && bs.last_state) {
+      bs.last_up = now();
+      if (bs.last_down >= 0) {
+        i64 held_time = bs.last_up - bs.last_down;
+        if (held_time < BUTTON_HOLD_THRESHOLD_MS) {
+          on_button_clicked(static_cast<Button>(i));
+        } else {
+          on_button_finished_hold(static_cast<Button>(i));
+        }
+      }
+      bs.handled_hold = false;
+    }
+    
+    // Check for hold event
+    if (pressed && bs.last_down >= 0 && !bs.handled_hold) {
+      i64 held_time = now() - bs.last_down;
+      if (held_time >= BUTTON_HOLD_THRESHOLD_MS) {
+        on_button_held(static_cast<Button>(i));
+        bs.handled_hold = true;
+      }
+    }
+    
+    bs.last_state = pressed;
+  }
+}
+
 void App::loop() {
   i64 last_tick = now();
   while (*this) {
@@ -111,23 +174,5 @@ void App::audio_sfx_play(const std::uint8_t *data, std::size_t len,
 void App::audio_sfx_stop_all() {}
 
 void App::audio_set_master_volume(std::uint8_t vol) { (void)vol; }
-
-bool App::button_clicked(Button btn) {
-  (void)btn;
-  // TODO: implement button reading from GPIO
-  return false;
-}
-
-bool App::button_held(Button btn) {
-  (void)btn;
-  // TODO: implement button reading from GPIO
-  return false;
-}
-
-bool App::button_finished_hold(Button btn) {
-  (void)btn;
-  // TODO: implement button reading from GPIO
-  return false;
-}
 
 } // namespace ge

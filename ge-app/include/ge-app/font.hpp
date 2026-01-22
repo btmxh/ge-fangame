@@ -35,7 +35,6 @@ public:
 
   u32 line_height() const;
   u32 default_advance() const;
-  u32 get_glyph_width(char c) const;
 
   template <class ColorCallback>
   void render(const char *text, u32 max_len, Surface region, int x0, int y0,

@@ -67,7 +67,13 @@ private:
   static u32 calculate_text_width(const char *text, const Font &font) {
     u32 width = 0;
     while (*text) {
-      width += font.get_glyph_width(*text);
+      u8 const *glyph_data;
+      u8 glyph_w, glyph_h, advance;
+      if (font.get_glyph(*text, glyph_data, glyph_w, glyph_h, advance)) {
+        width += advance;
+      } else {
+        width += font.default_advance();
+      }
       text++;
     }
     return width;

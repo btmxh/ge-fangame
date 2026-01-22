@@ -37,7 +37,13 @@ public:
       if (item.text_width == 0) {
         const char *c = item.label;
         while (*c) {
-          item.text_width += font.get_glyph_width(*c);
+          u8 const *glyph_data;
+          u8 glyph_w, glyph_h, advance;
+          if (font.get_glyph(*c, glyph_data, glyph_w, glyph_h, advance)) {
+            item.text_width += advance;
+          } else {
+            item.text_width += font.default_advance();
+          }
           c++;
         }
       }

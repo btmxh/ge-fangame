@@ -58,10 +58,4 @@ u32 Font::default_advance() const {
   return glyph_advances[' ' - first_char];
 }
 
-u32 Font::get_glyph_width(char c) const {
-  if (c < first_char || c > last_char)
-    return default_advance();
-  return glyph_advances[c - first_char];
-}
-
 } // namespace ge

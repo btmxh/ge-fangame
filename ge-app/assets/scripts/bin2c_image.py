@@ -4,6 +4,7 @@ import sys
 from PIL import Image
 import numpy as np
 import bin2c
+import argparse
 
 
 def rgb888_to_rgb565(r, g, b):
@@ -14,8 +15,9 @@ def argb888_to_argb1555(r, g, b, a):
     return ((1 if a else 0) << 15) | ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3)
 
 
-def main(inp_img: str, out_c: str, out_h: str, sym: str, mode: str):
-    img = Image.open(inp_img).convert("RGBA")
+def convert_image_to_data(img: Image.Image, mode: str):
+    """Convert a PIL Image to pixel data in the specified format."""
+    img = img.convert("RGBA")
     w, h = img.size
     px = img.load()
 
@@ -32,31 +34,213 @@ def main(inp_img: str, out_c: str, out_h: str, sym: str, mode: str):
             else:
                 raise ValueError(f"unknown mode: {mode}")
 
-    data_u16 = np.array(data_u16, dtype=np.uint16)
+    return np.array(data_u16, dtype=np.uint16), w, h
+
+
+def generate_rotated_spritesheet(img: Image.Image, rotation_count: int, mode: str):
+    """Generate a spritesheet with rotated versions of the image."""
+    frames = []
+    angle_step = 360.0 / rotation_count
+    
+    for i in range(rotation_count):
+        angle = i * angle_step
+        # Use BICUBIC for better quality rotation
+        rotated = img.rotate(-angle, resample=Image.BICUBIC, expand=False)
+        frames.append(rotated)
+    
+    # Create horizontal spritesheet
+    frame_w, frame_h = frames[0].size
+    sheet_w = frame_w * len(frames)
+    sheet_h = frame_h
+    
+    spritesheet = Image.new("RGBA", (sheet_w, sheet_h), (0, 0, 0, 0))
+    
+    for i, frame in enumerate(frames):
+        spritesheet.paste(frame, (i * frame_w, 0))
+    
+    data, w, h = convert_image_to_data(spritesheet, mode)
+    
+    return data, w, h, frame_w, frame_h, rotation_count
+
+
+def process_animated_image(img_path: str, mode: str):
+    """Process animated images (APNG, WEBP, GIF) and extract frames."""
+    img = Image.open(img_path)
+    
+    frames = []
+    frame_durations = []
+    
+    try:
+        # Try to get frame count
+        frame_count = getattr(img, 'n_frames', 1)
+        
+        for i in range(frame_count):
+            img.seek(i)
+            frame = img.convert("RGBA").copy()
+            frames.append(frame)
+            
+            # Get frame duration in milliseconds (if available)
+            duration = img.info.get('duration', 100)  # Default to 100ms
+            frame_durations.append(duration)
+    except (EOFError, AttributeError):
+        # Single frame or error reading frames
+        frames = [img.convert("RGBA")]
+        frame_durations = [100]
+    
+    if len(frames) == 1:
+        # Not actually animated, process as single image
+        data, w, h = convert_image_to_data(frames[0], mode)
+        return data, w, h, None, None, None
+    
+    # Create horizontal spritesheet from frames
+    frame_w, frame_h = frames[0].size
+    sheet_w = frame_w * len(frames)
+    sheet_h = frame_h
+    
+    spritesheet = Image.new("RGBA", (sheet_w, sheet_h), (0, 0, 0, 0))
+    
+    for i, frame in enumerate(frames):
+        spritesheet.paste(frame, (i * frame_w, 0))
+    
+    data, w, h = convert_image_to_data(spritesheet, mode)
+    
+    return data, w, h, frame_w, frame_h, len(frames), frame_durations
+
+
+def main(inp_img: str, out_c: str, out_h: str, sym: str, mode: str, 
+         rotation_count: int = 0, animated: bool = False):
+    """
+    Main processing function.
+    
+    Args:
+        inp_img: Input image path
+        out_c: Output C file path
+        out_h: Output H file path
+        sym: Symbol name
+        mode: Color mode (rgb565 or argb1555)
+        rotation_count: Number of rotations to generate (0 = no rotation)
+        animated: Whether to process as animated image
+    """
+    header_additional = ""
+    
+    if rotation_count > 0:
+        # Generate rotated spritesheet
+        img = Image.open(inp_img).convert("RGBA")
+        data, w, h, frame_w, frame_h, frame_count = generate_rotated_spritesheet(
+            img, rotation_count, mode
+        )
+        
+        header_additional = f"""
+#define {sym}_WIDTH {w}
+#define {sym}_HEIGHT {h}
+#define {sym}_FRAME_WIDTH {frame_w}
+#define {sym}_FRAME_HEIGHT {frame_h}
+#define {sym}_FRAME_COUNT {frame_count}
+#define {sym}_ROTATION_COUNT {frame_count}
+        """
+    elif animated:
+        # Process animated image
+        result = process_animated_image(inp_img, mode)
+        data, w, h, frame_w, frame_h, frame_count, frame_durations = result if len(result) == 7 else (*result, None)
+        
+        if frame_count is None:
+            # Single frame, treat as static image
+            header_additional = f"""
+#define {sym}_WIDTH {w}
+#define {sym}_HEIGHT {h}
+            """
+        else:
+            # Multi-frame animation
+            durations_c = ",".join(str(d) for d in frame_durations)
+            header_additional = f"""
+#define {sym}_WIDTH {w}
+#define {sym}_HEIGHT {h}
+#define {sym}_FRAME_WIDTH {frame_w}
+#define {sym}_FRAME_HEIGHT {frame_h}
+#define {sym}_FRAME_COUNT {frame_count}
+
+static const unsigned short {sym}_FRAME_DURATIONS[] = {{{durations_c}}};
+            """
+    else:
+        # Simple static image
+        img = Image.open(inp_img)
+        data, w, h = convert_image_to_data(img, mode)
+        
+        header_additional = f"""
+#define {sym}_WIDTH {w}
+#define {sym}_HEIGHT {h}
+        """
 
     # Emit C/H via shared helper
     bin2c.main(
-        data_u16,
+        data,
         out_c,
         out_h,
         sym,
-        header_additional=f"""
-#define {sym}_WIDTH {w}
-#define {sym}_HEIGHT {h}
-        """,
+        header_additional=header_additional,
         dtype="uint16_t",
     )
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 5:
-        print(
-            "usage: bin2c_image.py <input.png> <output.c> <output.h> <symbol> [mode] [additional_args...]"
-        )
-        sys.exit(1)
-
-    inp_img, out_c, out_h, sym = sys.argv[1:5]
-    mode = sys.argv[5] if len(sys.argv) >= 6 else "rgb565"
-    # Additional args beyond mode are ignored for now but accepted for consistency
-
-    main(inp_img, out_c, out_h, sym, mode)
+    # Support both old-style positional args and new optional features
+    parser = argparse.ArgumentParser(
+        description='Convert images to C/H files with optional rotation and animation support',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Basic usage (backwards compatible)
+  bin2c_image.py input.png output.c output.h symbol rgb565
+  
+  # With rotation (generates 16 rotated frames)
+  bin2c_image.py input.png output.c output.h symbol rgb565 --rotate 16
+  
+  # Animated image (APNG, WEBP, GIF)
+  bin2c_image.py animation.png output.c output.h symbol argb1555 --animated
+        """
+    )
+    
+    parser.add_argument('input', help='Input image file')
+    parser.add_argument('output_c', help='Output C file')
+    parser.add_argument('output_h', help='Output H file')
+    parser.add_argument('symbol', help='Symbol name')
+    parser.add_argument('mode', nargs='?', default='rgb565', 
+                        choices=['rgb565', 'argb1555'],
+                        help='Color mode (default: rgb565)')
+    parser.add_argument('--rotate', type=int, metavar='N',
+                        help='Generate N rotated frames as a spritesheet')
+    parser.add_argument('--animated', action='store_true',
+                        help='Process as animated image (APNG/WEBP/GIF)')
+    parser.add_argument('extra_args', nargs='*', 
+                        help='Additional arguments (for compatibility)')
+    
+    # Check if we're being called with old-style arguments (for backwards compatibility)
+    if len(sys.argv) >= 5 and not any(arg.startswith('--') for arg in sys.argv[1:]):
+        # Old-style: bin2c_image.py input.png output.c output.h symbol [mode] [...]
+        inp_img = sys.argv[1]
+        out_c = sys.argv[2]
+        out_h = sys.argv[3]
+        sym = sys.argv[4]
+        mode = sys.argv[5] if len(sys.argv) >= 6 else "rgb565"
+        rotation_count = 0
+        animated = False
+        
+        # Check for special flags in additional args
+        remaining_args = sys.argv[6:] if len(sys.argv) > 6 else []
+        for i, arg in enumerate(remaining_args):
+            if arg == '--rotate' and i + 1 < len(remaining_args):
+                rotation_count = int(remaining_args[i + 1])
+            elif arg == '--animated':
+                animated = True
+    else:
+        # New-style: use argparse
+        args = parser.parse_args()
+        inp_img = args.input
+        out_c = args.output_c
+        out_h = args.output_h
+        sym = args.symbol
+        mode = args.mode
+        rotation_count = args.rotate or 0
+        animated = args.animated
+    
+    main(inp_img, out_c, out_h, sym, mode, rotation_count, animated)

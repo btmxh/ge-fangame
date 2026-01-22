@@ -114,6 +114,40 @@ function(bitmap_font SYMBOL_NAME FONT_FILE FONT_SIZE)
     bin2c_generic(bin2c_bitmap_font.py ${SYMBOL_NAME} ${FONT_FILE} OUTPUT_BASE "${_dir}/${_name}_${FONT_SIZE}px" ARGS ${FONT_SIZE} ${BITMAP_FONT_ARGS})
 endfunction()
 
+function(raw_image_rotated SYMBOL_NAME IMAGE_FILE ROTATION_COUNT)
+    cmake_parse_arguments(
+        RAW_IMAGE_ROT # prefix
+        "" # no boolean options
+        "MODE" # single-value keywords
+        "ARGS" # multi-value keywords
+        ${ARGN}
+    )
+    
+    # Default mode is argb1555 for rotated images
+    if(NOT RAW_IMAGE_ROT_MODE)
+        set(RAW_IMAGE_ROT_MODE argb1555)
+    endif()
+    
+    bin2c_generic(bin2c_image.py ${SYMBOL_NAME} ${IMAGE_FILE} ARGS ${RAW_IMAGE_ROT_MODE} --rotate ${ROTATION_COUNT} ${RAW_IMAGE_ROT_ARGS})
+endfunction()
+
+function(raw_image_animated SYMBOL_NAME IMAGE_FILE)
+    cmake_parse_arguments(
+        RAW_IMAGE_ANIM # prefix
+        "" # no boolean options
+        "MODE" # single-value keywords
+        "ARGS" # multi-value keywords
+        ${ARGN}
+    )
+    
+    # Default mode is argb1555 for animated images
+    if(NOT RAW_IMAGE_ANIM_MODE)
+        set(RAW_IMAGE_ANIM_MODE argb1555)
+    endif()
+    
+    bin2c_generic(bin2c_image.py ${SYMBOL_NAME} ${IMAGE_FILE} ARGS ${RAW_IMAGE_ANIM_MODE} --animated ${RAW_IMAGE_ANIM_ARGS})
+endfunction()
+
 raw_audio(bgm_ambient out/sounds/ambient-bgm.wav)
 raw_audio(bgm_menu out/sounds/menu-bgm.wav)
 

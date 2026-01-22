@@ -48,19 +48,19 @@ The game now includes a fishing mode that allows players to cast a fishing line,
    - Animates during casting (extends from boat to target)
    - Animates during reeling (retracts from target to boat)
 2. **Bobber**: 3x3 pixel red square with animations:
-   - Casting animation: Moves from boat to cast position (0.5s)
+   - Casting animation: Moves from boat to cast position (0.25s with ease-out cubic)
    - Floating effect: Sinusoidal up/down motion (±2 pixels)
    - Wiggle effect: Circular motion that increases when fish bites
    - Small wiggle (amplitude: 1px) during normal fishing
    - Large wiggle (amplitude: 5px) when fish is biting
-   - Reeling animation: Returns to boat when fish caught (0.8s)
+   - Reeling animation: Returns to boat (0.8s)
 
 ### Fishing Mechanics
 
 1. **Casting**:
    - Flick the joystick to cast in desired direction
    - Distance proportional to joystick magnitude
-   - 0.5 second animated casting (line extends to target)
+   - 0.25 second animated casting with smooth easing (line extends to target)
 
 2. **Waiting**:
    - Fish can bite after 2 seconds minimum
@@ -73,16 +73,19 @@ The game now includes a fishing mode that allows players to cast a fishing line,
    - Visual feedback: Increased wiggle intensity
    - If time runs out: "The fish ate all the bait and got away!"
 
-4. **Reeling**:
-   - 0.8 second animation showing bobber returning to boat
-   - Fish is caught after animation completes
+4. **Early Retraction**:
+   - Player can press Button A during Fishing or FishBiting states
+   - Triggers reeling animation immediately
+   - Shows "Reeling in early..." message
+   - Results in "Nothing caught." after animation completes
 
-5. **Player Feedback**:
-   - Pressing Button A at wrong time: "Wait for the fish to bite!"
-   - Pressing Button A when fish caught: Starts reeling animation
+5. **Reeling**:
+   - 0.8 second animation showing bobber returning to boat
+   - If fish was caught: Fish name is logged
+   - If early retraction: "Nothing caught." is logged
 
 6. **Rewards**:
-   - Random fish or loot printed to stdout
+   - Random fish or loot printed to stdout (only when caught in time)
    - Possible catches:
      - Tropical Fish
      - Golden Fish (RARE!)
@@ -100,8 +103,8 @@ The game now includes a fishing mode that allows players to cast a fishing line,
 - **Joystick**: Flick to cast fishing line
 - **Button 2**: Switch between game modes (Steering/Fishing/Management)
 - **Button 1**: 
-  - Catch fish when in Caught state (triggers reeling animation)
-  - Shows feedback message if pressed at wrong time
+  - Catch fish when in Caught state (triggers reeling animation with fish)
+  - Retract early during Fishing/FishBiting states (triggers reeling animation, no catch)
 
 ## Implementation Details
 
@@ -111,7 +114,7 @@ The game now includes a fishing mode that allows players to cast a fishing line,
 static constexpr float MIN_DELTA_TIME = 0.001f;          // Minimum time step
 static constexpr float FLICK_THRESHOLD = 3.0f;           // Velocity for flick
 static constexpr float MIN_JOYSTICK_MAG = 0.4f;          // Min joystick magnitude
-static constexpr float CAST_DURATION = 0.5f;             // Cast animation time
+static constexpr float CAST_DURATION = 0.25f;            // Cast animation time (faster)
 static constexpr float REEL_DURATION = 0.8f;             // Reel animation time
 static constexpr float BITE_CHANCE_PER_SECOND = 0.3f;    // Fish bite probability
 static constexpr float MIN_FISHING_TIME = 2.0f;          // Min wait before bite
@@ -120,12 +123,25 @@ static constexpr float BITE_WINDOW = 3.5f;               // Time to catch fish (
 static constexpr float CATCH_REACTION_TIME = 0.5f;       // Required reaction time
 ```
 
+### Easing Functions
+
+**Ease-Out Cubic** (for smooth casting animation):
+```cpp
+static float ease_out_cubic(float t) {
+  float f = t - 1.0f;
+  return f * f * f + 1.0f;
+}
+```
+
+This creates a smooth deceleration effect where the bobber starts fast and slows down as it reaches the target position.
+
 ### Animation Details
 
-**Casting Animation:**
+**Casting Animation (with easing):**
 ```cpp
 float progress = casting_timer / CAST_DURATION;
-bobber_x = cast_x * progress;  // 0.0 -> 1.0
+progress = ease_out_cubic(progress);  // Apply easing
+bobber_x = cast_x * progress;  // 0.0 -> 1.0 (smooth)
 bobber_y = cast_y * progress;
 ```
 
@@ -160,7 +176,8 @@ float_offset = sin(wiggle_time * 2.0) * 2.0
 2. **Efficient Line Drawing**: Uses integer arithmetic (Bresenham)
 3. **Minimal State**: Only 6 states in state machine
 4. **Frame-based Updates**: All animations use delta time
-5. **Smooth Animations**: Linear interpolation for casting and reeling
+5. **Smooth Animations**: Ease-out cubic easing for casting, linear interpolation for reeling
+6. **Fast Casting**: 0.25s casting animation for responsive gameplay
 
 ## Files Modified
 
@@ -179,12 +196,13 @@ float_offset = sin(wiggle_time * 2.0) * 2.0
 
 1. **Switch to Fishing Mode**: Press Button 2 to cycle to Fishing mode
 2. **Cast Line**: Flick the joystick in the desired direction
-   - Watch the animated line extend to the target position
-3. **Wait**: Watch the bobber float and wiggle while waiting for a fish
+   - Watch the animated line extend to the target position with smooth easing (0.25s)
+3. **Wait or Retract Early**: 
+   - Watch the bobber float and wiggle while waiting for a fish
+   - Press Button A anytime to retract early (no catch)
 4. **React**: When fish bites (increased wiggle + log message), press Button A within 3.5 seconds
-   - Pressing too early shows "Wait for the fish to bite!"
-5. **Reel In**: Watch the bobber animate back to the boat
-6. **Success**: Fish name printed to stdout
+5. **Reel In**: Watch the bobber animate back to the boat (0.8s)
+6. **Success**: Fish name printed to stdout (or "Nothing caught." if retracted early)
 7. **Timeout/Miss**: If fish gets away, recast the line
 
 ## Future Enhancements

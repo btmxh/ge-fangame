@@ -243,14 +243,14 @@ bool begin_frame(u32 &buffer_index) {
     // No vblank yet, don't render this iteration
     return false;
   }
-  
+
   // Vblank occurred, swap to the next buffer and prepare for rendering
   LTDC_Layer1->CFBAR = reinterpret_cast<u32>(pixel_buffer(buffer_index));
   vblank = false;
   LTDC->SRCR = LTDC_SRCR_VBR;
   buffer_index ^= 1;
-  
-  return true;  // Signal that we should render this frame
+
+  return true; // Signal that we should render this frame
 }
 
 } // namespace stm

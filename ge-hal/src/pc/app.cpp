@@ -238,7 +238,7 @@ void App::loop() {
     float dt = (current - last_tick) * 1e-3f;
     tick(dt);
     last_tick = current;
-    
+
     // Render to framebuffer
     Surface fb_region{app_impl_instance->framebuffer,
                       WIDTH,
@@ -247,7 +247,7 @@ void App::loop() {
                       PixelFormat::RGB565,
                       0};
     render(fb_region);
-    
+
     // Upload framebuffer to screen
     int win_w, win_h;
     SDL_GetWindowSize(app_impl_instance->window, &win_w, &win_h);

@@ -35,21 +35,21 @@ struct ButtonState {
 constexpr hal::stm::Pin button_pins[NUM_BUTTONS] = {BUTTON1_PIN, BUTTON2_PIN};
 
 // Forward declaration for interrupt access
-App* app_instance = nullptr;
+App *app_instance = nullptr;
 } // anonymous namespace
 
 // Handle button state change (called from interrupt)
 void handle_button_interrupt(int button_index) {
   bool pressed = !button_pins[button_index].read();
   auto &bs = button_states[button_index];
-  
+
   // Detect button down event
   if (pressed && !bs.last_state) {
     bs.last_down = app_instance->now();
     bs.last_up = -1;
     bs.handled_hold = false;
   }
-  
+
   // Detect button up event
   if (!pressed && bs.last_state) {
     bs.last_up = app_instance->now();
@@ -58,12 +58,13 @@ void handle_button_interrupt(int button_index) {
       if (held_time < BUTTON_HOLD_THRESHOLD_MS) {
         app_instance->on_button_clicked(static_cast<Button>(button_index));
       } else {
-        app_instance->on_button_finished_hold(static_cast<Button>(button_index));
+        app_instance->on_button_finished_hold(
+            static_cast<Button>(button_index));
       }
     }
     bs.handled_hold = false;
   }
-  
+
   bs.last_state = pressed;
 }
 
@@ -85,14 +86,15 @@ void App::system_init() {
 
 App::App() {
   app_instance = this;
-  
+
   stdout_usart = hal::stm::USART_CONFIG_DEBUG.init(115200);
   hal::stm::init_sdram();
   hal::stm::init_ltdc();
   hal::stm::init_dma2d();
 
-  // Initialize button GPIO pins as inputs with pull-up resistors and enable interrupts
-  for (const auto& pin : button_pins) {
+  // Initialize button GPIO pins as inputs with pull-up resistors and enable
+  // interrupts
+  for (const auto &pin : button_pins) {
     pin.set_mode(hal::stm::GPIOMode::Input);
     pin.set_pupd(hal::stm::GPIOPuPd::PullUp);
     // Enable interrupt on both edges (press and release)
@@ -128,7 +130,7 @@ void App::tick(float dt) {
   // Only check for hold events (press/release are handled by interrupts)
   for (int i = 0; i < NUM_BUTTONS; ++i) {
     auto &bs = button_states[i];
-    
+
     // Check for hold event
     if (bs.last_state && bs.last_down >= 0 && !bs.handled_hold) {
       i64 held_time = now() - bs.last_down;
@@ -147,7 +149,7 @@ void App::loop() {
     float dt = (current - last_tick) * 1e-3f;
     tick(dt);
     last_tick = current;
-    
+
     // Check if vblank occurred and we should render this frame
     if (hal::stm::begin_frame(buffer_index)) {
       auto buffer = hal::stm::pixel_buffer(buffer_index);
@@ -155,10 +157,10 @@ void App::loop() {
                         App::HEIGHT, PixelFormat::RGB565, buffer_index};
       render(fb_region);
     }
-    
+
     // TODO: Process audio when needed
     // if (needs_audio_processing) process_audio();
-    
+
     // Wait for interrupt to save power
     __WFI();
   }
@@ -193,7 +195,7 @@ extern "C" {
 // EXTI0 interrupt handler (Button 1 on PA0)
 void EXTI0_IRQHandler() {
   if (EXTI->PR & (1U << 0)) {
-    EXTI->PR = (1U << 0);  // Clear pending bit
+    EXTI->PR = (1U << 0); // Clear pending bit
     ge::handle_button_interrupt(0);
   }
 }
@@ -201,9 +203,8 @@ void EXTI0_IRQHandler() {
 // EXTI1 interrupt handler (Button 2 on PA1)
 void EXTI1_IRQHandler() {
   if (EXTI->PR & (1U << 1)) {
-    EXTI->PR = (1U << 1);  // Clear pending bit
+    EXTI->PR = (1U << 1); // Clear pending bit
     ge::handle_button_interrupt(1);
   }
 }
-
 }

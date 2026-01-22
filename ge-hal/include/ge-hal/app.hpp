@@ -37,7 +37,6 @@ public:
   void sleep(std::int64_t ms);
 
   JoystickState get_joystick_state();
-  void wait_for_event(); // WFI on STM32
 
   // Event handlers & Rendering
   virtual void tick(float dt);
@@ -61,8 +60,5 @@ public:
 
   // -------- global --------
   void audio_set_master_volume(std::uint8_t vol); // 0..255
-
-  bool begin_render(Surface &out_surface);
-  void end_render();
 };
 }; // namespace ge

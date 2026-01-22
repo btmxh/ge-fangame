@@ -69,15 +69,7 @@ App::~App() = default;
 App::operator bool() { return true; }
 
 static u32 buffer_index = 0;
-
-bool App::begin_render(Surface &out_surface) {
-  auto buffer = hal::stm::pixel_buffer(buffer_index);
-  out_surface = Surface{buffer,      App::WIDTH,          App::WIDTH,
-                        App::HEIGHT, PixelFormat::RGB565, buffer_index};
-  return true;
-}
-
-void App::end_render() { hal::stm::swap_buffers(buffer_index); }
+static bool needs_rerender = true;
 
 std::int64_t App::now() { return hal::stm::systick_get(); }
 
@@ -97,11 +89,6 @@ void App::log(const char *fmt, ...) {
 
 void App::sleep(std::int64_t ms) { hal::stm::delay_timed(ms); }
 
-void App::wait_for_event() {
-  // TODO: implement WFI (Wait For Interrupt) for power saving
-  // For now, this is a no-op
-}
-
 void App::tick(float dt) {
   // Read button states and trigger callbacks
   for (int i = 0; i < NUM_BUTTONS; ++i) {
@@ -114,6 +101,7 @@ void App::tick(float dt) {
       bs.last_down = now();
       bs.last_up = -1;
       bs.handled_hold = false;
+      needs_rerender = true; // Button state changed, need to rerender
     }
     
     // Detect button up event
@@ -128,6 +116,7 @@ void App::tick(float dt) {
         }
       }
       bs.handled_hold = false;
+      needs_rerender = true; // Button state changed, need to rerender
     }
     
     // Check for hold event
@@ -136,6 +125,7 @@ void App::tick(float dt) {
       if (held_time >= BUTTON_HOLD_THRESHOLD_MS) {
         on_button_held(static_cast<Button>(i));
         bs.handled_hold = true;
+        needs_rerender = true; // Button state changed, need to rerender
       }
     }
     
@@ -150,10 +140,22 @@ void App::loop() {
     float dt = (current - last_tick) * 1e-3f;
     tick(dt);
     last_tick = current;
-    Surface fb_region;
-    begin_render(fb_region);
-    render(fb_region);
-    end_render();
+    
+    // Master-loop architecture: only render when needed
+    if (needs_rerender) {
+      auto buffer = hal::stm::pixel_buffer(buffer_index);
+      Surface fb_region{buffer,      App::WIDTH,          App::WIDTH,
+                        App::HEIGHT, PixelFormat::RGB565, buffer_index};
+      render(fb_region);
+      hal::stm::swap_buffers(buffer_index);
+      needs_rerender = false;
+    }
+    
+    // TODO: Process audio when needed
+    // if (needs_audio_processing) process_audio();
+    
+    // Wait for interrupt to save power
+    __WFI();
   }
 }
 

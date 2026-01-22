@@ -15,12 +15,13 @@ struct DialogMessage {
 
 class DialogScene : public Scene {
 public:
-  DialogScene(App &app) : Scene(app), has_message(false), start_time(0), ms_per_char(50) {
+  DialogScene(App &app) : Scene(app), start_time(0), ms_per_char(50) {
     set_active(false); // Start inactive
   }
 
   void render(Surface &fb_region) override {
-    if (!get_active() || !has_message) return;
+    if (!get_active())
+      return;
 
     // Dialog box is positioned at the bottom
     static constexpr auto dialog_height = 64, dialog_padding = 4;
@@ -30,18 +31,21 @@ public:
 
     static constexpr u32 PADDING = 4;
     hal::gpu::fill(region, 0x0000);
-    region = region.subsurface(PADDING, PADDING, region.get_width() - PADDING * 2,
-                               region.get_height() - PADDING * 2);
+    region =
+        region.subsurface(PADDING, PADDING, region.get_width() - PADDING * 2,
+                          region.get_height() - PADDING * 2);
     const auto &bold_font = Font::bold_font();
     bold_font.render_colored(msg.title, -1, region, 0, 0, 0xFFFF);
     region = region.subsurface(0, bold_font.line_height(), region.get_width(),
                                region.get_height() - bold_font.line_height());
     u32 num_chars = (app.now() - start_time) / ms_per_char;
-    Font::regular_font().render_colored(msg.desc, num_chars, region, 0, 0, 0xFFFF);
+    Font::regular_font().render_colored(msg.desc, num_chars, region, 0, 0,
+                                        0xFFFF);
   }
 
   bool on_button_clicked(Button btn) override {
-    if (!get_active() || !has_message) return false;
+    if (!get_active())
+      return false;
 
     // Dialog captures input when active
     if (btn == Button::Button2) {
@@ -62,36 +66,31 @@ public:
   void set_start_time(i64 time = -1e12) { start_time = time; }
 
   bool message_complete() {
-    return !has_message || (app.now() - start_time) / ms_per_char >= strlen(msg.desc);
+    return !get_active() ||
+           (app.now() - start_time) / ms_per_char >= strlen(msg.desc);
   }
 
   // Show a message with input focus (blocks other input)
   void show_message(const char *title, const char *desc) {
-    msg = {title, desc};
-    has_message = true;
     start_time = app.now();
+    msg = {title, desc};
     set_active(true);
   }
 
-  // Check if dialog has input focus
-  bool has_input_focus() const { return has_message && get_active(); }
-
   void dismiss() {
     msg = {"", ""};
-    has_message = false;
     set_active(false);
   }
 
   // Get the current pending message
   const DialogMessage *get_pending_message() const {
-    return has_message ? &msg : nullptr;
+    return get_active() ? &msg : nullptr;
   }
 
 private:
   i64 start_time;
   i64 ms_per_char;
   DialogMessage msg;
-  bool has_message;
 };
 
 } // namespace ge

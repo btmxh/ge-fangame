@@ -148,15 +148,19 @@ void App::loop() {
     tick(dt);
     last_tick = current;
     
-    // Render every frame (vblank-based)
-    auto buffer = hal::stm::pixel_buffer(buffer_index);
-    Surface fb_region{buffer,      App::WIDTH,          App::WIDTH,
-                      App::HEIGHT, PixelFormat::RGB565, buffer_index};
-    render(fb_region);
-    hal::stm::swap_buffers(buffer_index);  // Waits for vblank
+    // Check if vblank occurred and we should render this frame
+    if (hal::stm::begin_frame(buffer_index)) {
+      auto buffer = hal::stm::pixel_buffer(buffer_index);
+      Surface fb_region{buffer,      App::WIDTH,          App::WIDTH,
+                        App::HEIGHT, PixelFormat::RGB565, buffer_index};
+      render(fb_region);
+    }
     
     // TODO: Process audio when needed
     // if (needs_audio_processing) process_audio();
+    
+    // Wait for interrupt to save power
+    __WFI();
   }
 }
 

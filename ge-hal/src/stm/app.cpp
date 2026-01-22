@@ -20,6 +20,7 @@ namespace ge {
 // Button GPIO pins (to be configured based on actual hardware)
 static constexpr hal::stm::Pin BUTTON1_PIN{'A', 0};
 static constexpr hal::stm::Pin BUTTON2_PIN{'A', 1};
+static constexpr int NUM_BUTTONS = 2;
 
 // Button state tracking for event detection
 static constexpr i64 BUTTON_HOLD_THRESHOLD_MS = 1000;
@@ -28,7 +29,9 @@ struct ButtonState {
   i64 last_down = -1;
   i64 last_up = -1;
   bool handled_hold = false;
-} button_states[2];
+} button_states[NUM_BUTTONS];
+
+static const hal::stm::Pin* button_pins[NUM_BUTTONS] = {&BUTTON1_PIN, &BUTTON2_PIN};
 
 static void enable_fpu() {
   SCB->CPACR |=
@@ -99,9 +102,7 @@ void App::wait_for_event() {
 
 void App::tick(float dt) {
   // Read button states and trigger callbacks
-  static const hal::stm::Pin* button_pins[] = {&BUTTON1_PIN, &BUTTON2_PIN};
-  
-  for (int i = 0; i < 2; ++i) {
+  for (int i = 0; i < NUM_BUTTONS; ++i) {
     // Buttons are active-low (pull-up resistors, pressed = LOW)
     bool pressed = !button_pins[i]->read();
     auto &bs = button_states[i];

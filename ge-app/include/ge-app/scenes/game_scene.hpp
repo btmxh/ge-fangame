@@ -13,10 +13,8 @@
 #include "ge-app/game/water.hpp"
 #include "ge-app/gfx/color.hpp"
 #include "ge-app/scenes/dialog_scene.hpp"
-#include "ge-app/scenes/inventory_scene.hpp"
-#include "ge-app/scenes/management_menu_scene.hpp"
+#include "ge-app/scenes/root_management_ui_scene.hpp"
 #include "ge-app/scenes/scene.hpp"
-#include "ge-app/scenes/status_scene.hpp"
 
 namespace ge {
 struct HSV {
@@ -91,16 +89,9 @@ inline uint16_t sky_color(float t) {
 }
 
 class GameScene : public Scene {
-private:
-  // Forward declare nested classes for management scenes
-  class ManagementMenuImpl;
-  class StatusSceneImpl;
-  class InventorySceneImpl;
-
 public:
   GameScene(App &app)
-      : Scene{app}, dialog_scene(app), management_menu_scene(*this),
-        status_scene(*this), inventory_scene(*this) {
+      : Scene{app}, dialog_scene(app), management_ui(*this) {
     // TODO: flash audio when it is implemented
     // Currently we skip this step to speed up flashing
 #ifndef GE_HAL_STM32
@@ -115,22 +106,13 @@ public:
     // Connect inventory to fishing system
     fishing.set_inventory(&inventory);
 
-    // Setup management sub-scenes (management_menu owns status and inventory)
-    management_sub_scenes[0] = &status_scene;
-    management_sub_scenes[1] = &inventory_scene;
-    management_menu_scene.set_sub_scenes(management_sub_scenes, 2);
-
-    // Status and inventory start inactive
-    status_scene.set_active(false);
-    inventory_scene.set_active(false);
-
-    // Setup game sub-scenes (DialogScene and ManagementMenu)
+    // Setup game sub-scenes (DialogScene and RootManagementUIScene)
     sub_scene_array[0] = &dialog_scene;
-    sub_scene_array[1] = &management_menu_scene;
+    sub_scene_array[1] = &management_ui;
     set_sub_scenes(sub_scene_array, 2);
 
-    // Management starts inactive
-    management_menu_scene.set_active(false);
+    // Management UI starts inactive
+    management_ui.set_active(false);
 
     // Initialize tutorial
     tutorial.initialize(dialog_scene, tutorial_messages, 3);
@@ -251,14 +233,11 @@ public:
       auto new_mode = mode_indicator.switch_mode();
       clock.set_multiplier(app, new_mode);
 
-      // Activate/deactivate management menu based on mode
+      // Activate/deactivate management UI based on mode
       if (new_mode == GameMode::Management) {
-        management_menu_scene.set_active(true);
+        management_ui.set_active(true);
       } else {
-        management_menu_scene.set_active(false);
-        // Also deactivate management sub-scenes
-        status_scene.set_active(false);
-        inventory_scene.set_active(false);
+        management_ui.set_active(false);
       }
       return true;
     } else if (btn == Button::Button1) {
@@ -273,28 +252,13 @@ public:
   }
 
   // Getters for management scenes
+  // Getters for management UI (used by RootManagementUIScene)
   const Clock &get_clock() const { return clock; }
   const Inventory &get_inventory() const { return inventory; }
   const GameModeIndicator &get_mode_indicator() const { return mode_indicator; }
   const PlayerStats &get_player_stats() const { return player_stats; }
-  Inventory &get_inventory() { return inventory; }
-  PlayerStats &get_player_stats() { return player_stats; }
-
-  // Management scene navigation (called by management menu sub-scene)
-  void show_status_screen() {
-    status_scene.set_active(true);
-    inventory_scene.set_active(false);
-  }
-
-  void show_inventory_screen() {
-    status_scene.set_active(false);
-    inventory_scene.set_active(true);
-  }
-
-  void hide_management_screens() {
-    status_scene.set_active(false);
-    inventory_scene.set_active(false);
-  }
+  Inventory &get_inventory_mutable() { return inventory; }
+  PlayerStats &get_player_stats_mutable() { return player_stats; }
 
   bool on_button_held(Button btn) override {
     // Check sub-scenes first
@@ -348,15 +312,11 @@ private:
   PlayerStats player_stats; // Player food and stamina
 
   // Sub-scenes
+  // Sub-scenes
   DialogScene dialog_scene;
-  ManagementMenuScene management_menu_scene;
-  StatusScene status_scene;
-  InventoryScene inventory_scene;
+  RootManagementUIScene management_ui;
 
-  Scene *sub_scene_array[2]; // Array for GameScene sub-scenes (DialogScene,
-                             // ManagementMenu)
-  Scene *management_sub_scenes[2]; // Array for ManagementMenu sub-scenes
-                                   // (Status, Inventory)
+  Scene *sub_scene_array[2]; // Array for GameScene sub-scenes (DialogScene, RootManagementUIScene)
 
   // Tutorial system
   TutorialSystem tutorial;

@@ -1,10 +1,10 @@
 #include "ge-app/scenes/management_menu_scene.hpp"
-#include "ge-app/scenes/game_scene.hpp"
+#include "ge-app/scenes/root_management_ui_scene.hpp"
 
 namespace ge {
 
-ManagementMenuScene::ManagementMenuScene(GameScene &parent)
-    : Scene{parent.get_app()}, parent{parent} {
+ManagementMenuScene::ManagementMenuScene(RootManagementUIScene &parent)
+    : Scene{parent.app}, parent{parent} {
   // Initialize menu items array
   menu_items[0] = {"View Status",
                    static_cast<int>(ManagementAction::ViewStatus)};

@@ -13,11 +13,11 @@
 
 namespace ge {
 
-class GameScene;
+class RootManagementUIScene;
 
 class StatusScene : public Scene {
 public:
-  StatusScene(GameScene &parent);
+  StatusScene(RootManagementUIScene &parent);
 
   void tick(float dt) override {
     // No input handling needed for status screen
@@ -155,7 +155,7 @@ private:
     }
   }
 
-  GameScene &parent;
+  RootManagementUIScene &parent;
   const Clock &clock;
   const Inventory &inventory;
   const GameModeIndicator &mode_indicator;

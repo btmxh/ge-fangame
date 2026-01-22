@@ -9,7 +9,7 @@
 
 namespace ge {
 
-class GameScene;
+class RootManagementUIScene;
 
 enum class ManagementAction {
   None = 0,
@@ -20,7 +20,7 @@ enum class ManagementAction {
 
 class ManagementMenuScene : public Scene {
 public:
-  ManagementMenuScene(GameScene &parent);
+  ManagementMenuScene(RootManagementUIScene &parent);
 
   void tick(float dt) override {
     auto joystick = app.get_joystick_state();
@@ -60,7 +60,7 @@ public:
 private:
   ui::Menu menu;
   ui::MenuItem menu_items[3];
-  GameScene &parent;
+  RootManagementUIScene &parent;
 };
 
 } // namespace ge

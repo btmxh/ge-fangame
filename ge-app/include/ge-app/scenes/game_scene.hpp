@@ -257,8 +257,8 @@ public:
   const Inventory &get_inventory() const { return inventory; }
   const GameModeIndicator &get_mode_indicator() const { return mode_indicator; }
   const PlayerStats &get_player_stats() const { return player_stats; }
-  Inventory &get_inventory_mutable() { return inventory; }
-  PlayerStats &get_player_stats_mutable() { return player_stats; }
+  Inventory &get_inventory() { return inventory; }
+  PlayerStats &get_player_stats() { return player_stats; }
 
   bool on_button_held(Button btn) override {
     // Check sub-scenes first

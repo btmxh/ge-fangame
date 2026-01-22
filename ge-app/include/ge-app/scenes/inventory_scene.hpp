@@ -13,11 +13,11 @@
 
 namespace ge {
 
-class GameScene;
+class RootManagementUIScene;
 
 class InventoryScene : public Scene {
 public:
-  InventoryScene(GameScene &parent);
+  InventoryScene(RootManagementUIScene &parent);
 
   void tick(float dt) override {
     auto joystick = app.get_joystick_state();
@@ -178,7 +178,7 @@ public:
   void on_back_action();
 
 private:
-  GameScene &parent;
+  RootManagementUIScene &parent;
   Inventory &inventory;
   PlayerStats &player_stats;
   u32 scroll_offset;

@@ -3,7 +3,6 @@
 namespace ge {
 namespace hal {
 namespace stm {
-Pin::Pin(char bankChar, uint8_t numVal) : bank(bankChar - 'A'), num(numVal) {}
 
 GPIO_TypeDef *Pin::gpio() const {
   return reinterpret_cast<GPIO_TypeDef *>(GPIOA_BASE + bank * 0x400);
@@ -61,29 +60,30 @@ bool Pin::toggle() const {
 void Pin::enable_exti(EXTITrigger trigger) const {
   // Enable SYSCFG clock for EXTI configuration
   RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
-  
+
   // Configure EXTI line to this GPIO bank
   u32 exti_idx = num / 4;
   u32 exti_shift = (num % 4) * 4;
   SYSCFG->EXTICR[exti_idx] &= ~(0xFU << exti_shift);
   SYSCFG->EXTICR[exti_idx] |= (bank << exti_shift);
-  
+
   // Configure trigger
   u32 mask = (1U << num);
-  EXTI->IMR |= mask;  // Unmask interrupt
-  
+  EXTI->IMR |= mask; // Unmask interrupt
+
   if (trigger == EXTITrigger::Rising || trigger == EXTITrigger::RisingFalling) {
-    EXTI->RTSR |= mask;  // Enable rising edge
+    EXTI->RTSR |= mask; // Enable rising edge
   } else {
     EXTI->RTSR &= ~mask;
   }
-  
-  if (trigger == EXTITrigger::Falling || trigger == EXTITrigger::RisingFalling) {
-    EXTI->FTSR |= mask;  // Enable falling edge
+
+  if (trigger == EXTITrigger::Falling ||
+      trigger == EXTITrigger::RisingFalling) {
+    EXTI->FTSR |= mask; // Enable falling edge
   } else {
     EXTI->FTSR &= ~mask;
   }
-  
+
   // Enable NVIC interrupt for this EXTI line
   IRQn_Type irqn;
   if (num < 5) {
@@ -98,7 +98,7 @@ void Pin::enable_exti(EXTITrigger trigger) const {
 
 void Pin::disable_exti() const {
   u32 mask = (1U << num);
-  EXTI->IMR &= ~mask;  // Mask interrupt
+  EXTI->IMR &= ~mask; // Mask interrupt
   EXTI->RTSR &= ~mask;
   EXTI->FTSR &= ~mask;
 }

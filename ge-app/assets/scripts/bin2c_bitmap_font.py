@@ -106,12 +106,13 @@ static const unsigned char {symbol}_ADVANCES[] = {{{", ".join(str(a) for a in ad
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 6:
+    if len(sys.argv) < 6:
         print(
-            "usage: bin2c_bitmap_font.py <font.ttf> <output.c> <output.h> <symbol> <font_size>"
+            "usage: bin2c_bitmap_font.py <font.ttf> <output.c> <output.h> <symbol> <font_size> [additional_args...]"
         )
         sys.exit(1)
 
     font_path, out_c, out_h, symbol, font_size_str = sys.argv[1:6]
+    # Additional args are ignored for now but accepted for consistency
     font_size = int(font_size_str)
     main(font_path, font_size, out_c, out_h, symbol)

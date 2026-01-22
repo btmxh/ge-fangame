@@ -52,18 +52,60 @@ function(bin2c_generic BIN2C SYMBOL_NAME RESOURCE_FILE)
 endfunction()
 
 function(raw_audio SYMBOL_NAME WAV_FILE)
-    bin2c_generic(bin2c_audio.py ${SYMBOL_NAME} ${WAV_FILE})
+    cmake_parse_arguments(
+        RAW_AUDIO # prefix
+        "" # no boolean options
+        "" # no single-value keywords
+        "ARGS" # multi-value keywords
+        ${ARGN}
+    )
+
+    bin2c_generic(bin2c_audio.py ${SYMBOL_NAME} ${WAV_FILE} ARGS ${RAW_AUDIO_ARGS})
 endfunction()
 
 function(raw_image SYMBOL_NAME IMAGE_FILE)
-    bin2c_generic(bin2c_image.py ${SYMBOL_NAME} ${IMAGE_FILE} ARGS rgb565)
+    cmake_parse_arguments(
+        RAW_IMAGE # prefix
+        "" # no boolean options
+        "" # no single-value keywords
+        "ARGS" # multi-value keywords
+        ${ARGN}
+    )
+
+    # Default mode is rgb565, but allow override via ARGS
+    if(NOT RAW_IMAGE_ARGS)
+        set(RAW_IMAGE_ARGS rgb565)
+    endif()
+
+    bin2c_generic(bin2c_image.py ${SYMBOL_NAME} ${IMAGE_FILE} ARGS ${RAW_IMAGE_ARGS})
 endfunction()
 
 function(raw_image_alpha SYMBOL_NAME IMAGE_FILE)
-    bin2c_generic(bin2c_image.py ${SYMBOL_NAME} ${IMAGE_FILE} ARGS argb1555)
+    cmake_parse_arguments(
+        RAW_IMAGE_ALPHA # prefix
+        "" # no boolean options
+        "" # no single-value keywords
+        "ARGS" # multi-value keywords
+        ${ARGN}
+    )
+
+    # Default mode is argb1555, but allow override via ARGS
+    if(NOT RAW_IMAGE_ALPHA_ARGS)
+        set(RAW_IMAGE_ALPHA_ARGS argb1555)
+    endif()
+
+    bin2c_generic(bin2c_image.py ${SYMBOL_NAME} ${IMAGE_FILE} ARGS ${RAW_IMAGE_ALPHA_ARGS})
 endfunction()
 
 function(bitmap_font SYMBOL_NAME FONT_FILE FONT_SIZE)
+    cmake_parse_arguments(
+        BITMAP_FONT # prefix
+        "" # no boolean options
+        "" # no single-value keywords
+        "ARGS" # multi-value keywords
+        ${ARGN}
+    )
+
     get_filename_component(_dir ${FONT_FILE} DIRECTORY)
     get_filename_component(_name ${FONT_FILE} NAME_WE)
     bin2c_generic(
@@ -74,6 +116,59 @@ function(bitmap_font SYMBOL_NAME FONT_FILE FONT_SIZE)
         "${_dir}/${_name}_${FONT_SIZE}px"
         ARGS
         ${FONT_SIZE}
+    )
+endfunction()
+
+function(raw_image_rotated SYMBOL_NAME IMAGE_FILE ROTATION_ANGLE)
+    cmake_parse_arguments(
+        RAW_IMAGE_ROT # prefix
+        "" # no boolean options
+        "MODE" # single-value keywords
+        "ARGS" # multi-value keywords
+        ${ARGN}
+    )
+
+    # Default mode is argb1555 for rotated images
+    # (rotated images often need alpha channel for smooth edges due to interpolation)
+    if(NOT RAW_IMAGE_ROT_MODE)
+        set(RAW_IMAGE_ROT_MODE argb1555)
+    endif()
+
+    bin2c_generic(
+        bin2c_image.py
+        ${SYMBOL_NAME}
+        ${IMAGE_FILE}
+        ARGS
+        ${RAW_IMAGE_ROT_MODE}
+        --rotate
+        ${ROTATION_ANGLE}
+        ${RAW_IMAGE_ROT_ARGS}
+    )
+endfunction()
+
+function(raw_image_animated SYMBOL_NAME IMAGE_FILE)
+    cmake_parse_arguments(
+        RAW_IMAGE_ANIM # prefix
+        "" # no boolean options
+        "MODE" # single-value keywords
+        "ARGS" # multi-value keywords
+        ${ARGN}
+    )
+
+    # Default mode is argb1555 for animated images
+    # (animated images often have transparency for sprite composition)
+    if(NOT RAW_IMAGE_ANIM_MODE)
+        set(RAW_IMAGE_ANIM_MODE argb1555)
+    endif()
+
+    bin2c_generic(
+        bin2c_image.py
+        ${SYMBOL_NAME}
+        ${IMAGE_FILE}
+        ARGS
+        ${RAW_IMAGE_ANIM_MODE}
+        --animated
+        ${RAW_IMAGE_ANIM_ARGS}
     )
 endfunction()
 

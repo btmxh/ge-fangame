@@ -247,6 +247,8 @@ void App::loop() {
   }
 }
 
+void App::request_quit() { app_impl_instance->quit = true; }
+
 bool App::begin_render(Surface &out_surface) {
   out_surface = Surface{app_impl_instance->framebuffer,
                         WIDTH,

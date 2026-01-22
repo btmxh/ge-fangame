@@ -48,6 +48,8 @@ public:
 
   void loop();
 
+  void request_quit();
+
   void audio_bgm_play(const std::uint8_t *data, std::size_t length, bool loop);
 
   void audio_bgm_stop();

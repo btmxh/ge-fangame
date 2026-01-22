@@ -92,4 +92,8 @@ void App::audio_sfx_stop_all() {}
 
 void App::audio_set_master_volume(std::uint8_t vol) { (void)vol; }
 
+void App::request_quit() {
+  // On STM32, the app runs indefinitely; this is a no-op
+}
+
 } // namespace ge

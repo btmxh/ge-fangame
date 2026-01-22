@@ -120,8 +120,7 @@ public:
 
       // Draw border
       hal::gpu::fill(
-          border_region.subsurface(0, 0, border_region.get_width(), 2),
-          0x0000);
+          border_region.subsurface(0, 0, border_region.get_width(), 2), 0x0000);
       hal::gpu::fill(border_region.subsurface(0, border_region.get_height() - 2,
                                               border_region.get_width(), 2),
                      0x0000);

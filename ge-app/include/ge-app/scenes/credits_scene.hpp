@@ -60,20 +60,19 @@ public:
     Font::regular_font().render_colored("Music", -1, fb_region, 20, y_offset,
                                         0x0000);
     y_offset += line_height;
-    Font::regular_font().render_colored("  Placeholder Composer", -1,
-                                        fb_region, 20, y_offset, 0xBDF7);
+    Font::regular_font().render_colored("  Placeholder Composer", -1, fb_region,
+                                        20, y_offset, 0xBDF7);
     y_offset += line_height + 10;
 
     Font::regular_font().render_colored("Special Thanks", -1, fb_region, 20,
                                         y_offset, 0x0000);
     y_offset += line_height;
-    Font::regular_font().render_colored("  Placeholder Team", -1, fb_region,
-                                        20, y_offset, 0xBDF7);
+    Font::regular_font().render_colored("  Placeholder Team", -1, fb_region, 20,
+                                        y_offset, 0xBDF7);
 
     // Render back button at bottom
-    auto menu_region =
-        fb_region.subsurface(0, fb_region.get_height() - 60,
-                             fb_region.get_width(), 60);
+    auto menu_region = fb_region.subsurface(0, fb_region.get_height() - 60,
+                                            fb_region.get_width(), 60);
     menu.render(menu_region, Font::regular_font());
   }
 

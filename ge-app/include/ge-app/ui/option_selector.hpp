@@ -61,8 +61,8 @@ public:
 
       // Draw right arrow if not last option
       if (selected_option < num_options - 1) {
-        font.render_colored(">", -1, region, region.get_width() - 20,
-                            option_y, label_color);
+        font.render_colored(">", -1, region, region.get_width() - 20, option_y,
+                            label_color);
       }
     }
   }

@@ -56,9 +56,10 @@ public:
     i32 bobber_x, bobber_y;
     
     if (state == FishingState::Casting) {
-      // Animate casting: line extends from boat to target position
+      // Animate casting: line extends from boat to target position with easing
       float progress = casting_timer / CAST_DURATION;
       progress = std::min(progress, 1.0f);
+      progress = ease_out_cubic(progress); // Apply easing for smooth motion
       bobber_x = static_cast<i32>(cast_x * progress);
       bobber_y = static_cast<i32>(cast_y * progress);
     } else if (state == FishingState::Reeling) {
@@ -95,9 +96,13 @@ public:
         // Start reeling in the fish!
         state = FishingState::Reeling;
         reeling_timer = 0.0f;
+        caught_fish = true; // Mark that we caught a fish
       } else if (state == FishingState::Fishing || state == FishingState::FishBiting) {
-        // Pressed too early or at wrong time
-        app.log("Wait for the fish to bite!");
+        // Allow early retraction - player won't get anything
+        app.log("Reeling in early...");
+        state = FishingState::Reeling;
+        reeling_timer = 0.0f;
+        caught_fish = false; // No fish caught
       }
     }
   }
@@ -111,13 +116,19 @@ private:
   static constexpr float MIN_DELTA_TIME = 0.001f;
   static constexpr float FLICK_THRESHOLD = 3.0f;
   static constexpr float MIN_JOYSTICK_MAG = 0.4f;
-  static constexpr float CAST_DURATION = 0.5f;
+  static constexpr float CAST_DURATION = 0.25f; // Faster casting
   static constexpr float REEL_DURATION = 0.8f;
   static constexpr float BITE_CHANCE_PER_SECOND = 0.3f;
   static constexpr float MIN_FISHING_TIME = 2.0f;
   static constexpr float MAX_FISHING_TIME = 15.0f;
   static constexpr float BITE_WINDOW = 3.5f; // 3-4 seconds as requested
   static constexpr float CATCH_REACTION_TIME = 0.5f;
+
+  // Easing function for smooth animations (ease-out cubic)
+  static float ease_out_cubic(float t) {
+    float f = t - 1.0f;
+    return f * f * f + 1.0f;
+  }
 
   void update_idle(const JoystickState &joystick, float dt) {
     // Detect joystick flick
@@ -204,8 +215,14 @@ private:
     reeling_timer += dt;
     
     if (reeling_timer >= REEL_DURATION) {
-      // Animation complete, catch the fish
-      catch_fish(app);
+      // Animation complete
+      if (caught_fish) {
+        // Player caught a fish!
+        catch_fish(app);
+      } else {
+        // Early retraction - no fish
+        app.log("Nothing caught.");
+      }
       reset();
     }
   }
@@ -239,6 +256,7 @@ private:
     reeling_timer = 0.0f;
     wiggle_time = 0.0f;
     prev_joystick_mag = 0.0f;
+    caught_fish = false;
   }
 
   void draw_line(Surface &region, i32 x0, i32 y0, i32 x1, i32 y1,
@@ -315,6 +333,9 @@ private:
   
   // Joystick tracking
   float prev_joystick_mag = 0.0f;
+  
+  // Catch tracking
+  bool caught_fish = false;
 };
 
 } // namespace ge

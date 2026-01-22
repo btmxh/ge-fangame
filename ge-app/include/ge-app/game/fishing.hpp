@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ge-app/game/inventory.hpp"
-#include "ge-app/gfx/dialog_box.hpp"
+#include "ge-app/scenes/dialog_scene.hpp"
 #include "ge-app/texture.hpp"
 #include "ge-hal/app.hpp"
 #include "ge-hal/gpu.hpp"
@@ -26,7 +26,7 @@ public:
 
   void set_inventory(Inventory *inv) { inventory = inv; }
 
-  void update(App &app, DialogBox &dialog_box, float dt,
+  void update(App &app, DialogScene &dialog_scene, float dt,
               const JoystickState &joystick) {
     switch (state) {
     case FishingState::Idle:
@@ -100,7 +100,7 @@ public:
     draw_bobber(region, bobber_x, bobber_y);
   }
 
-  void on_button_clicked(App &app, DialogBox &dialog, Button btn) {
+  void on_button_clicked(App &app, DialogScene &dialog, Button btn) {
     if (btn == Button::Button1) {
       if (state == FishingState::Caught) {
         // Start reeling in the fish!
@@ -234,7 +234,7 @@ private:
     }
   }
 
-  void update_reeling(App &app, DialogBox &dialog, float dt) {
+  void update_reeling(App &app, DialogScene &dialog, float dt) {
     reeling_timer += dt;
 
     if (reeling_timer >= REEL_DURATION) {
@@ -250,7 +250,7 @@ private:
     }
   }
 
-  void catch_fish(App &app, DialogBox &dialog) {
+  void catch_fish(App &app, DialogScene &dialog) {
     // Fish data with names, rarities, and weights
     struct FishData {
       const char *name;

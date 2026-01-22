@@ -49,12 +49,14 @@ public:
     menu.render(menu_region, Font::regular_font());
   }
 
-  void on_button_clicked(Button btn) override {
+  bool on_button_clicked(Button btn) override {
     if (btn == Button::Button1) {
       // Button 1 is used to select in UI mode
       int selected = menu.get_selected_id();
       on_menu_action(static_cast<ManagementAction>(selected));
+      return true; // Event captured
     }
+    return Scene::on_button_clicked(btn); // Check sub-scenes
   }
 
   // Virtual method that can be overridden to handle menu actions

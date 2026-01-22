@@ -72,14 +72,16 @@ public:
     }
   }
 
-  void on_button_clicked(Button btn) override {
+  bool on_button_clicked(Button btn) override {
     if (btn == Button::Button1) {
       // Button 1 selects the back button
       // int selected = menu.get_selected_id();
       // if (selected == 1) {
       on_back_action();
       // }
+      return true; // Event captured
     }
+    return Scene::on_button_clicked(btn); // Check sub-scenes
   }
 
   // Virtual method to handle back action

@@ -125,7 +125,7 @@ public:
                         fb_region.get_height() - line_height - 10, 0x7BEF);
   }
 
-  void on_button_clicked(Button btn) override {
+  bool on_button_clicked(Button btn) override {
     if (btn == Button::Button1) {
       // Eat selected fish
       if (inventory.get_item_count() > 0 && selected_index < inventory.get_item_count()) {
@@ -163,10 +163,13 @@ public:
           }
         }
       }
+      return true; // Event captured
     } else if (btn == Button::Button2) {
       // Return to management menu
       on_back_action();
+      return true; // Event captured
     }
+    return Scene::on_button_clicked(btn); // Check sub-scenes
   }
 
   // Virtual method to be overridden to handle back action

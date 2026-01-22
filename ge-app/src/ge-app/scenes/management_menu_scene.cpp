@@ -4,7 +4,7 @@
 namespace ge {
 
 ManagementMenuScene::ManagementMenuScene(RootManagementUIScene &parent)
-    : Scene{parent.app}, parent{parent} {
+    : Scene{parent.get_app()}, parent{parent} {
   // Initialize menu items array
   menu_items[0] = {"View Status",
                    static_cast<int>(ManagementAction::ViewStatus)};

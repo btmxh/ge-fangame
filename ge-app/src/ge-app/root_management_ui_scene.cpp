@@ -4,11 +4,8 @@
 namespace ge {
 
 RootManagementUIScene::RootManagementUIScene(GameScene &parent_game_scene)
-    : Scene(parent_game_scene.app),
-      game_scene(parent_game_scene),
-      management_menu(*this),
-      status_scene(*this),
-      inventory_scene(*this) {
+    : Scene(parent_game_scene.get_app()), game_scene(parent_game_scene),
+      management_menu(*this), status_scene(*this), inventory_scene(*this) {
   // Setup management sub-scenes (status and inventory are sub-scenes of
   // management menu)
   management_sub_scenes[0] = &status_scene;
@@ -21,7 +18,8 @@ RootManagementUIScene::RootManagementUIScene(GameScene &parent_game_scene)
 
   // Set management menu as the only direct sub-scene of RootManagementUIScene
   // (It will delegate to status/inventory)
-  // Note: We don't set sub_scenes here because ManagementMenu already contains them
+  // Note: We don't set sub_scenes here because ManagementMenu already contains
+  // them
 }
 
 void RootManagementUIScene::show_status_screen() {

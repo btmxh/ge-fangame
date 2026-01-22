@@ -1,10 +1,11 @@
 #include "ge-app/scenes/status_scene.hpp"
-#include "ge-app/scenes/root_management_ui_scene.hpp"
 #include "ge-app/scenes/game_scene.hpp"
+#include "ge-app/scenes/root_management_ui_scene.hpp"
 
 namespace ge {
 StatusScene::StatusScene(RootManagementUIScene &parent)
-    : Scene{parent.app}, parent{parent}, clock(parent.game_scene.get_clock()),
+    : Scene{parent.get_app()}, parent{parent},
+      clock(parent.game_scene.get_clock()),
       inventory(parent.game_scene.get_inventory()),
       mode_indicator(parent.game_scene.get_mode_indicator()),
       player_stats(parent.game_scene.get_player_stats()) {}

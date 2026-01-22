@@ -115,6 +115,8 @@ public:
     } else if (mode_indicator.get_current_mode() == GameMode::Fishing) {
       // Update fishing system
       fishing.update(app, world_dt, joystick);
+      // Keep boat drifting slowly in fishing mode
+      boat.update_position(app, world_dt);
     }
   }
 

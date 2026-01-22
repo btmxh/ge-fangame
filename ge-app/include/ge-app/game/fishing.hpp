@@ -80,19 +80,32 @@ public:
   FishingState get_state() const { return state; }
 
 private:
+  // Constants
+  static constexpr float MIN_DELTA_TIME = 0.001f;
+  static constexpr float FLICK_THRESHOLD = 3.0f;
+  static constexpr float MIN_JOYSTICK_MAG = 0.4f;
+  static constexpr float CAST_DURATION = 0.5f;
+  static constexpr float BITE_CHANCE_PER_SECOND = 0.3f;
+  static constexpr float MIN_FISHING_TIME = 2.0f;
+  static constexpr float MAX_FISHING_TIME = 15.0f;
+  static constexpr float BITE_WINDOW = 3.0f;
+  static constexpr float CATCH_REACTION_TIME = 0.5f;
+
   void update_idle(const JoystickState &joystick, float dt) {
     // Detect joystick flick
     float mag = std::sqrt(joystick.x * joystick.x + joystick.y * joystick.y);
     
     // Track previous joystick state to detect velocity
-    float velocity = (mag - prev_joystick_mag) / dt;
-    prev_joystick_mag = mag;
-
-    // If joystick moved fast enough, start casting
-    const float FLICK_THRESHOLD = 2.0f; // Adjust as needed
-    if (velocity > FLICK_THRESHOLD && mag > 0.3f) {
-      start_cast(joystick.x, joystick.y, velocity);
+    if (dt > MIN_DELTA_TIME) { // Avoid division by very small numbers
+      float velocity = (mag - prev_joystick_mag) / dt;
+      
+      // If joystick moved fast enough, start casting
+      if (velocity > FLICK_THRESHOLD && mag > MIN_JOYSTICK_MAG) {
+        start_cast(joystick.x, joystick.y, mag);
+      }
     }
+    
+    prev_joystick_mag = mag;
   }
 
   void start_cast(float joy_x, float joy_y, float strength) {
@@ -101,7 +114,9 @@ private:
 
     // Calculate cast direction and distance
     float angle = std::atan2(joy_y, joy_x);
-    float distance = std::min(strength * 20.0f, 100.0f); // Cap at 100 pixels
+    // Use joystick magnitude as strength (0-1 range typically)
+    float distance = strength * 60.0f; // Scale to reasonable pixel range
+    distance = std::min(distance, 80.0f); // Cap at 80 pixels
 
     // Position relative to boat (center of screen)
     cast_x = static_cast<i32>(std::cos(angle) * distance);
@@ -110,7 +125,6 @@ private:
 
   void update_casting(float dt) {
     casting_timer += dt;
-    const float CAST_DURATION = 0.5f;
     
     if (casting_timer >= CAST_DURATION) {
       state = FishingState::Fishing;
@@ -124,9 +138,6 @@ private:
     fishing_timer += dt;
 
     // Random chance for fish to bite (check every frame)
-    const float BITE_CHANCE_PER_SECOND = 0.3f; // 30% chance per second
-    const float MIN_FISHING_TIME = 2.0f; // Wait at least 2 seconds
-    
     if (fishing_timer > MIN_FISHING_TIME) {
       float bite_chance = BITE_CHANCE_PER_SECOND * dt;
       float random_value = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
@@ -142,7 +153,6 @@ private:
     }
 
     // If fishing too long without bite, reset
-    const float MAX_FISHING_TIME = 15.0f;
     if (fishing_timer > MAX_FISHING_TIME) {
       app.log("The fish got away. Recast your line!");
       reset();
@@ -153,12 +163,11 @@ private:
     fish_bite_timer += dt;
 
     // Player has limited time to catch
-    const float BITE_WINDOW = 3.0f;
     if (fish_bite_timer > BITE_WINDOW) {
       app.log("The fish got away! You were too slow.");
       reset();
-    } else {
-      // Allow catching
+    } else if (fish_bite_timer > CATCH_REACTION_TIME) {
+      // Allow catching after a small delay (reaction time needed)
       state = FishingState::Caught;
     }
   }
@@ -178,7 +187,7 @@ private:
         "Sardine"
     };
     
-    int num_fish = sizeof(fish_names) / sizeof(fish_names[0]);
+    constexpr int num_fish = sizeof(fish_names) / sizeof(fish_names[0]);
     int caught_index = rand() % num_fish;
     
     app.log("You caught: %s", fish_names[caught_index]);

@@ -152,8 +152,6 @@ App::~App() { app_impl_instance.reset(); }
 
 App::operator bool() { return app_impl_instance && !app_impl_instance->quit; }
 
-void App::wait_for_event() {}
-
 static auto gamepad_button_to_button = [](u32 gb) -> int {
   switch (gb) {
   case SDL_GAMEPAD_BUTTON_LABEL_A:
@@ -240,56 +238,47 @@ void App::loop() {
     float dt = (current - last_tick) * 1e-3f;
     tick(dt);
     last_tick = current;
-    Surface fb_region;
-    begin_render(fb_region);
+
+    // Render to framebuffer
+    Surface fb_region{app_impl_instance->framebuffer,
+                      WIDTH,
+                      WIDTH,
+                      HEIGHT,
+                      PixelFormat::RGB565,
+                      0};
     render(fb_region);
-    end_render();
+
+    // Upload framebuffer to screen
+    int win_w, win_h;
+    SDL_GetWindowSize(app_impl_instance->window, &win_w, &win_h);
+
+    float sx = (float)win_w / WIDTH;
+    float sy = (float)win_h / HEIGHT;
+    float scale = (sx < sy) ? sx : sy;
+
+    int dst_w = (int)(WIDTH * scale);
+    int dst_h = (int)(HEIGHT * scale);
+    int dst_x = (win_w - dst_w) / 2;
+    int dst_y = (win_h - dst_h) / 2;
+
+    auto *impl = app_impl_instance.get();
+
+    // upload framebuffer → texture
+    SDL_UpdateTexture(impl->frame_texture, nullptr,
+                      app_impl_instance->framebuffer,
+                      WIDTH * sizeof(app_impl_instance->framebuffer[0]));
+
+    // letterbox clear
+    SDL_SetRenderDrawColor(impl->renderer, 0, 0, 0, 255);
+    SDL_RenderClear(impl->renderer);
+
+    // render scaled texture
+    SDL_FRect dstf{(float)dst_x, (float)dst_y, (float)dst_w, (float)dst_h};
+
+    SDL_RenderTexture(impl->renderer, impl->frame_texture, nullptr, &dstf);
+    // TODO: remove VSync if that is problematic
+    SDL_RenderPresent(impl->renderer);
   }
-}
-
-void App::request_quit() { app_impl_instance->quit = true; }
-
-bool App::begin_render(Surface &out_surface) {
-  out_surface = Surface{app_impl_instance->framebuffer,
-                        WIDTH,
-                        WIDTH,
-                        HEIGHT,
-                        PixelFormat::RGB565,
-                        0};
-  // HACK: currently always return true
-  return true;
-}
-
-void App::end_render() {
-  int win_w, win_h;
-  SDL_GetWindowSize(app_impl_instance->window, &win_w, &win_h);
-
-  float sx = (float)win_w / WIDTH;
-  float sy = (float)win_h / HEIGHT;
-  float scale = (sx < sy) ? sx : sy;
-
-  int dst_w = (int)(WIDTH * scale);
-  int dst_h = (int)(HEIGHT * scale);
-  int dst_x = (win_w - dst_w) / 2;
-  int dst_y = (win_h - dst_h) / 2;
-
-  auto *impl = app_impl_instance.get();
-
-  // upload framebuffer → texture
-  SDL_UpdateTexture(impl->frame_texture, nullptr,
-                    app_impl_instance->framebuffer,
-                    WIDTH * sizeof(app_impl_instance->framebuffer[0]));
-
-  // letterbox clear
-  SDL_SetRenderDrawColor(impl->renderer, 0, 0, 0, 255);
-  SDL_RenderClear(impl->renderer);
-
-  // render scaled texture
-  SDL_FRect dstf{(float)dst_x, (float)dst_y, (float)dst_w, (float)dst_h};
-
-  SDL_RenderTexture(impl->renderer, impl->frame_texture, nullptr, &dstf);
-  // TODO: remove VSync if that is problematic
-  SDL_RenderPresent(impl->renderer);
 }
 
 std::int64_t App::now() { return SDL_GetTicks(); }

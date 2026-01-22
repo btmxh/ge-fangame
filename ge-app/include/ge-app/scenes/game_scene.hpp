@@ -165,6 +165,19 @@ public:
           fb_region.subsurface(PADDING, PADDING + 16, 120, 15);
       mode_indicator.render(mode_indicator_region);
     }
+    
+    // Render fishing dialog if active
+    if (mode_indicator.get_current_mode() == GameMode::Fishing) {
+      auto* fishing_msg = fishing.get_dialog_box().get_pending_message();
+      if (fishing_msg) {
+        static constexpr auto dialog_height = 64, dialog_padding = 4;
+        auto dialog_region = fb_region.subsurface(
+            dialog_padding, ge::App::HEIGHT - dialog_height - dialog_padding,
+            ge::App::WIDTH - dialog_padding * 2, dialog_height);
+        fishing.get_dialog_box().render(app, dialog_region, *fishing_msg);
+      }
+    }
+    
     if (current_msg < sizeof(msg) / sizeof(msg[0])) {
       // bottom, padding 4px
       static constexpr auto dialog_height = 64, dialog_padding = 4;
@@ -183,12 +196,23 @@ public:
       mode_indicator.switch_mode();
       clock.set_multiplier(app, mode_indicator.get_current_mode());
     } else if (btn == Button::Button1) {
-      // Handle fishing button press
+      // Handle fishing dialog dismissal first (input focus)
       if (mode_indicator.get_current_mode() == GameMode::Fishing) {
+        if (fishing.get_dialog_box().has_input_focus()) {
+          if (fishing.get_dialog_box().is_message_complete()) {
+            fishing.get_dialog_box().dismiss();
+            return; // Dialog consumed the input
+          } else {
+            // Fast-forward the message
+            fishing.get_dialog_box().set_start_time();
+            return;
+          }
+        }
+        // No dialog focus, handle fishing actions
         fishing.on_button_clicked(app, btn);
       }
       
-      // Handle dialog
+      // Handle tutorial dialog
       if (current_msg < sizeof(msg) / sizeof(msg[0])) {
         if (dialog_box.message_complete(app, msg[current_msg])) {
           // advance to next message

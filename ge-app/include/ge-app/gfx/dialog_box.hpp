@@ -37,9 +37,49 @@ public:
     return (app.now() - start_time) / ms_per_char >= strlen(msg.desc);
   }
 
+  // Show a message with input focus (blocks other input)
+  void show_message(const char *title, const char *desc, i64 current_time) {
+    pending_message.title = title;
+    pending_message.desc = desc;
+    has_focus = true;
+    start_time = current_time;
+    is_complete = false;
+  }
+
+  // Check if dialog has input focus
+  bool has_input_focus() const { return has_focus; }
+
+  // Get the current pending message
+  const DialogMessage* get_pending_message() const {
+    return has_focus ? &pending_message : nullptr;
+  }
+
+  // Update dialog state - returns true if message was just completed
+  bool update(App &app) {
+    if (!has_focus) return false;
+    
+    if (!is_complete && message_complete(app, pending_message)) {
+      is_complete = true;
+      return true; // Message just completed
+    }
+    return false;
+  }
+
+  // Dismiss the dialog (removes focus)
+  void dismiss() {
+    has_focus = false;
+    is_complete = false;
+  }
+
+  // Check if current message is complete
+  bool is_message_complete() const { return is_complete; }
+
 private:
   i64 start_time = 0;
   i64 ms_per_char = 50;
+  bool has_focus = false;
+  bool is_complete = false;
+  DialogMessage pending_message = {"", ""};
 };
 
 } // namespace ge

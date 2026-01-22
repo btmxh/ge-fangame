@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ge-app/gfx/dialog_box.hpp"
 #include "ge-app/texture.hpp"
 #include "ge-hal/app.hpp"
 #include "ge-hal/gpu.hpp"
@@ -103,13 +104,13 @@ public:
         caught_fish = true; // Mark that we caught a fish
       } else if (state == FishingState::BaitLost) {
         // Reel in after losing bait
-        app.log("Reeling in empty line...");
+        fishing_dialog.show_message("Fishing", "Reeling in empty line...", app.now());
         state = FishingState::Reeling;
         reeling_timer = 0.0f;
         caught_fish = false; // No fish caught
       } else if (state == FishingState::Fishing || state == FishingState::FishBiting) {
         // Allow early retraction - player won't get anything
-        app.log("Reeling in early...");
+        fishing_dialog.show_message("Fishing", "Reeling in early...", app.now());
         state = FishingState::Reeling;
         reeling_timer = 0.0f;
         caught_fish = false; // No fish caught
@@ -120,6 +121,10 @@ public:
   bool is_active() const { return state != FishingState::Idle; }
 
   FishingState get_state() const { return state; }
+
+  // Get the fishing dialog box for rendering
+  DialogBox& get_dialog_box() { return fishing_dialog; }
+  const DialogBox& get_dialog_box() const { return fishing_dialog; }
 
 private:
   // Constants
@@ -197,13 +202,13 @@ private:
         fish_bite_timer = 0.0f;
         wiggle_amplitude = 5.0f; // Increased wiggle
         wiggle_freq = 8.0f;      // Faster wiggle
-        app.log("Fish is biting! Press A to catch it!");
+        fishing_dialog.show_message("Fishing", "Fish is biting! Press A to catch it!", app.now());
       }
     }
 
     // If fishing too long without bite, reset
     if (fishing_timer > MAX_FISHING_TIME) {
-      app.log("The fish got away. Recast your line!");
+      fishing_dialog.show_message("Fishing", "The fish got away. Recast your line!", app.now());
       reset();
     }
   }
@@ -213,7 +218,7 @@ private:
 
     // Player has limited time to catch
     if (fish_bite_timer > BITE_WINDOW) {
-      app.log("The fish ate all the bait and got away!");
+      fishing_dialog.show_message("Fishing", "The fish ate all the bait and got away!", app.now());
       state = FishingState::BaitLost;
     } else if (fish_bite_timer > CATCH_REACTION_TIME) {
       // Allow catching after a small delay (reaction time needed)
@@ -230,8 +235,8 @@ private:
         // Player caught a fish!
         catch_fish(app);
       } else {
-        // Early retraction - no fish
-        app.log("Nothing caught.");
+        // Early retraction or bait lost - no fish
+        fishing_dialog.show_message("Fishing", "Nothing caught.", app.now());
       }
       reset();
     }
@@ -255,7 +260,9 @@ private:
     constexpr int num_fish = sizeof(fish_names) / sizeof(fish_names[0]);
     int caught_index = rand() % num_fish;
     
-    app.log("You caught: %s", fish_names[caught_index]);
+    // Store the caught fish message
+    caught_fish_name = fish_names[caught_index];
+    fishing_dialog.show_message("Fishing", caught_fish_name, app.now());
   }
 
   void reset() {
@@ -346,6 +353,10 @@ private:
   
   // Catch tracking
   bool caught_fish = false;
+  const char *caught_fish_name = nullptr;
+  
+  // Dialog box for fishing messages
+  DialogBox fishing_dialog;
 };
 
 } // namespace ge

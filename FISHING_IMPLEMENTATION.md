@@ -26,11 +26,12 @@ The game now includes a fishing mode that allows players to cast a fishing line,
 ### Fishing States
 
 1. **Idle**: Not fishing, waiting for joystick flick
-2. **Casting**: Animated line extending from boat to target position (0.5s)
+2. **Casting**: Animated line extending from boat to target position (0.25s with easing)
 3. **Fishing**: Line in water, waiting for fish to bite
 4. **FishBiting**: Fish is biting, player must react quickly
 5. **Caught**: Fish caught, ready to be reeled in with Button A
-6. **Reeling**: Bobber animating back to boat (0.8s), then fish is caught
+6. **BaitLost**: Fish got away after eating all the bait, player must reel in empty line
+7. **Reeling**: Bobber animating back to boat (0.8s)
 
 ## Key Features
 
@@ -71,20 +72,28 @@ The game now includes a fishing mode that allows players to cast a fishing line,
    - Player has 3.5 seconds to press Button A after fish bites
    - 0.5 second reaction time required before catching is possible
    - Visual feedback: Increased wiggle intensity
-   - If time runs out: "The fish ate all the bait and got away!"
+   - If time runs out: Transitions to BaitLost state with message "The fish ate all the bait and got away!"
 
-4. **Early Retraction**:
+4. **Bait Lost**:
+   - State entered when fish escapes after eating bait (time expired in FishBiting)
+   - Player must press Button A to reel in the empty line
+   - Shows "Reeling in empty line..." when reeling starts
+   - Provides visual feedback that bait was lost before resetting
+
+5. **Early Retraction**:
    - Player can press Button A during Fishing or FishBiting states
    - Triggers reeling animation immediately
    - Shows "Reeling in early..." message
    - Results in "Nothing caught." after animation completes
 
-5. **Reeling**:
+6. **Reeling**:
    - 0.8 second animation showing bobber returning to boat
-   - If fish was caught: Fish name is logged
-   - If early retraction: "Nothing caught." is logged
+   - Handles three scenarios:
+     - Fish caught: Logs fish name
+     - Early retraction: Logs "Nothing caught."
+     - Bait lost: Logs "Nothing caught."
 
-6. **Rewards**:
+7. **Rewards**:
    - Random fish or loot printed to stdout (only when caught in time)
    - Possible catches:
      - Tropical Fish
@@ -104,6 +113,7 @@ The game now includes a fishing mode that allows players to cast a fishing line,
 - **Button 2**: Switch between game modes (Steering/Fishing/Management)
 - **Button 1**: 
   - Catch fish when in Caught state (triggers reeling animation with fish)
+  - Reel in empty line when in BaitLost state (triggers reeling animation, no catch)
   - Retract early during Fishing/FishBiting states (triggers reeling animation, no catch)
 
 ## Implementation Details
@@ -174,7 +184,7 @@ float_offset = sin(wiggle_time * 2.0) * 2.0
 
 1. **No Dynamic Allocation**: All state stored in class members
 2. **Efficient Line Drawing**: Uses integer arithmetic (Bresenham)
-3. **Minimal State**: Only 6 states in state machine
+3. **Minimal State**: Only 7 states in state machine (Idle, Casting, Fishing, FishBiting, Caught, BaitLost, Reeling)
 4. **Frame-based Updates**: All animations use delta time
 5. **Smooth Animations**: Ease-out cubic easing for casting, linear interpolation for reeling
 6. **Fast Casting**: 0.25s casting animation for responsive gameplay
@@ -201,9 +211,9 @@ float_offset = sin(wiggle_time * 2.0) * 2.0
    - Watch the bobber float and wiggle while waiting for a fish
    - Press Button A anytime to retract early (no catch)
 4. **React**: When fish bites (increased wiggle + log message), press Button A within 3.5 seconds
-5. **Reel In**: Watch the bobber animate back to the boat (0.8s)
-6. **Success**: Fish name printed to stdout (or "Nothing caught." if retracted early)
-7. **Timeout/Miss**: If fish gets away, recast the line
+5. **Bait Lost**: If timeout, enters BaitLost state - press Button A to reel in empty line
+6. **Reel In**: Watch the bobber animate back to the boat (0.8s)
+7. **Success**: Fish name printed to stdout (or "Nothing caught." if retracted early or bait lost)
 
 ## Future Enhancements
 

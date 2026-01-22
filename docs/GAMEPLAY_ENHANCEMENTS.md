@@ -152,7 +152,7 @@ Status bars displayed on **Status Screen**:
 Status:
   Food: 75%
   [████████████████░░░░] (yellow bar)
-  
+
   Stamina: 60%
   [████████████░░░░░░░░] (cyan bar)
 ```

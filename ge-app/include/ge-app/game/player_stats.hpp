@@ -10,10 +10,14 @@ class PlayerStats {
 public:
   static constexpr float MAX_FOOD = 100.0f;
   static constexpr float MAX_STAMINA = 100.0f;
-  static constexpr float FOOD_THRESHOLD_FOR_HEALING = 30.0f; // Food must be > 30% for stamina to heal
-  static constexpr float STAMINA_HEAL_RATE = 5.0f;          // Stamina per second when healing
-  static constexpr float FOOD_DRAIN_RATE = 1.0f;            // Food drain per second (passive)
-  static constexpr float STAMINA_DRAIN_ON_TURN = 2.0f;      // Stamina drain when turning
+  static constexpr float FOOD_THRESHOLD_FOR_HEALING =
+      30.0f; // Food must be > 30% for stamina to heal
+  static constexpr float STAMINA_HEAL_RATE =
+      5.0f; // Stamina per second when healing
+  static constexpr float FOOD_DRAIN_RATE =
+      1.0f; // Food drain per second (passive)
+  static constexpr float STAMINA_DRAIN_ON_TURN =
+      2.0f; // Stamina drain when turning
 
   PlayerStats() : food(MAX_FOOD), stamina(MAX_STAMINA), last_angle(0.0f) {}
 

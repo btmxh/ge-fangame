@@ -241,7 +241,7 @@
 - **Joystick**: Steer boat
 - **Button 2 (B)**: Switch to Fishing mode
 
-#### Game Scene - Fishing Mode  
+#### Game Scene - Fishing Mode
 - **Joystick Flick**: Cast fishing line
 - **Button 1 (A)**: Catch fish (when biting)
 - **Button 2 (B)**: Switch to Management mode

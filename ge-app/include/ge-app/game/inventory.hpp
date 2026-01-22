@@ -12,7 +12,9 @@ struct FishItem {
   i64 caught_time; // Timestamp when caught (in milliseconds)
   float weight;    // Weight in kg for cargo calculation
 
-  FishItem() : name(nullptr), rarity(FishRarity::Common), caught_time(0), weight(0.0f) {}
+  FishItem()
+      : name(nullptr), rarity(FishRarity::Common), caught_time(0),
+        weight(0.0f) {}
 
   FishItem(const char *name, FishRarity rarity, i64 caught_time, float weight)
       : name(name), rarity(rarity), caught_time(caught_time), weight(weight) {}
@@ -27,7 +29,8 @@ public:
   Inventory() : item_count(0) {}
 
   // Add a fish to the inventory
-  bool add_fish(const char *name, FishRarity rarity, i64 caught_time, float weight) {
+  bool add_fish(const char *name, FishRarity rarity, i64 caught_time,
+                float weight) {
     if (item_count >= MAX_ITEMS) {
       return false; // Inventory full
     }

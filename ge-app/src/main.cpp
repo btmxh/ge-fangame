@@ -10,16 +10,17 @@ namespace ge {
 
 class MainApp : public ge::App {
 public:
-  MainApp() : ge::App(), menu_scene_impl(*this), game_scene_impl(*this),
-              settings_scene_impl(*this), credits_scene_impl(*this),
-              root_scene(*this) {
+  MainApp()
+      : ge::App(), menu_scene_impl(*this), game_scene_impl(*this),
+        settings_scene_impl(*this), credits_scene_impl(*this),
+        root_scene(*this) {
     // Setup root scene with main scenes as sub-scenes
     main_scenes[0] = &menu_scene_impl;
     main_scenes[1] = &game_scene_impl;
     main_scenes[2] = &settings_scene_impl;
     main_scenes[3] = &credits_scene_impl;
     root_scene.set_sub_scenes(main_scenes, 4);
-    
+
     // Start with menu active, others inactive
     game_scene_impl.set_active(false);
     settings_scene_impl.set_active(false);
@@ -31,17 +32,13 @@ public:
     root_scene.tick(dt);
   }
 
-  void render(Surface &fb) override {
-    root_scene.render(fb);
-  }
+  void render(Surface &fb) override { root_scene.render(fb); }
 
   void on_button_clicked(Button btn) override {
     root_scene.on_button_clicked(btn);
   }
 
-  void on_button_held(Button btn) override {
-    root_scene.on_button_held(btn);
-  }
+  void on_button_held(Button btn) override { root_scene.on_button_held(btn); }
 
   void on_button_finished_hold(Button btn) override {
     root_scene.on_button_finished_hold(btn);

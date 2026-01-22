@@ -90,8 +90,7 @@ inline uint16_t sky_color(float t) {
 
 class GameScene : public Scene {
 public:
-  GameScene(App &app)
-      : Scene{app}, dialog_scene(app), management_ui(*this) {
+  GameScene(App &app) : Scene{app}, dialog_scene(app), management_ui(*this) {
     // TODO: flash audio when it is implemented
     // Currently we skip this step to speed up flashing
 #ifndef GE_HAL_STM32
@@ -316,7 +315,8 @@ private:
   DialogScene dialog_scene;
   RootManagementUIScene management_ui;
 
-  Scene *sub_scene_array[2]; // Array for GameScene sub-scenes (DialogScene, RootManagementUIScene)
+  Scene *sub_scene_array[2]; // Array for GameScene sub-scenes (DialogScene,
+                             // RootManagementUIScene)
 
   // Tutorial system
   TutorialSystem tutorial;

@@ -95,7 +95,8 @@ public:
 
     // Acceleration increases speed up to 2-3x
     if (is_accelerating) {
-      // Gradually increase current speed towards max (2.5x base for this weight)
+      // Gradually increase current speed towards max (2.5x base for this
+      // weight)
       float max_accel_speed = effective_base_speed * 2.5f;
       current_speed += acceleration_rate * delta_time;
       current_speed = std::min(current_speed, max_accel_speed);
@@ -123,11 +124,13 @@ private:
 
   static constexpr float default_angle = M_PI_2;
   static constexpr float turn_rate = 1.5f;
-  static constexpr float boat_speed = 30.0f;        // 30m/s base speed
-  static constexpr float ship_weight = 100.0f;      // Ship base weight in kg
-  static constexpr float acceleration_rate = 60.0f; // Speed increase per second when accelerating
-  static constexpr float deceleration_rate = 40.0f; // Speed decrease per second when not accelerating
-  
+  static constexpr float boat_speed = 30.0f;   // 30m/s base speed
+  static constexpr float ship_weight = 100.0f; // Ship base weight in kg
+  static constexpr float acceleration_rate =
+      60.0f; // Speed increase per second when accelerating
+  static constexpr float deceleration_rate =
+      40.0f; // Speed decrease per second when not accelerating
+
   float angle = default_angle;
   float current_speed = boat_speed; // Current actual speed
 

@@ -41,7 +41,7 @@ public:
   }
 
   void render(Surface &region, const Font &font, bool is_selected) {
-    u16 label_color = is_selected ? 0x0000 : 0xBDF7;
+    u16 label_color = is_selected ? 0x0000 : 0x39E7;
 
     // Render label
     font.render_colored(label, -1, region, 10, 2, label_color);
@@ -57,7 +57,11 @@ public:
 
       // Draw current option (centered-ish)
       const char *current_opt = options[selected_option];
-      font.render_colored(current_opt, -1, region, 30, option_y, label_color);
+      auto width = font.text_width(current_opt, -1);
+      auto text_region = region.subsurface((region.get_width() - width) / 2, 0,
+                                           width, region.get_height());
+      font.render_colored(current_opt, -1, text_region, 0, option_y,
+                          label_color);
 
       // Draw right arrow if not last option
       if (selected_option < num_options - 1) {

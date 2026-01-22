@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ge-app/font.hpp"
+#include "ge-app/gfx/shape_utils.hpp"
 #include "ge-hal/app.hpp"
 #include "ge-hal/core.hpp"
 #include "ge-hal/gpu.hpp"
@@ -54,7 +55,7 @@ public:
   }
 
   void render(Surface &region, const Font &font, bool is_selected) {
-    u16 label_color = is_selected ? 0x0000 : 0xBDF7;
+    u16 label_color = is_selected ? 0x0000 : 0x39E7;
     u16 bar_color = is_selected ? 0x0000 : 0x5AEB;
     u16 fill_color = is_selected ? 0x001F : 0x001F; // Blue
 
@@ -72,12 +73,7 @@ public:
     hal::gpu::fill(bar_region, 0xFFFF); // White background
 
     // Draw slider border
-    hal::gpu::fill(bar_region.subsurface(0, 0, bar_width, 1), bar_color);
-    hal::gpu::fill(bar_region.subsurface(0, bar_height - 1, bar_width, 1),
-                   bar_color);
-    hal::gpu::fill(bar_region.subsurface(0, 0, 1, bar_height), bar_color);
-    hal::gpu::fill(bar_region.subsurface(bar_width - 1, 0, 1, bar_height),
-                   bar_color);
+    draw_rect(bar_region, bar_color, 1);
 
     // Calculate fill width based on current value
     float normalized = get_normalized_value();

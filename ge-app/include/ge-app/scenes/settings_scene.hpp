@@ -13,6 +13,15 @@
 
 namespace ge {
 
+// Settings item indices
+enum SettingsItem : u32 {
+  MUSIC_SLIDER = 0,
+  SFX_SLIDER = 1,
+  BUTTON_FLIP = 2,
+  BACK_BUTTON = 3,
+  NUM_SETTINGS_ITEMS = 4
+};
+
 class SettingsScene : public Scene {
 public:
   SettingsScene(App &app) : Scene{app} {
@@ -42,7 +51,7 @@ public:
       }
       joy_moved_y = true;
     } else if (joystick.y > 0.5f && !joy_moved_y) {
-      if (selected_item < 3) { // 0=music, 1=sfx, 2=flip, 3=back
+      if (selected_item < BACK_BUTTON) {
         selected_item++;
       }
       joy_moved_y = true;
@@ -51,16 +60,16 @@ public:
     }
 
     // Adjust selected item with joystick X axis
-    if (selected_item == 0) {
+    if (selected_item == MUSIC_SLIDER) {
       // Music slider
       music_slider.adjust_value(joystick.x, 2.0f);
       // Update app volume
       app.audio_set_master_volume(music_slider.get_value_as_volume());
-    } else if (selected_item == 1) {
+    } else if (selected_item == SFX_SLIDER) {
       // SFX slider
       sfx_slider.adjust_value(joystick.x, 2.0f);
       // Note: SFX volume would need separate handling in the audio system
-    } else if (selected_item == 2) {
+    } else if (selected_item == BUTTON_FLIP) {
       // Button flip option
       button_flip_selector.adjust_selection(joystick.x);
     }
@@ -80,29 +89,30 @@ public:
     auto music_region =
         fb_region.subsurface(0, y_offset, fb_region.get_width(), item_height);
     music_slider.render(music_region, Font::regular_font(),
-                        selected_item == 0);
+                        selected_item == MUSIC_SLIDER);
     y_offset += item_height;
 
     // Render SFX Slider
     auto sfx_region =
         fb_region.subsurface(0, y_offset, fb_region.get_width(), item_height);
-    sfx_slider.render(sfx_region, Font::regular_font(), selected_item == 1);
+    sfx_slider.render(sfx_region, Font::regular_font(),
+                      selected_item == SFX_SLIDER);
     y_offset += item_height;
 
     // Render Button Flip Option
     auto flip_region =
         fb_region.subsurface(0, y_offset, fb_region.get_width(), item_height);
     button_flip_selector.render(flip_region, Font::regular_font(),
-                                selected_item == 2);
+                                selected_item == BUTTON_FLIP);
     y_offset += item_height;
 
     // Render Back button
     auto back_region =
         fb_region.subsurface(0, y_offset, fb_region.get_width(), item_height);
-    u16 back_color = (selected_item == 3) ? 0x0000 : 0xBDF7;
+    u16 back_color = (selected_item == BACK_BUTTON) ? 0x0000 : 0xBDF7;
 
     // Draw border for selected back button
-    if (selected_item == 3) {
+    if (selected_item == BACK_BUTTON) {
       u32 padding = 4;
       auto border_region = back_region.subsurface(
           padding, padding, back_region.get_width() - padding * 2,
@@ -128,7 +138,7 @@ public:
   }
 
   void on_button_clicked(Button btn) override {
-    if (btn == Button::Button1 && selected_item == 3) {
+    if (btn == Button::Button1 && selected_item == BACK_BUTTON) {
       // Back button selected
       on_back_action();
     }
@@ -154,7 +164,7 @@ private:
   ui::OptionSelector button_flip_selector;
   const char *button_flip_options[2];
 
-  u32 selected_item = 0; // 0=music, 1=sfx, 2=flip, 3=back
+  u32 selected_item = MUSIC_SLIDER;
   bool joy_moved_y = false;
 
   Texture menu_bg_texture{menu_bg, menu_bg_WIDTH, menu_bg_HEIGHT,

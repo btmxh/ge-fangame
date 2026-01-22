@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ge-hal/core.hpp"
-#include <cstring>
 
 namespace ge {
 

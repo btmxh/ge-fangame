@@ -6,6 +6,7 @@
 #include "ge-hal/app.hpp"
 #include "ge-hal/gpu.hpp"
 #include "ge-hal/surface.hpp"
+#include <algorithm>
 #include <cstdio>
 
 namespace ge {

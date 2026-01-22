@@ -4,24 +4,31 @@ This document describes the fishing system implementation for the GE-Fangame pro
 
 ## Overview
 
-The game now includes a fishing mode that allows players to cast a fishing line, wait for fish to bite, and catch them. The fishing system is integrated into the existing game modes and can be activated by switching to Fishing mode.
+The game now includes a fishing mode that allows players to cast a fishing line, wait for fish to bite, and catch them. The fishing system is integrated into the existing game modes and can be activated by switching to Fishing mode. All fishing feedback is displayed through on-screen dialog boxes with input focus.
 
 ## Architecture
 
 ### Components
 
 1. **Fishing System** (`ge-app/include/ge-app/game/fishing.hpp`)
-   - Manages fishing state machine (Idle, Casting, Fishing, FishBiting, Caught)
+   - Manages fishing state machine (7 states: Idle, Casting, Fishing, FishBiting, Caught, BaitLost, Reeling)
    - Handles joystick flick detection for casting
    - Implements line drawing using Bresenham's algorithm
    - Renders bobber with floating and wiggle animations
    - Manages fish bite timing and player interaction
+   - Integrates DialogBox for all user feedback
 
-2. **GameScene Integration** (`ge-app/include/ge-app/scenes/game_scene.hpp`)
+2. **Enhanced DialogBox** (`ge-app/include/ge-app/gfx/dialog_box.hpp`)
+   - Added input focus system to prevent accidental actions
+   - Methods: `show_message()`, `has_input_focus()`, `dismiss()`
+   - Blocks other input when displaying messages
+   - Supports fast-forwarding with Button A
+
+3. **GameScene Integration** (`ge-app/include/ge-app/scenes/game_scene.hpp`)
    - Added fishing system to GameScene
    - Integrated fishing updates in Fishing mode
-   - Renders fishing line and bobber when fishing is active
-   - Delegates Button A clicks to fishing system
+   - Renders fishing line, bobber, and dialog boxes
+   - Handles input focus for fishing dialogs
 
 ### Fishing States
 
@@ -112,9 +119,23 @@ The game now includes a fishing mode that allows players to cast a fishing line,
 - **Joystick**: Flick to cast fishing line
 - **Button 2**: Switch between game modes (Steering/Fishing/Management)
 - **Button 1**: 
+  - **When dialog has focus**: Dismiss dialog (or fast-forward if typing)
   - Catch fish when in Caught state (triggers reeling animation with fish)
   - Reel in empty line when in BaitLost state (triggers reeling animation, no catch)
   - Retract early during Fishing/FishBiting states (triggers reeling animation, no catch)
+
+### User Feedback (Dialog System)
+
+All fishing events display on-screen dialogs:
+- **Fish Biting**: "Fish is biting! Press A to catch it!"
+- **Bait Lost**: "The fish ate all the bait and got away!"
+- **Early Retraction**: "Reeling in early..."
+- **Empty Line**: "Reeling in empty line..."
+- **No Catch**: "Nothing caught."
+- **Success**: Fish name (e.g., "Golden Fish (RARE!)")
+- **Timeout**: "The fish got away. Recast your line!"
+
+Dialogs use input focus to prevent accidental actions while messages are displayed.
 
 ## Implementation Details
 
@@ -195,12 +216,21 @@ float_offset = sin(wiggle_time * 2.0) * 2.0
   - Added `#include "ge-app/game/fishing.hpp"`
   - Added `Fishing fishing;` member
   - Updated `tick()` to handle fishing mode
-  - Updated `render()` to draw fishing elements
-  - Updated `on_button_clicked()` to handle fishing actions
+  - Updated `render()` to draw fishing elements and dialogs
+  - Updated `on_button_clicked()` to handle fishing actions and dialog input focus
+  
+- `ge-app/include/ge-app/gfx/dialog_box.hpp`: Enhanced DialogBox API
+  - Added input focus system
+  - Added `show_message()`, `has_input_focus()`, `dismiss()` methods
+  - Added `get_pending_message()` for rendering
+  - Added `update()` and `is_message_complete()` for state management
 
 ## Files Added
 
 - `ge-app/include/ge-app/game/fishing.hpp`: Complete fishing system implementation
+  - Includes DialogBox integration
+  - Handles all fishing states and transitions
+  - Provides user feedback through on-screen dialogs
 
 ## Usage
 
@@ -209,11 +239,19 @@ float_offset = sin(wiggle_time * 2.0) * 2.0
    - Watch the animated line extend to the target position with smooth easing (0.25s)
 3. **Wait or Retract Early**: 
    - Watch the bobber float and wiggle while waiting for a fish
-   - Press Button A anytime to retract early (no catch)
-4. **React**: When fish bites (increased wiggle + log message), press Button A within 3.5 seconds
-5. **Bait Lost**: If timeout, enters BaitLost state - press Button A to reel in empty line
+   - Press Button A anytime to retract early (shows dialog: "Reeling in early...")
+4. **React to Fish Bite**: 
+   - When fish bites, dialog appears: "Fish is biting! Press A to catch it!"
+   - Press Button A to dismiss dialog, then press again to catch
+   - Must catch within 3.5 seconds or fish escapes
+5. **Bait Lost**: 
+   - If timeout, dialog shows: "The fish ate all the bait and got away!"
+   - Press Button A to dismiss, then press again to reel in empty line
 6. **Reel In**: Watch the bobber animate back to the boat (0.8s)
-7. **Success**: Fish name printed to stdout (or "Nothing caught." if retracted early or bait lost)
+7. **Result Dialog**: 
+   - Success: Fish name displayed (e.g., "Golden Fish (RARE!)")
+   - No catch: "Nothing caught."
+   - Press Button A to dismiss and continue fishing
 
 ## Future Enhancements
 

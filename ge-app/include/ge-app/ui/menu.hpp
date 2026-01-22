@@ -67,7 +67,7 @@ public:
       }
 
       // Just render text at left aligned position, let renderer handle it
-      u16 color = (i == selected_index) ? 0x0000 : 0xBDF7; // white or gray
+      u16 color = (i == selected_index) ? 0x0000 : 0x39E7; // black or gray
       font.render_colored(items[i].label, -1, item_region, 10, 2, color);
     }
   }

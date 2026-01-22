@@ -86,7 +86,7 @@ void Pin::enable_exti(EXTITrigger trigger) const {
   
   // Enable NVIC interrupt for this EXTI line
   IRQn_Type irqn;
-  if (num <= 4) {
+  if (num < 5) {
     irqn = static_cast<IRQn_Type>(EXTI0_IRQn + num);
   } else if (num <= 9) {
     irqn = EXTI9_5_IRQn;

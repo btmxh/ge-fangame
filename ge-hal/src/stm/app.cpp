@@ -38,6 +38,37 @@ constexpr hal::stm::Pin button_pins[NUM_BUTTONS] = {BUTTON1_PIN, BUTTON2_PIN};
 App* app_instance = nullptr;
 } // anonymous namespace
 
+// Handle button state change (called from interrupt)
+static void handle_button_interrupt(int button_index) {
+  bool pressed = !button_pins[button_index].read();
+  auto &bs = button_states[button_index];
+  
+  // Detect button down event
+  if (pressed && !bs.last_state) {
+    bs.last_down = app_instance->now();
+    bs.last_up = -1;
+    bs.handled_hold = false;
+    needs_rerender = true;
+  }
+  
+  // Detect button up event
+  if (!pressed && bs.last_state) {
+    bs.last_up = app_instance->now();
+    if (bs.last_down >= 0) {
+      i64 held_time = bs.last_up - bs.last_down;
+      if (held_time < BUTTON_HOLD_THRESHOLD_MS) {
+        app_instance->on_button_clicked(static_cast<Button>(button_index));
+      } else {
+        app_instance->on_button_finished_hold(static_cast<Button>(button_index));
+      }
+    }
+    bs.handled_hold = false;
+    needs_rerender = true;
+  }
+  
+  bs.last_state = pressed;
+}
+
 static void enable_fpu() {
   SCB->CPACR |=
       (3UL << 20) | (3UL << 22); // enable FPU: CP10 and CP11 full access
@@ -95,37 +126,6 @@ void App::log(const char *fmt, ...) {
 }
 
 void App::sleep(std::int64_t ms) { hal::stm::delay_timed(ms); }
-
-// Handle button state change (called from interrupt)
-static void handle_button_interrupt(int button_index) {
-  bool pressed = !button_pins[button_index].read();
-  auto &bs = button_states[button_index];
-  
-  // Detect button down event
-  if (pressed && !bs.last_state) {
-    bs.last_down = app_instance->now();
-    bs.last_up = -1;
-    bs.handled_hold = false;
-    needs_rerender = true;
-  }
-  
-  // Detect button up event
-  if (!pressed && bs.last_state) {
-    bs.last_up = app_instance->now();
-    if (bs.last_down >= 0) {
-      i64 held_time = bs.last_up - bs.last_down;
-      if (held_time < BUTTON_HOLD_THRESHOLD_MS) {
-        app_instance->on_button_clicked(static_cast<Button>(button_index));
-      } else {
-        app_instance->on_button_finished_hold(static_cast<Button>(button_index));
-      }
-    }
-    bs.handled_hold = false;
-    needs_rerender = true;
-  }
-  
-  bs.last_state = pressed;
-}
 
 void App::tick(float dt) {
   // Only check for hold events (press/release are handled by interrupts)

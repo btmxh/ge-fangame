@@ -281,6 +281,8 @@ void App::loop() {
   }
 }
 
+void App::request_quit() { app_impl_instance->quit = true; }
+
 std::int64_t App::now() { return SDL_GetTicks(); }
 
 JoystickState App::get_joystick_state() {

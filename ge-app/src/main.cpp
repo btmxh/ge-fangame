@@ -4,7 +4,6 @@
 #include "ge-hal/surface.hpp"
 
 #include <cassert>
-#include <memory>
 
 namespace ge {
 
@@ -12,7 +11,7 @@ enum class SceneType { Menu, Game };
 
 class MainApp : public ge::App {
 public:
-  MainApp() : ge::App() { switch_to_menu(); }
+  MainApp() : ge::App(), menu_scene_impl(*this) { switch_to_menu(); }
 
   void tick(float dt) override {
     App::tick(dt);
@@ -47,14 +46,17 @@ public:
 
   void switch_to_menu() {
     current_scene_type = SceneType::Menu;
-    menu_scene = std::unique_ptr<MenuSceneImpl>(new MenuSceneImpl(*this));
-    current_scene = menu_scene.get();
+    current_scene = &menu_scene_impl;
   }
 
   void switch_to_game() {
     current_scene_type = SceneType::Game;
-    game_scene = std::unique_ptr<GameScene>(new GameScene(*this));
-    current_scene = game_scene.get();
+    // Construct game scene in-place when switching to it
+    if (!game_scene_initialized) {
+      new (&game_scene_storage) GameScene(*this);
+      game_scene_initialized = true;
+    }
+    current_scene = reinterpret_cast<GameScene *>(&game_scene_storage);
   }
 
 private:
@@ -82,8 +84,11 @@ private:
 
   SceneType current_scene_type = SceneType::Menu;
   Scene *current_scene = nullptr;
-  std::unique_ptr<MenuSceneImpl> menu_scene;
-  std::unique_ptr<GameScene> game_scene;
+  MenuSceneImpl menu_scene_impl;
+  
+  // Storage for GameScene (placement new)
+  alignas(GameScene) char game_scene_storage[sizeof(GameScene)];
+  bool game_scene_initialized = false;
 };
 } // namespace ge
 

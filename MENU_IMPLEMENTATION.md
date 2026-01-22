@@ -14,8 +14,8 @@ The game now starts with a main menu instead of jumping directly into gameplay. 
    - Reusable menu widget that can be used in any scene
    - Handles rendering of menu items with selection indicator
    - Manages joystick navigation with configurable thresholds
-   - Caches text widths for optimal performance
    - **No dynamic allocation**: Uses user-provided arrays to avoid heap allocation
+   - Simple text rendering without width calculation
 
 2. **MenuScene** (`ge-app/include/ge-app/scenes/menu_scene.hpp`)
    - Main menu scene with title, subtitle, and menu options
@@ -24,7 +24,7 @@ The game now starts with a main menu instead of jumping directly into gameplay. 
 
 3. **Scene Management** (`ge-app/src/main.cpp`)
    - MainApp now supports switching between different scenes
-   - Uses unique_ptr for proper memory management
+   - Uses static storage for scenes (no heap allocation)
    - Delegates input events to the current scene
 
 ### Input Controls
@@ -39,10 +39,9 @@ The game now starts with a main menu instead of jumping directly into gameplay. 
 
 ### Performance Optimizations
 
-1. **Text Width Caching**: Menu items cache their text widths on first render
-2. **Pre-calculated Layouts**: Title and subtitle widths are calculated once in the constructor
-3. **Efficient Rendering**: Only renders necessary elements, no redundant calculations
-4. **No Dynamic Allocation**: Menu uses pointer to user-provided array instead of heap allocation
+1. **Simple Rendering**: Menu items rendered directly without width calculation - just eyeball positioning
+2. **Efficient Rendering**: Only renders necessary elements, no redundant calculations
+3. **No Dynamic Allocation**: Menu uses pointer to user-provided array, scenes use static storage
 
 ### Type Safety
 
@@ -67,10 +66,10 @@ class MyScene : public Scene {
 public:
   MyScene(App &app) : Scene{app} {
     // Initialize menu items in a static array (no dynamic allocation)
-    menu_items[0] = {"Option 1", 1, 0};
-    menu_items[1] = {"Option 2", 2, 0};
-    menu_items[2] = {"Option 3", 3, 0};
-    menu_items[3] = {"Option 4", 4, 0};
+    menu_items[0] = {"Option 1", 1};
+    menu_items[1] = {"Option 2", 2};
+    menu_items[2] = {"Option 3", 3};
+    menu_items[3] = {"Option 4", 4};
     menu.set_items(menu_items, 4);
   }
 

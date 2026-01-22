@@ -12,7 +12,6 @@ namespace ui {
 struct MenuItem {
   const char *label;
   int id;
-  u32 text_width = 0; // Cached text width
 };
 
 class Menu {
@@ -36,24 +35,6 @@ public:
   void render(Surface &region, const Font &font) {
     if (!items || item_count == 0)
       return;
-
-    // Cache text widths on first render if not already cached
-    for (u32 i = 0; i < item_count; i++) {
-      auto &item = items[i];
-      if (item.text_width == 0) {
-        const char *c = item.label;
-        while (*c) {
-          u8 const *glyph_data;
-          u8 glyph_w, glyph_h, advance;
-          if (font.get_glyph(*c, glyph_data, glyph_w, glyph_h, advance)) {
-            item.text_width += advance;
-          } else {
-            item.text_width += font.default_advance();
-          }
-          c++;
-        }
-      }
-    }
 
     // Calculate item height and spacing
     u32 item_height = font.line_height() + 8; // 8px padding
@@ -84,12 +65,9 @@ public:
                        0xFFFF);
       }
 
-      // Calculate centered x position for text using cached width
-      u32 x_pos = (region.get_width() - items[i].text_width) / 2;
-
-      // Draw text
+      // Just render text at left aligned position, let renderer handle it
       u16 color = (i == selected_index) ? 0xFFFF : 0xBDF7; // white or gray
-      font.render_colored(items[i].label, -1, region, x_pos, y_pos, color);
+      font.render_colored(items[i].label, -1, region, 10, y_pos, color);
     }
   }
 

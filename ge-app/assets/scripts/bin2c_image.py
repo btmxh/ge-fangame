@@ -7,6 +7,10 @@ import bin2c
 import argparse
 
 
+# Rotation constraint: Only multiples of this angle are allowed
+ROTATION_ANGLE_INCREMENT = 45
+
+
 def rgb888_to_rgb565(r, g, b):
     return ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3)
 
@@ -38,21 +42,23 @@ def convert_image_to_data(img: Image.Image, mode: str):
 
 
 def rotate_image(img: Image.Image, angle: int, mode: str):
-    """Rotate an image by the specified angle (must be multiple of 45).
+    """Rotate an image by the specified angle (must be multiple of ROTATION_ANGLE_INCREMENT).
     
     Args:
         img: Input PIL Image
-        angle: Rotation angle in degrees (must be multiple of 45)
+        angle: Rotation angle in degrees (must be multiple of ROTATION_ANGLE_INCREMENT)
         mode: Color mode (rgb565 or argb1555)
     
     Returns:
         Tuple of (data, w, h) for the rotated image
     
     Raises:
-        ValueError: If angle is not a multiple of 45
+        ValueError: If angle is not a multiple of ROTATION_ANGLE_INCREMENT
     """
-    if angle % 45 != 0:
-        raise ValueError(f"Rotation angle must be a multiple of 45 degrees, got {angle}")
+    if angle % ROTATION_ANGLE_INCREMENT != 0:
+        raise ValueError(
+            f"Rotation angle must be a multiple of {ROTATION_ANGLE_INCREMENT} degrees, got {angle}"
+        )
     
     # Use BICUBIC for better quality rotation
     # expand=True allows the image dimensions to change to fit the rotated content

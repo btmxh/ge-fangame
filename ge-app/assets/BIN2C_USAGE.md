@@ -346,10 +346,20 @@ void draw_compass(int angle_degrees) {
         needle_180, needle_225, needle_270, needle_315
     };
     
+    // Array of dimensions for each rotation (dimensions may vary)
+    int widths[] = {
+        needle_0_WIDTH, needle_45_WIDTH, needle_90_WIDTH, needle_135_WIDTH,
+        needle_180_WIDTH, needle_225_WIDTH, needle_270_WIDTH, needle_315_WIDTH
+    };
+    int heights[] = {
+        needle_0_HEIGHT, needle_45_HEIGHT, needle_90_HEIGHT, needle_135_HEIGHT,
+        needle_180_HEIGHT, needle_225_HEIGHT, needle_270_HEIGHT, needle_315_HEIGHT
+    };
+    
     // Draw the appropriate rotation
     draw_sprite(rotations[rotation_index], 
-                needle_0_WIDTH,  // They all have same dimensions at 45° intervals
-                needle_0_HEIGHT);
+                widths[rotation_index],
+                heights[rotation_index]);
 }
 ```
 

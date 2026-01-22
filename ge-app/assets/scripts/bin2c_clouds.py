@@ -32,11 +32,13 @@ def rle_encode_row(pixels, width, offset):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5:
+    if len(sys.argv) < 5:
         print(
-            f"Usage: {argv[0]} <input image> <output c file> <output h file> <symbol>"
+            f"Usage: {argv[0]} <input image> <output c file> <output h file> <symbol> [additional_args...]"
         )
+        sys.exit(1)
     image_path, out_c, out_h, symbol = argv[1:5]
+    # Additional args are ignored for now but accepted for consistency
 
     # --- load grayscale image ---
     img = Image.open(image_path).convert("L")

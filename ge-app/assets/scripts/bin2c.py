@@ -40,11 +40,14 @@ def main(data, out_c, out_h, name, header_additional="", dtype="uint8_t"):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5:
-        print("usage: bin2c.py <input.bin> <output.c> <output.h> <symbol>")
+    if len(sys.argv) < 5:
+        print(
+            "usage: bin2c.py <input.bin> <output.c> <output.h> <symbol> [additional_args...]"
+        )
         sys.exit(1)
 
     inp, out_c, out_h, name = sys.argv[1:5]
+    # Additional args are ignored for now but accepted for consistency
 
     with open(inp, "rb") as f:
         data = f.read()

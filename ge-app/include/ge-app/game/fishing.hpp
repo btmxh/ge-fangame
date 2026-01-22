@@ -10,10 +10,11 @@ namespace ge {
 
 enum class FishingState {
   Idle,       // Not fishing
-  Casting,    // Joystick flick animation
+  Casting,    // Joystick flick animation - line extending
   Fishing,    // Line in water, waiting for fish
   FishBiting, // Fish is biting, wiggle intensifies
-  Caught      // Fish caught, ready to reel in
+  Caught,     // Fish caught, ready to reel in
+  Reeling     // Reeling in the catch - bobber returning to boat
 };
 
 class Fishing {
@@ -37,6 +38,9 @@ public:
     case FishingState::Caught:
       // Stay in this state until player presses button
       break;
+    case FishingState::Reeling:
+      update_reeling(app, dt);
+      break;
     }
 
     // Update wiggle animation
@@ -48,16 +52,34 @@ public:
       return; // Nothing to render
     }
 
-    // Calculate bobber position with wiggle
-    float wiggle_x = std::sin(wiggle_time * wiggle_freq) * wiggle_amplitude;
-    float wiggle_y = std::cos(wiggle_time * wiggle_freq * 0.7f) * wiggle_amplitude;
+    // Calculate bobber position based on state
+    i32 bobber_x, bobber_y;
     
-    i32 bobber_x = cast_x + static_cast<i32>(wiggle_x);
-    i32 bobber_y = cast_y + static_cast<i32>(wiggle_y);
+    if (state == FishingState::Casting) {
+      // Animate casting: line extends from boat to target position
+      float progress = casting_timer / CAST_DURATION;
+      progress = std::min(progress, 1.0f);
+      bobber_x = static_cast<i32>(cast_x * progress);
+      bobber_y = static_cast<i32>(cast_y * progress);
+    } else if (state == FishingState::Reeling) {
+      // Animate reeling: bobber returns to boat
+      float progress = reeling_timer / REEL_DURATION;
+      progress = std::min(progress, 1.0f);
+      float inv_progress = 1.0f - progress; // 1.0 -> 0.0
+      bobber_x = static_cast<i32>(cast_x * inv_progress);
+      bobber_y = static_cast<i32>(cast_y * inv_progress);
+    } else {
+      // Normal position with wiggle
+      float wiggle_x = std::sin(wiggle_time * wiggle_freq) * wiggle_amplitude;
+      float wiggle_y = std::cos(wiggle_time * wiggle_freq * 0.7f) * wiggle_amplitude;
+      
+      bobber_x = cast_x + static_cast<i32>(wiggle_x);
+      bobber_y = cast_y + static_cast<i32>(wiggle_y);
 
-    // Add floating effect (up and down motion)
-    float float_offset = std::sin(wiggle_time * 2.0f) * 2.0f;
-    bobber_y += static_cast<i32>(float_offset);
+      // Add floating effect (up and down motion)
+      float float_offset = std::sin(wiggle_time * 2.0f) * 2.0f;
+      bobber_y += static_cast<i32>(float_offset);
+    }
 
     // Draw fishing line from boat to bobber
     draw_line(region, boat_center_x, boat_center_y, bobber_x, bobber_y,
@@ -68,10 +90,15 @@ public:
   }
 
   void on_button_clicked(App &app, Button btn) {
-    if (btn == Button::Button1 && state == FishingState::Caught) {
-      // Catch the fish!
-      catch_fish(app);
-      reset();
+    if (btn == Button::Button1) {
+      if (state == FishingState::Caught) {
+        // Start reeling in the fish!
+        state = FishingState::Reeling;
+        reeling_timer = 0.0f;
+      } else if (state == FishingState::Fishing || state == FishingState::FishBiting) {
+        // Pressed too early or at wrong time
+        app.log("Wait for the fish to bite!");
+      }
     }
   }
 
@@ -85,10 +112,11 @@ private:
   static constexpr float FLICK_THRESHOLD = 3.0f;
   static constexpr float MIN_JOYSTICK_MAG = 0.4f;
   static constexpr float CAST_DURATION = 0.5f;
+  static constexpr float REEL_DURATION = 0.8f;
   static constexpr float BITE_CHANCE_PER_SECOND = 0.3f;
   static constexpr float MIN_FISHING_TIME = 2.0f;
   static constexpr float MAX_FISHING_TIME = 15.0f;
-  static constexpr float BITE_WINDOW = 3.0f;
+  static constexpr float BITE_WINDOW = 3.5f; // 3-4 seconds as requested
   static constexpr float CATCH_REACTION_TIME = 0.5f;
 
   void update_idle(const JoystickState &joystick, float dt) {
@@ -164,11 +192,21 @@ private:
 
     // Player has limited time to catch
     if (fish_bite_timer > BITE_WINDOW) {
-      app.log("The fish got away! You were too slow.");
+      app.log("The fish ate all the bait and got away!");
       reset();
     } else if (fish_bite_timer > CATCH_REACTION_TIME) {
       // Allow catching after a small delay (reaction time needed)
       state = FishingState::Caught;
+    }
+  }
+
+  void update_reeling(App &app, float dt) {
+    reeling_timer += dt;
+    
+    if (reeling_timer >= REEL_DURATION) {
+      // Animation complete, catch the fish
+      catch_fish(app);
+      reset();
     }
   }
 
@@ -198,6 +236,7 @@ private:
     casting_timer = 0.0f;
     fishing_timer = 0.0f;
     fish_bite_timer = 0.0f;
+    reeling_timer = 0.0f;
     wiggle_time = 0.0f;
     prev_joystick_mag = 0.0f;
   }
@@ -267,6 +306,7 @@ private:
   float casting_timer = 0.0f;
   float fishing_timer = 0.0f;
   float fish_bite_timer = 0.0f;
+  float reeling_timer = 0.0f;
   float wiggle_time = 0.0f;
   
   // Wiggle parameters

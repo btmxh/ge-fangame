@@ -124,6 +124,7 @@ function(raw_image_rotated SYMBOL_NAME IMAGE_FILE ROTATION_COUNT)
     )
     
     # Default mode is argb1555 for rotated images
+    # (rotated images often need alpha channel for smooth edges due to interpolation)
     if(NOT RAW_IMAGE_ROT_MODE)
         set(RAW_IMAGE_ROT_MODE argb1555)
     endif()
@@ -141,6 +142,7 @@ function(raw_image_animated SYMBOL_NAME IMAGE_FILE)
     )
     
     # Default mode is argb1555 for animated images
+    # (animated images often have transparency for sprite composition)
     if(NOT RAW_IMAGE_ANIM_MODE)
         set(RAW_IMAGE_ANIM_MODE argb1555)
     endif()

@@ -64,7 +64,12 @@ def generate_rotated_spritesheet(img: Image.Image, rotation_count: int, mode: st
 
 
 def process_animated_image(img_path: str, mode: str):
-    """Process animated images (APNG, WEBP, GIF) and extract frames."""
+    """Process animated images (APNG, WEBP, GIF) and extract frames.
+    
+    Returns:
+        Tuple of (data, w, h, frame_w, frame_h, frame_count, frame_durations)
+        For single-frame images: frame_w, frame_h, frame_count, frame_durations are None
+    """
     img = Image.open(img_path)
     
     frames = []
@@ -90,7 +95,7 @@ def process_animated_image(img_path: str, mode: str):
     if len(frames) == 1:
         # Not actually animated, process as single image
         data, w, h = convert_image_to_data(frames[0], mode)
-        return data, w, h, None, None, None
+        return data, w, h, None, None, None, None
     
     # Create horizontal spritesheet from frames
     frame_w, frame_h = frames[0].size
@@ -140,8 +145,7 @@ def main(inp_img: str, out_c: str, out_h: str, sym: str, mode: str,
         """
     elif animated:
         # Process animated image
-        result = process_animated_image(inp_img, mode)
-        data, w, h, frame_w, frame_h, frame_count, frame_durations = result if len(result) == 7 else (*result, None)
+        data, w, h, frame_w, frame_h, frame_count, frame_durations = process_animated_image(inp_img, mode)
         
         if frame_count is None:
             # Single frame, treat as static image
@@ -151,7 +155,7 @@ def main(inp_img: str, out_c: str, out_h: str, sym: str, mode: str,
             """
         else:
             # Multi-frame animation
-            durations_c = ",".join(str(d) for d in frame_durations)
+            duration_values_csv = ",".join(str(d) for d in frame_durations)
             header_additional = f"""
 #define {sym}_WIDTH {w}
 #define {sym}_HEIGHT {h}
@@ -159,7 +163,7 @@ def main(inp_img: str, out_c: str, out_h: str, sym: str, mode: str,
 #define {sym}_FRAME_HEIGHT {frame_h}
 #define {sym}_FRAME_COUNT {frame_count}
 
-static const unsigned short {sym}_FRAME_DURATIONS[] = {{{durations_c}}};
+static const unsigned short {sym}_FRAME_DURATIONS[] = {{{duration_values_csv}}};
             """
     else:
         # Simple static image
@@ -215,7 +219,11 @@ Examples:
                         help='Additional arguments (for compatibility)')
     
     # Check if we're being called with old-style arguments (for backwards compatibility)
-    if len(sys.argv) >= 5 and not any(arg.startswith('--') for arg in sys.argv[1:]):
+    # Old-style: no arguments start with '--'
+    # New-style: at least one argument starts with '--'
+    has_new_style_args = any(arg.startswith('--') for arg in sys.argv[1:])
+    
+    if len(sys.argv) >= 5 and not has_new_style_args:
         # Old-style: bin2c_image.py input.png output.c output.h symbol [mode] [...]
         inp_img = sys.argv[1]
         out_c = sys.argv[2]
@@ -225,13 +233,22 @@ Examples:
         rotation_count = 0
         animated = False
         
-        # Check for special flags in additional args
+        # Check for special flags in additional args (with bounds checking)
         remaining_args = sys.argv[6:] if len(sys.argv) > 6 else []
-        for i, arg in enumerate(remaining_args):
+        i = 0
+        while i < len(remaining_args):
+            arg = remaining_args[i]
             if arg == '--rotate' and i + 1 < len(remaining_args):
-                rotation_count = int(remaining_args[i + 1])
+                try:
+                    rotation_count = int(remaining_args[i + 1])
+                    i += 2  # Skip the next argument too
+                except ValueError:
+                    i += 1
             elif arg == '--animated':
                 animated = True
+                i += 1
+            else:
+                i += 1
     else:
         # New-style: use argparse
         args = parser.parse_args()

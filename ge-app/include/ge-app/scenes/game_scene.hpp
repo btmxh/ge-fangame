@@ -6,6 +6,7 @@
 #include "ge-app/game/compass.hpp"
 #include "ge-app/game/dock.hpp"
 #include "ge-app/game/fishing.hpp"
+#include "ge-app/game/inventory.hpp"
 #include "ge-app/game/sky.hpp"
 #include "ge-app/game/water.hpp"
 #include "ge-app/gfx/color.hpp"
@@ -99,6 +100,9 @@ public:
     water.set_water_color(ge::hsv_to_rgb565(142, 255, 181));
 
     dialog_box.show_message(app, msg[0].title, msg[0].desc);
+
+    // Connect inventory to fishing system
+    fishing.set_inventory(&inventory);
   }
 
   void tick(float dt) override {
@@ -110,6 +114,11 @@ public:
     last_frame_world_time = current_frame_world_time;
 
     auto joystick = app.get_joystick_state();
+
+    // If in Management mode, show management UI (handled elsewhere)
+    if (mode_indicator.get_current_mode() == GameMode::Management) {
+      return; // Management mode handled by separate scenes
+    }
 
     if (mode_indicator.get_current_mode() == GameMode::Steering) {
       if (!dialog_box.has_input_focus()) {
@@ -216,8 +225,13 @@ public:
     }
 
     if (btn == Button::Button2) {
-      mode_indicator.switch_mode();
-      clock.set_multiplier(app, mode_indicator.get_current_mode());
+      auto new_mode = mode_indicator.switch_mode();
+      clock.set_multiplier(app, new_mode);
+      
+      // If switched to Management mode, notify parent to show management UI
+      if (new_mode == GameMode::Management) {
+        on_enter_management_mode();
+      }
     } else if (btn == Button::Button1) {
       // Handle fishing dialog dismissal first (input focus)
       if (mode_indicator.get_current_mode() == GameMode::Fishing) {
@@ -225,6 +239,18 @@ public:
         fishing.on_button_clicked(app, dialog_box, btn);
       }
     }
+  }
+
+  // Virtual method to be called when entering management mode
+  virtual void on_enter_management_mode() {
+    // This will be handled by MainApp
+  }
+
+  // Getters for management scenes
+  const Clock &get_clock() const { return clock; }
+  const Inventory &get_inventory() const { return inventory; }
+  const GameModeIndicator &get_mode_indicator() const {
+    return mode_indicator;
   }
 
   void on_button_held(Button btn) override {
@@ -258,6 +284,7 @@ private:
   Sky sky;
   Water water;
   Fishing fishing;
+  Inventory inventory; // Player inventory
 
   DialogBox dialog_box;
   DialogMessage msg[3] = {

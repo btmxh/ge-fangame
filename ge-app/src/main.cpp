@@ -1,7 +1,10 @@
 #include "ge-app/scenes/credits_scene.hpp"
 #include "ge-app/scenes/game_scene.hpp"
+#include "ge-app/scenes/inventory_scene.hpp"
+#include "ge-app/scenes/management_menu_scene.hpp"
 #include "ge-app/scenes/menu_scene.hpp"
 #include "ge-app/scenes/settings_scene.hpp"
+#include "ge-app/scenes/status_scene.hpp"
 #include "ge-hal/app.hpp"
 #include "ge-hal/surface.hpp"
 
@@ -9,13 +12,23 @@
 
 namespace ge {
 
-enum class SceneType { Menu, Game, Settings, Credits };
+enum class SceneType {
+  Menu,
+  Game,
+  Settings,
+  Credits,
+  ManagementMenu,
+  Status,
+  Inventory
+};
 
 class MainApp : public ge::App {
 public:
   MainApp()
-      : ge::App(), menu_scene_impl(*this), game_scene{*this},
-        settings_scene_impl(*this), credits_scene_impl(*this) {
+      : ge::App(), menu_scene_impl(*this), game_scene_impl(*this),
+        settings_scene_impl(*this), credits_scene_impl(*this),
+        management_menu_scene_impl(*this), status_scene_impl(*this),
+        inventory_scene_impl(*this) {
     switch_to_menu();
   }
 
@@ -57,7 +70,7 @@ public:
 
   void switch_to_game() {
     current_scene_type = SceneType::Game;
-    current_scene = &game_scene;
+    current_scene = &game_scene_impl;
   }
 
   void switch_to_settings() {
@@ -68,6 +81,21 @@ public:
   void switch_to_credits() {
     current_scene_type = SceneType::Credits;
     current_scene = &credits_scene_impl;
+  }
+
+  void switch_to_management_menu() {
+    current_scene_type = SceneType::ManagementMenu;
+    current_scene = &management_menu_scene_impl;
+  }
+
+  void switch_to_status() {
+    current_scene_type = SceneType::Status;
+    current_scene = &status_scene_impl;
+  }
+
+  void switch_to_inventory() {
+    current_scene_type = SceneType::Inventory;
+    current_scene = &inventory_scene_impl;
   }
 
 private:
@@ -85,6 +113,18 @@ private:
       } else if (action == MenuAction::ExitGame) {
         main_app.request_quit();
       }
+    }
+
+  private:
+    MainApp &main_app;
+  };
+
+  class GameSceneImpl : public GameScene {
+  public:
+    GameSceneImpl(MainApp &app) : GameScene(app), main_app(app) {}
+
+    void on_enter_management_mode() override {
+      main_app.switch_to_management_menu();
     }
 
   private:
@@ -111,12 +151,60 @@ private:
     MainApp &main_app;
   };
 
+  class ManagementMenuSceneImpl : public ManagementMenuScene {
+  public:
+    ManagementMenuSceneImpl(MainApp &app)
+        : ManagementMenuScene(app), main_app(app) {}
+
+    void on_menu_action(ManagementAction action) override {
+      if (action == ManagementAction::ViewStatus) {
+        main_app.switch_to_status();
+      } else if (action == ManagementAction::ViewInventory) {
+        main_app.switch_to_inventory();
+      } else if (action == ManagementAction::BackToGame) {
+        main_app.switch_to_game();
+      }
+    }
+
+  private:
+    MainApp &main_app;
+  };
+
+  class StatusSceneImpl : public StatusScene {
+  public:
+    StatusSceneImpl(MainApp &app)
+        : StatusScene(app, app.game_scene_impl.get_clock(),
+                      app.game_scene_impl.get_inventory(),
+                      app.game_scene_impl.get_mode_indicator()),
+          main_app(app) {}
+
+    void on_back_action() override { main_app.switch_to_management_menu(); }
+
+  private:
+    MainApp &main_app;
+  };
+
+  class InventorySceneImpl : public InventoryScene {
+  public:
+    InventorySceneImpl(MainApp &app)
+        : InventoryScene(app, app.game_scene_impl.get_inventory()),
+          main_app(app) {}
+
+    void on_back_action() override { main_app.switch_to_management_menu(); }
+
+  private:
+    MainApp &main_app;
+  };
+
   SceneType current_scene_type = SceneType::Menu;
   Scene *current_scene = nullptr;
   MenuSceneImpl menu_scene_impl;
-  GameScene game_scene;
+  GameSceneImpl game_scene_impl;
   SettingsSceneImpl settings_scene_impl;
   CreditsSceneImpl credits_scene_impl;
+  ManagementMenuSceneImpl management_menu_scene_impl;
+  StatusSceneImpl status_scene_impl;
+  InventorySceneImpl inventory_scene_impl;
 };
 } // namespace ge
 

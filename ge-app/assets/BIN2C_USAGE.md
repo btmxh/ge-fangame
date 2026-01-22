@@ -109,8 +109,8 @@ int frame_index = (current_time_ms / anim_symbol_FRAME_DURATIONS[0]) % anim_symb
 int frame_offset = frame_index * anim_symbol_FRAME_WIDTH;
 
 // Draw the current frame
-draw_sprite(&anim_symbol[frame_offset * anim_symbol_FRAME_HEIGHT], 
-            anim_symbol_FRAME_WIDTH, 
+draw_sprite(&anim_symbol[frame_offset * anim_symbol_FRAME_HEIGHT],
+            anim_symbol_FRAME_WIDTH,
             anim_symbol_FRAME_HEIGHT);
 ```
 
@@ -162,8 +162,8 @@ extern const uint32_t rotated_sprite_len;
 
 ```c
 // Simply draw the pre-rotated image
-draw_sprite(rotated_sprite, 
-            rotated_sprite_WIDTH, 
+draw_sprite(rotated_sprite,
+            rotated_sprite_WIDTH,
             rotated_sprite_HEIGHT);
 ```
 
@@ -314,8 +314,8 @@ raw_image_rotated(compass_needle_90 out/textures/needle.png 90)
 
 void draw_compass_east() {
     // Draw the pre-rotated needle (pointing east)
-    draw_sprite(compass_needle_90, 
-                compass_needle_90_WIDTH, 
+    draw_sprite(compass_needle_90,
+                compass_needle_90_WIDTH,
                 compass_needle_90_HEIGHT);
 }
 ```
@@ -339,13 +339,13 @@ raw_image_rotated(needle_315 out/textures/needle.png 315)
 void draw_compass(int angle_degrees) {
     // Round to nearest 45-degree increment
     int rotation_index = ((angle_degrees + 22) / 45) % 8;
-    
+
     // Array of pointers to the different rotations
     const uint16_t* rotations[] = {
         needle_0, needle_45, needle_90, needle_135,
         needle_180, needle_225, needle_270, needle_315
     };
-    
+
     // Array of dimensions for each rotation (dimensions may vary)
     int widths[] = {
         needle_0_WIDTH, needle_45_WIDTH, needle_90_WIDTH, needle_135_WIDTH,
@@ -355,9 +355,9 @@ void draw_compass(int angle_degrees) {
         needle_0_HEIGHT, needle_45_HEIGHT, needle_90_HEIGHT, needle_135_HEIGHT,
         needle_180_HEIGHT, needle_225_HEIGHT, needle_270_HEIGHT, needle_315_HEIGHT
     };
-    
+
     // Draw the appropriate rotation
-    draw_sprite(rotations[rotation_index], 
+    draw_sprite(rotations[rotation_index],
                 widths[rotation_index],
                 heights[rotation_index]);
 }
@@ -381,7 +381,7 @@ typedef struct {
 
 void update_explosion(Animation* anim, uint32_t current_time_ms) {
     uint32_t elapsed = current_time_ms - anim->frame_start_time;
-    
+
     if (elapsed >= explosion_FRAME_DURATIONS[anim->frame]) {
         anim->frame = (anim->frame + 1) % explosion_FRAME_COUNT;
         anim->frame_start_time = current_time_ms;

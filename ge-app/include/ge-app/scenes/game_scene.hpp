@@ -13,7 +13,10 @@
 #include "ge-app/game/water.hpp"
 #include "ge-app/gfx/color.hpp"
 #include "ge-app/scenes/dialog_scene.hpp"
+#include "ge-app/scenes/inventory_scene.hpp"
+#include "ge-app/scenes/management_menu_scene.hpp"
 #include "ge-app/scenes/scene.hpp"
+#include "ge-app/scenes/status_scene.hpp"
 
 namespace ge {
 struct HSV {
@@ -88,8 +91,19 @@ inline uint16_t sky_color(float t) {
 }
 
 class GameScene : public Scene {
+private:
+  // Forward declare nested classes for management scenes
+  class ManagementMenuImpl;
+  class StatusSceneImpl;
+  class InventorySceneImpl;
+
 public:
-  GameScene(App &app) : Scene{app}, dialog_scene(app) {
+  GameScene(App &app) 
+      : Scene{app}, 
+        dialog_scene(app),
+        management_menu(*this),
+        status_scene(*this),
+        inventory_scene(*this) {
     // TODO: flash audio when it is implemented
     // Currently we skip this step to speed up flashing
 #ifndef GE_HAL_STM32
@@ -104,16 +118,29 @@ public:
     // Connect inventory to fishing system
     fishing.set_inventory(&inventory);
     
-    // Setup sub-scenes (DialogScene is a sub-scene of GameScene)
+    // Setup management sub-scenes (management_menu owns status and inventory)
+    management_sub_scenes[0] = &status_scene;
+    management_sub_scenes[1] = &inventory_scene;
+    management_menu.set_sub_scenes(management_sub_scenes, 2);
+    
+    // Status and inventory start inactive
+    status_scene.set_active(false);
+    inventory_scene.set_active(false);
+    
+    // Setup game sub-scenes (DialogScene and ManagementMenu)
     sub_scene_array[0] = &dialog_scene;
-    set_sub_scenes(sub_scene_array, 1);
+    sub_scene_array[1] = &management_menu;
+    set_sub_scenes(sub_scene_array, 2);
+    
+    // Management starts inactive
+    management_menu.set_active(false);
     
     // Initialize tutorial
     tutorial.initialize(dialog_scene, tutorial_messages, 3);
   }
 
   void tick(float dt) override {
-    // Tick sub-scenes first (includes DialogScene)
+    // Tick sub-scenes first (includes DialogScene and ManagementMenu)
     Scene::tick(dt);
     
     auto current_frame_world_time = clock.get_day_timer().get(app);
@@ -125,9 +152,9 @@ public:
 
     auto joystick = app.get_joystick_state();
 
-    // If in Management mode, show management UI (handled elsewhere)
+    // If in Management mode, management UI is handled by sub-scenes
     if (mode_indicator.get_current_mode() == GameMode::Management) {
-      return; // Management mode handled by separate scenes
+      return; // Management menu and sub-scenes handle everything
     }
 
     // Dialog captures input, so we don't update game state when it's showing
@@ -212,7 +239,7 @@ public:
     // app.log("Frame time: %ld ms", frame_time);
   }
   bool on_button_clicked(Button btn) override {
-    // Check sub-scenes first (DialogScene will capture if active)
+    // Check sub-scenes first (DialogScene and ManagementMenu will capture if active)
     if (Scene::on_button_clicked(btn)) {
       // If dialog was dismissed and tutorial not completed, show next message
       if (!dialog_scene.has_input_focus() && !tutorial.is_completed()) {
@@ -226,9 +253,14 @@ public:
       auto new_mode = mode_indicator.switch_mode();
       clock.set_multiplier(app, new_mode);
       
-      // If switched to Management mode, notify parent to show management UI
+      // Activate/deactivate management menu based on mode
       if (new_mode == GameMode::Management) {
-        on_enter_management_mode();
+        management_menu.set_active(true);
+      } else {
+        management_menu.set_active(false);
+        // Also deactivate management sub-scenes
+        status_scene.set_active(false);
+        inventory_scene.set_active(false);
       }
       return true;
     } else if (btn == Button::Button1) {
@@ -242,11 +274,6 @@ public:
     return false;
   }
 
-  // Virtual method to be called when entering management mode
-  virtual void on_enter_management_mode() {
-    // This will be handled by MainApp
-  }
-
   // Getters for management scenes
   const Clock &get_clock() const { return clock; }
   const Inventory &get_inventory() const { return inventory; }
@@ -256,6 +283,22 @@ public:
   const PlayerStats &get_player_stats() const { return player_stats; }
   Inventory &get_inventory_mutable() { return inventory; }
   PlayerStats &get_player_stats_mutable() { return player_stats; }
+  
+  // Management scene navigation (called by management menu sub-scene)
+  void show_status_screen() {
+    status_scene.set_active(true);
+    inventory_scene.set_active(false);
+  }
+  
+  void show_inventory_screen() {
+    status_scene.set_active(false);
+    inventory_scene.set_active(true);
+  }
+  
+  void hide_management_screens() {
+    status_scene.set_active(false);
+    inventory_scene.set_active(false);
+  }
 
   bool on_button_held(Button btn) override {
     // Check sub-scenes first
@@ -309,7 +352,12 @@ private:
 
   // Sub-scenes
   DialogScene dialog_scene;
-  Scene *sub_scene_array[1]; // Array for sub-scenes (DialogScene)
+  ManagementMenuImpl management_menu;
+  StatusSceneImpl status_scene;
+  InventorySceneImpl inventory_scene;
+  
+  Scene *sub_scene_array[2];         // Array for GameScene sub-scenes (DialogScene, ManagementMenu)
+  Scene *management_sub_scenes[2];   // Array for ManagementMenu sub-scenes (Status, Inventory)
   
   // Tutorial system
   TutorialSystem tutorial;
@@ -338,5 +386,55 @@ private:
 
   i64 last_frame_world_time = -1;
   bool is_accelerating = false; // Track if Button A is held for acceleration
+  
+  // Nested implementation classes for management scenes
+  class ManagementMenuImpl : public ManagementMenuScene {
+  public:
+    ManagementMenuImpl(GameScene &parent) 
+        : ManagementMenuScene(parent.app), game_scene(parent) {}
+    
+    void on_menu_action(ManagementAction action) override {
+      if (action == ManagementAction::ViewStatus) {
+        game_scene.show_status_screen();
+      } else if (action == ManagementAction::ViewInventory) {
+        game_scene.show_inventory_screen();
+      } else if (action == ManagementAction::BackToGame) {
+        // Cycle back to gameplay mode (Button B will switch mode)
+        game_scene.hide_management_screens();
+      }
+    }
+    
+  private:
+    GameScene &game_scene;
+  };
+  
+  class StatusSceneImpl : public StatusScene {
+  public:
+    StatusSceneImpl(GameScene &parent)
+        : StatusScene(parent.app, parent.clock, parent.inventory, 
+                     parent.mode_indicator, parent.player_stats),
+          game_scene(parent) {}
+    
+    void on_back_action() override {
+      game_scene.hide_management_screens();
+    }
+    
+  private:
+    GameScene &game_scene;
+  };
+  
+  class InventorySceneImpl : public InventoryScene {
+  public:
+    InventorySceneImpl(GameScene &parent)
+        : InventoryScene(parent.app, parent.inventory, parent.player_stats),
+          game_scene(parent) {}
+    
+    void on_back_action() override {
+      game_scene.hide_management_screens();
+    }
+    
+  private:
+    GameScene &game_scene;
+  };
 };
 } // namespace ge

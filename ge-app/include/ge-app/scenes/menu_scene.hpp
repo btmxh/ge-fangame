@@ -9,13 +9,19 @@
 
 namespace ge {
 
-enum MenuAction { None = 0, StartGame = 1, ExitGame = 2 };
+enum class MenuAction { None = 0, StartGame = 1, ExitGame = 2 };
 
 class MenuScene : public Scene {
 public:
   MenuScene(App &app) : Scene{app} {
-    menu.add_item("Start Game", MenuAction::StartGame);
-    menu.add_item("Exit", MenuAction::ExitGame);
+    menu.add_item("Start Game", static_cast<int>(MenuAction::StartGame));
+    menu.add_item("Exit", static_cast<int>(MenuAction::ExitGame));
+    
+    // Pre-calculate text widths for title and subtitle
+    const auto &bold_font = Font::bold_font();
+    const auto &regular_font = Font::regular_font();
+    title_width = calculate_text_width(title, bold_font);
+    subtitle_width = calculate_text_width(subtitle, regular_font);
   }
 
   void tick(float dt) override {
@@ -29,25 +35,11 @@ public:
 
     // Render title
     const auto &bold_font = Font::bold_font();
-    const char *title = "Glow Embrace";
-    u32 title_width = 0;
-    const char *c = title;
-    while (*c) {
-      title_width += bold_font.get_glyph_width(*c);
-      c++;
-    }
     u32 title_x = (fb_region.get_width() - title_width) / 2;
     bold_font.render_colored(title, -1, fb_region, title_x, 40, 0xFFFF);
 
     // Render subtitle
     const auto &regular_font = Font::regular_font();
-    const char *subtitle = "A Fangame";
-    u32 subtitle_width = 0;
-    c = subtitle;
-    while (*c) {
-      subtitle_width += regular_font.get_glyph_width(*c);
-      c++;
-    }
     u32 subtitle_x = (fb_region.get_width() - subtitle_width) / 2;
     regular_font.render_colored(subtitle, -1, fb_region, subtitle_x, 65,
                                 0xBDF7);
@@ -72,7 +64,20 @@ public:
   }
 
 private:
+  static u32 calculate_text_width(const char *text, const Font &font) {
+    u32 width = 0;
+    while (*text) {
+      width += font.get_glyph_width(*text);
+      text++;
+    }
+    return width;
+  }
+
   ui::Menu menu;
+  const char *title = "Glow Embrace";
+  const char *subtitle = "A Fangame";
+  u32 title_width = 0;
+  u32 subtitle_width = 0;
 };
 
 } // namespace ge

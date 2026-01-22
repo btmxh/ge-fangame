@@ -13,19 +13,35 @@ namespace ui {
 struct MenuItem {
   const char *label;
   int id;
+  u32 text_width = 0; // Cached text width
 };
 
 class Menu {
 public:
   Menu() = default;
 
+  // Joystick navigation thresholds
+  static constexpr float JOY_THRESHOLD_MOVE = 0.5f;
+  static constexpr float JOY_THRESHOLD_CENTER = 0.3f;
+
   void add_item(const char *label, int id) {
-    items.push_back({label, id});
+    items.push_back({label, id, 0});
   }
 
   void render(Surface &region, const Font &font) {
     if (items.empty())
       return;
+
+    // Cache text widths on first render if not already cached
+    for (auto &item : items) {
+      if (item.text_width == 0) {
+        const char *c = item.label;
+        while (*c) {
+          item.text_width += font.get_glyph_width(*c);
+          c++;
+        }
+      }
+    }
 
     // Calculate item height and spacing
     u32 item_height = font.line_height() + 8; // 8px padding
@@ -56,14 +72,8 @@ public:
                        0xFFFF);
       }
 
-      // Calculate centered x position for text
-      u32 text_width = 0;
-      const char *label = items[i].label;
-      while (*label) {
-        text_width += font.get_glyph_width(*label);
-        label++;
-      }
-      u32 x_pos = (region.get_width() - text_width) / 2;
+      // Calculate centered x position for text using cached width
+      u32 x_pos = (region.get_width() - items[i].text_width) / 2;
 
       // Draw text
       u16 color = (i == selected_index) ? 0xFFFF : 0xBDF7; // white or gray
@@ -77,14 +87,14 @@ public:
 
     // Use joystick Y axis to move selection
     // Only trigger on significant movement to avoid jitter
-    if (joy_y < -0.5f && !joy_moved) {
+    if (joy_y < -JOY_THRESHOLD_MOVE && !joy_moved) {
       selected_index = (selected_index > 0) ? selected_index - 1 
                                              : static_cast<u32>(items.size()) - 1;
       joy_moved = true;
-    } else if (joy_y > 0.5f && !joy_moved) {
+    } else if (joy_y > JOY_THRESHOLD_MOVE && !joy_moved) {
       selected_index = (selected_index + 1) % static_cast<u32>(items.size());
       joy_moved = true;
-    } else if (joy_y > -0.3f && joy_y < 0.3f) {
+    } else if (joy_y > -JOY_THRESHOLD_CENTER && joy_y < JOY_THRESHOLD_CENTER) {
       // Reset joy_moved when joystick returns to center
       joy_moved = false;
     }

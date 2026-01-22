@@ -31,7 +31,7 @@ struct ButtonState {
   bool handled_hold = false;
 } button_states[NUM_BUTTONS];
 
-static const hal::stm::Pin* button_pins[NUM_BUTTONS] = {&BUTTON1_PIN, &BUTTON2_PIN};
+static constexpr hal::stm::Pin button_pins[NUM_BUTTONS] = {BUTTON1_PIN, BUTTON2_PIN};
 
 static void enable_fpu() {
   SCB->CPACR |=
@@ -104,7 +104,7 @@ void App::tick(float dt) {
   // Read button states and trigger callbacks
   for (int i = 0; i < NUM_BUTTONS; ++i) {
     // Buttons are active-low (pull-up resistors, pressed = LOW)
-    bool pressed = !button_pins[i]->read();
+    bool pressed = !button_pins[i].read();
     auto &bs = button_states[i];
     
     // Detect button down event

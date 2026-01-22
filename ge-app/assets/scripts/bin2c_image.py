@@ -37,30 +37,30 @@ def convert_image_to_data(img: Image.Image, mode: str):
     return np.array(data_u16, dtype=np.uint16), w, h
 
 
-def generate_rotated_spritesheet(img: Image.Image, rotation_count: int, mode: str):
-    """Generate a spritesheet with rotated versions of the image."""
-    frames = []
-    angle_step = 360.0 / rotation_count
+def rotate_image(img: Image.Image, angle: int, mode: str):
+    """Rotate an image by the specified angle (must be multiple of 45).
     
-    for i in range(rotation_count):
-        angle = i * angle_step
-        # Use BICUBIC for better quality rotation
-        rotated = img.rotate(-angle, resample=Image.BICUBIC, expand=False)
-        frames.append(rotated)
+    Args:
+        img: Input PIL Image
+        angle: Rotation angle in degrees (must be multiple of 45)
+        mode: Color mode (rgb565 or argb1555)
     
-    # Create horizontal spritesheet
-    frame_w, frame_h = frames[0].size
-    sheet_w = frame_w * len(frames)
-    sheet_h = frame_h
+    Returns:
+        Tuple of (data, w, h) for the rotated image
     
-    spritesheet = Image.new("RGBA", (sheet_w, sheet_h), (0, 0, 0, 0))
+    Raises:
+        ValueError: If angle is not a multiple of 45
+    """
+    if angle % 45 != 0:
+        raise ValueError(f"Rotation angle must be a multiple of 45 degrees, got {angle}")
     
-    for i, frame in enumerate(frames):
-        spritesheet.paste(frame, (i * frame_w, 0))
+    # Use BICUBIC for better quality rotation
+    # expand=True allows the image dimensions to change to fit the rotated content
+    rotated = img.rotate(-angle, resample=Image.BICUBIC, expand=True)
     
-    data, w, h = convert_image_to_data(spritesheet, mode)
+    data, w, h = convert_image_to_data(rotated, mode)
     
-    return data, w, h, frame_w, frame_h, rotation_count
+    return data, w, h
 
 
 def process_animated_image(img_path: str, mode: str):
@@ -113,7 +113,7 @@ def process_animated_image(img_path: str, mode: str):
 
 
 def main(inp_img: str, out_c: str, out_h: str, sym: str, mode: str, 
-         rotation_count: int = 0, animated: bool = False):
+         rotation_angle: int = 0, animated: bool = False):
     """
     Main processing function.
     
@@ -123,25 +123,20 @@ def main(inp_img: str, out_c: str, out_h: str, sym: str, mode: str,
         out_h: Output H file path
         sym: Symbol name
         mode: Color mode (rgb565 or argb1555)
-        rotation_count: Number of rotations to generate (0 = no rotation)
+        rotation_angle: Rotation angle in degrees (must be multiple of 45, 0 = no rotation)
         animated: Whether to process as animated image
     """
     header_additional = ""
     
-    if rotation_count > 0:
-        # Generate rotated spritesheet
+    if rotation_angle != 0:
+        # Rotate image by specified angle
         img = Image.open(inp_img).convert("RGBA")
-        data, w, h, frame_w, frame_h, frame_count = generate_rotated_spritesheet(
-            img, rotation_count, mode
-        )
+        data, w, h = rotate_image(img, rotation_angle, mode)
         
         header_additional = f"""
 #define {sym}_WIDTH {w}
 #define {sym}_HEIGHT {h}
-#define {sym}_FRAME_WIDTH {frame_w}
-#define {sym}_FRAME_HEIGHT {frame_h}
-#define {sym}_FRAME_COUNT {frame_count}
-#define {sym}_ROTATION_COUNT {frame_count}
+#define {sym}_ROTATION_ANGLE {rotation_angle}
         """
     elif animated:
         # Process animated image
@@ -196,8 +191,8 @@ Examples:
   # Basic usage (backwards compatible)
   bin2c_image.py input.png output.c output.h symbol rgb565
   
-  # With rotation (generates 16 rotated frames)
-  bin2c_image.py input.png output.c output.h symbol rgb565 --rotate 16
+  # With rotation (rotate by 90 degrees)
+  bin2c_image.py input.png output.c output.h symbol rgb565 --rotate 90
   
   # Animated image (APNG, WEBP, GIF)
   bin2c_image.py animation.png output.c output.h symbol argb1555 --animated
@@ -211,8 +206,8 @@ Examples:
     parser.add_argument('mode', nargs='?', default='rgb565', 
                         choices=['rgb565', 'argb1555'],
                         help='Color mode (default: rgb565)')
-    parser.add_argument('--rotate', type=int, metavar='N',
-                        help='Generate N rotated frames as a spritesheet')
+    parser.add_argument('--rotate', type=int, metavar='ANGLE',
+                        help='Rotation angle in degrees (must be multiple of 45)')
     parser.add_argument('--animated', action='store_true',
                         help='Process as animated image (APNG/WEBP/GIF)')
     parser.add_argument('extra_args', nargs='*', 
@@ -230,7 +225,7 @@ Examples:
         out_h = sys.argv[3]
         sym = sys.argv[4]
         mode = sys.argv[5] if len(sys.argv) >= 6 else "rgb565"
-        rotation_count = 0
+        rotation_angle = 0
         animated = False
         
         # Check for special flags in additional args (with bounds checking)
@@ -240,7 +235,7 @@ Examples:
             arg = remaining_args[i]
             if arg == '--rotate' and i + 1 < len(remaining_args):
                 try:
-                    rotation_count = int(remaining_args[i + 1])
+                    rotation_angle = int(remaining_args[i + 1])
                     i += 2  # Skip the next argument too
                 except ValueError:
                     i += 1
@@ -257,7 +252,7 @@ Examples:
         out_h = args.output_h
         sym = args.symbol
         mode = args.mode
-        rotation_count = args.rotate or 0
+        rotation_angle = args.rotate or 0
         animated = args.animated
     
-    main(inp_img, out_c, out_h, sym, mode, rotation_count, animated)
+    main(inp_img, out_c, out_h, sym, mode, rotation_angle, animated)

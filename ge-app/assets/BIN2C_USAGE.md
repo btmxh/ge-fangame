@@ -114,55 +114,76 @@ draw_sprite(&anim_symbol[frame_offset * anim_symbol_FRAME_HEIGHT],
             anim_symbol_FRAME_HEIGHT);
 ```
 
-## Rotated Sprite Sheets
+## Rotated Images
 
-Generate a spritesheet containing multiple rotations of an image. Useful for sprites that need to rotate (e.g., compass needles, spinning objects, rotating characters).
+Rotate an image by a specified angle (must be a multiple of 45 degrees). The image dimensions will be adjusted to fit the rotated content. Useful for pre-rotated sprites or assets that need to be displayed at specific angles.
 
 ### CMake Function
 
-#### `raw_image_rotated(SYMBOL_NAME IMAGE_FILE ROTATION_COUNT [MODE mode] [ARGS ...])`
+#### `raw_image_rotated(SYMBOL_NAME IMAGE_FILE ROTATION_ANGLE [MODE mode] [ARGS ...])`
+
+**Note:** ROTATION_ANGLE must be a multiple of 45 degrees (0, 45, 90, 135, 180, 225, 270, 315, etc.)
 
 ```cmake
-# Generate 16 rotations of a compass needle
-raw_image_rotated(compass_needle_rotated out/textures/compass-needle.png 16)
+# Rotate a compass needle by 90 degrees
+raw_image_rotated(compass_needle_90 out/textures/compass-needle.png 90)
 
-# Generate 8 rotations with custom mode
-raw_image_rotated(spinning_coin out/textures/coin.png 8 MODE rgb565)
+# Rotate by 45 degrees with custom mode
+raw_image_rotated(diamond_45 out/textures/diamond.png 45 MODE rgb565)
+
+# Rotate by 180 degrees
+raw_image_rotated(upside_down out/textures/sprite.png 180)
 ```
 
 ### Direct Script Usage
 
 ```bash
-# Generate 16 rotated frames
-python3 scripts/bin2c_image.py compass.png output.c output.h rotated_sprite argb1555 --rotate 16
+# Rotate by 90 degrees
+python3 scripts/bin2c_image.py compass.png output.c output.h rotated_sprite argb1555 --rotate 90
+
+# Rotate by 270 degrees
+python3 scripts/bin2c_image.py icon.png output.c output.h icon_270 rgb565 --rotate 270
 ```
 
 ### Generated Output
 
 ```c
-#define rotated_sprite_WIDTH 768        // Total spritesheet width (48px * 16 rotations)
-#define rotated_sprite_HEIGHT 48        // Frame height
-#define rotated_sprite_FRAME_WIDTH 48   // Individual frame width
-#define rotated_sprite_FRAME_HEIGHT 48  // Individual frame height
-#define rotated_sprite_FRAME_COUNT 16   // Number of rotation frames
-#define rotated_sprite_ROTATION_COUNT 16
+#define rotated_sprite_WIDTH 48         // Width after rotation
+#define rotated_sprite_HEIGHT 48        // Height after rotation
+#define rotated_sprite_ROTATION_ANGLE 90
 
 extern const uint16_t rotated_sprite[];
 extern const uint32_t rotated_sprite_len;
 ```
 
+**Note:** Width and height may differ from the original image dimensions depending on the rotation angle. For example, a 40x60 image rotated 90° becomes 60x40.
+
 ### Usage in Code
 
 ```c
-// Get rotation frame based on angle (0-359 degrees)
-int frame_index = (angle * rotated_sprite_ROTATION_COUNT) / 360;
-int frame_offset = frame_index * rotated_sprite_FRAME_WIDTH;
-
-// Draw the rotated frame
-draw_sprite(&rotated_sprite[frame_offset * rotated_sprite_FRAME_HEIGHT],
-            rotated_sprite_FRAME_WIDTH,
-            rotated_sprite_FRAME_HEIGHT);
+// Simply draw the pre-rotated image
+draw_sprite(rotated_sprite, 
+            rotated_sprite_WIDTH, 
+            rotated_sprite_HEIGHT);
 ```
+
+### Creating Rotation Spritesheets Manually
+
+If you need multiple rotations in a spritesheet, generate each rotation separately and combine them manually:
+
+```cmake
+# Generate rotations at 0, 45, 90, 135, 180, 225, 270, 315 degrees
+raw_image(sprite_0 out/textures/sprite.png)
+raw_image_rotated(sprite_45 out/textures/sprite.png 45)
+raw_image_rotated(sprite_90 out/textures/sprite.png 90)
+raw_image_rotated(sprite_135 out/textures/sprite.png 135)
+raw_image_rotated(sprite_180 out/textures/sprite.png 180)
+raw_image_rotated(sprite_225 out/textures/sprite.png 225)
+raw_image_rotated(sprite_270 out/textures/sprite.png 270)
+raw_image_rotated(sprite_315 out/textures/sprite.png 315)
+```
+
+Then use them in your code to select the appropriate rotation based on angle.
 
 ## Audio Files
 
@@ -226,14 +247,15 @@ extern const uint32_t symbol_name_len;
 
 ### Combining Features
 
-While you can't combine rotation and animation in a single call, you can process the same image multiple ways:
+You can process the same image in different ways:
 
 ```cmake
 # Original static image
 raw_image_alpha(coin out/textures/coin.png)
 
-# Rotated version
-raw_image_rotated(coin_rotated out/textures/coin.png 12)
+# Rotated versions at different angles
+raw_image_rotated(coin_90 out/textures/coin.png 90)
+raw_image_rotated(coin_180 out/textures/coin.png 180)
 
 # Animated version (if coin.png is an animated image)
 raw_image_animated(coin_anim out/textures/coin_animated.webp)
@@ -277,27 +299,57 @@ raw_image_alpha(sprite out/sprite.png ARGS --custom-flag value)
 
 ## Examples
 
-### Complete Example: Rotating Compass Needle
+### Complete Example: Rotated Compass Needle
+
+If you need the needle at a specific angle (e.g., pointing East):
 
 ```cmake
-# In CMakeLists.txt
-raw_image_rotated(compass_needle_rot out/textures/needle.png 32)
+# In CMakeLists.txt - generate a 90-degree rotated needle
+raw_image_rotated(compass_needle_90 out/textures/needle.png 90)
 ```
 
 ```c
 // In your C code
 #include "assets/out/textures/needle.h"
 
+void draw_compass_east() {
+    // Draw the pre-rotated needle (pointing east)
+    draw_sprite(compass_needle_90, 
+                compass_needle_90_WIDTH, 
+                compass_needle_90_HEIGHT);
+}
+```
+
+For dynamic rotation with multiple angles, generate multiple rotations:
+
+```cmake
+# Generate 8 rotations (every 45 degrees)
+raw_image(needle_0 out/textures/needle.png)
+raw_image_rotated(needle_45 out/textures/needle.png 45)
+raw_image_rotated(needle_90 out/textures/needle.png 90)
+raw_image_rotated(needle_135 out/textures/needle.png 135)
+raw_image_rotated(needle_180 out/textures/needle.png 180)
+raw_image_rotated(needle_225 out/textures/needle.png 225)
+raw_image_rotated(needle_270 out/textures/needle.png 270)
+raw_image_rotated(needle_315 out/textures/needle.png 315)
+```
+
+```c
+// In your C code
 void draw_compass(int angle_degrees) {
-    // Calculate which rotation frame to use
-    int frame = (angle_degrees * compass_needle_rot_ROTATION_COUNT) / 360;
-    frame = frame % compass_needle_rot_ROTATION_COUNT;
+    // Round to nearest 45-degree increment
+    int rotation_index = ((angle_degrees + 22) / 45) % 8;
     
-    // Calculate offset into the spritesheet
-    int x_offset = frame * compass_needle_rot_FRAME_WIDTH;
+    // Array of pointers to the different rotations
+    const uint16_t* rotations[] = {
+        needle_0, needle_45, needle_90, needle_135,
+        needle_180, needle_225, needle_270, needle_315
+    };
     
-    // Draw the rotated needle
-    // (Implementation depends on your graphics system)
+    // Draw the appropriate rotation
+    draw_sprite(rotations[rotation_index], 
+                needle_0_WIDTH,  // They all have same dimensions at 45° intervals
+                needle_0_HEIGHT);
 }
 ```
 

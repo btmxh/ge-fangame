@@ -114,7 +114,7 @@ function(bitmap_font SYMBOL_NAME FONT_FILE FONT_SIZE)
     bin2c_generic(bin2c_bitmap_font.py ${SYMBOL_NAME} ${FONT_FILE} OUTPUT_BASE "${_dir}/${_name}_${FONT_SIZE}px" ARGS ${FONT_SIZE} ${BITMAP_FONT_ARGS})
 endfunction()
 
-function(raw_image_rotated SYMBOL_NAME IMAGE_FILE ROTATION_COUNT)
+function(raw_image_rotated SYMBOL_NAME IMAGE_FILE ROTATION_ANGLE)
     cmake_parse_arguments(
         RAW_IMAGE_ROT # prefix
         "" # no boolean options
@@ -129,7 +129,7 @@ function(raw_image_rotated SYMBOL_NAME IMAGE_FILE ROTATION_COUNT)
         set(RAW_IMAGE_ROT_MODE argb1555)
     endif()
     
-    bin2c_generic(bin2c_image.py ${SYMBOL_NAME} ${IMAGE_FILE} ARGS ${RAW_IMAGE_ROT_MODE} --rotate ${ROTATION_COUNT} ${RAW_IMAGE_ROT_ARGS})
+    bin2c_generic(bin2c_image.py ${SYMBOL_NAME} ${IMAGE_FILE} ARGS ${RAW_IMAGE_ROT_MODE} --rotate ${ROTATION_ANGLE} ${RAW_IMAGE_ROT_ARGS})
 endfunction()
 
 function(raw_image_animated SYMBOL_NAME IMAGE_FILE)

@@ -9,6 +9,7 @@ target_sources(
         ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/assets/bgm.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ge-app/font.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ge-app/game/water.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ge-app/assets/bgm.cpp
 )
 

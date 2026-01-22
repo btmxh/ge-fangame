@@ -100,6 +100,11 @@ public:
 
   ElemT *data() const { return fb_ptr; }
 
+  BaseSurface<const ElemT> as_const() const {
+    return BaseSurface<const ElemT>(fb_ptr, stride, width, height, fmt,
+                                    buffer_index);
+  }
+
 private:
   static constexpr u32 BUFFER_INDEX_NONE = -1;
   ElemT *fb_ptr = nullptr;

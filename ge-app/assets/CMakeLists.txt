@@ -1,5 +1,8 @@
 find_package(Python3 REQUIRED)
 
+add_library(ge-assets STATIC)
+target_include_directories(ge-assets PUBLIC ${CMAKE_BINARY_DIR}/generated)
+
 function(bin2c_generic BIN2C SYMBOL_NAME RESOURCE_FILE)
     cmake_parse_arguments(
         BIN2C # prefix
@@ -47,6 +50,8 @@ function(bin2c_generic BIN2C SYMBOL_NAME RESOURCE_FILE)
             ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/scripts/bin2c.py
         VERBATIM
     )
+
+    target_sources(ge-assets PRIVATE ${SOURCE_FILE} ${HEADER_FILE})
 endfunction()
 
 function(raw_audio SYMBOL_NAME WAV_FILE)
@@ -75,25 +80,9 @@ raw_image_alpha(sun out/textures/sun.png)
 raw_image_alpha(compass_base out/textures/compass-base.png)
 raw_image_alpha(compass_needle out/textures/compass-needle.png)
 raw_image_alpha(crate out/textures/crate.png)
+raw_image(water_texture out/textures/watertexture.png)
 
 bitmap_font(font_pixeloid_9px src/fonts/Pixeloid/TTF/PixeloidSans.ttf 9)
 bitmap_font(font_pixeloid_9px_bold src/fonts/Pixeloid/TTF/PixeloidSans-Bold.ttf 9)
 bitmap_font(font_pixeloid_18px src/fonts/Pixeloid/TTF/PixeloidSans.ttf 18)
 bin2c_generic(bin2c_clouds.py bg_clouds out/textures/clouds.png)
-
-add_library(
-    ge-assets
-    STATIC
-    ${CMAKE_BINARY_DIR}/generated/assets/out/textures/crate.c
-    ${CMAKE_BINARY_DIR}/generated/assets/out/textures/compass-base.c
-    ${CMAKE_BINARY_DIR}/generated/assets/out/textures/compass-needle.c
-    ${CMAKE_BINARY_DIR}/generated/assets/out/textures/clouds.c
-    ${CMAKE_BINARY_DIR}/generated/assets/out/textures/sun.c
-    ${CMAKE_BINARY_DIR}/generated/assets/out/textures/default-boat.c
-    ${CMAKE_BINARY_DIR}/generated/assets/out/sounds/menu-bgm.c
-    ${CMAKE_BINARY_DIR}/generated/assets/out/sounds/ambient-bgm.c
-    ${CMAKE_BINARY_DIR}/generated/assets/src/fonts/Pixeloid/TTF/PixeloidSans_9px.c
-    ${CMAKE_BINARY_DIR}/generated/assets/src/fonts/Pixeloid/TTF/PixeloidSans-Bold_9px.c
-    ${CMAKE_BINARY_DIR}/generated/assets/src/fonts/Pixeloid/TTF/PixeloidSans_18px.c
-)
-target_include_directories(ge-assets PUBLIC ${CMAKE_BINARY_DIR}/generated)

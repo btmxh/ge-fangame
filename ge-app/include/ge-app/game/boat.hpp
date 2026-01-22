@@ -6,6 +6,27 @@
 #include <cmath>
 
 namespace ge {
+template <class T = i32, class Rem = u32, Rem RemMax = 4096> struct Pos {
+  T base;
+  Rem rem;
+  // real value = base + rem / RemMax
+
+  constexpr Pos(i32 base) : base(base), rem(0) {}
+
+  void update(float delta) {
+    i64 to_add = delta * RemMax;
+    i64 new_rem = static_cast<i64>(rem) + to_add;
+    if (new_rem > 0) {
+      base += static_cast<T>(new_rem / RemMax);
+      rem = static_cast<Rem>(new_rem % RemMax);
+    } else {
+      i64 borrow = (-new_rem + RemMax - 1) / RemMax;
+      base -= static_cast<T>(borrow);
+      rem = static_cast<Rem>(new_rem + borrow * RemMax);
+    }
+  }
+};
+
 class Boat {
 public:
   u32 get_width() const { return boat.get_width(); }
@@ -65,13 +86,12 @@ public:
 
   void update_position(App &app, float delta_time) {
     const auto angle = get_angle();
-    x += boat_speed * delta_time * std::cos(angle);
-    y += boat_speed * delta_time * std::sin(angle);
-    // app.log("Boat position: (%.2f, %.2f)", x, y);
+    x.update(boat_speed * std::cos(angle) * delta_time);
+    y.update(boat_speed * std::sin(angle) * delta_time);
   }
 
-  float get_x() const { return x; }
-  float get_y() const { return y; }
+  i32 get_x() const { return x.base; }
+  i32 get_y() const { return y.base; }
 
 private:
   Texture boat{
@@ -81,9 +101,9 @@ private:
   };
 
   static constexpr float default_angle = M_PI_2, turn_rate = 1.5f,
-                         boat_speed = 1.0; // 1m/s
+                         boat_speed = 30; // 30m/s
   float angle = default_angle;
 
-  float x = 0.0, y = 0.0;
+  Pos<> x = 0, y = 0;
 };
 } // namespace ge

@@ -37,6 +37,16 @@ public:
   void sleep(std::int64_t ms);
 
   JoystickState get_joystick_state();
+  void wait_for_event(); // WFI on STM32
+
+  // Event handlers & Rendering
+  virtual void tick(float dt);
+  virtual void render(Surface &fb) {}
+  virtual void on_button_clicked(Button btn) {}
+  virtual void on_button_held(Button btn) {}
+  virtual void on_button_finished_hold(Button btn) {}
+
+  void loop();
 
   void audio_bgm_play(const std::uint8_t *data, std::size_t length, bool loop);
 
@@ -56,7 +66,7 @@ public:
   void end_render();
 
   bool button_clicked(Button btn);
-
-  void wait_for_event(); // WFI on STM32
+  bool button_held(Button btn);
+  bool button_finished_hold(Button btn);
 };
 }; // namespace ge

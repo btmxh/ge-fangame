@@ -141,56 +141,109 @@ void AppImpl::audio_callback(SDL_AudioStream *stream, int) {
 
 std::unique_ptr<AppImpl> app_impl_instance = nullptr;
 
+static constexpr i64 BUTTON_HOLD_THRESHOLD_MS = 1000;
+struct ButtonState {
+  i64 last_up = -1, last_down = -1;
+  bool handled_hold = false;
+} button_states[2];
+
 App::App() { app_impl_instance = std::make_unique<AppImpl>(this); }
 App::~App() { app_impl_instance.reset(); }
 
 App::operator bool() { return app_impl_instance && !app_impl_instance->quit; }
 
-static bool button_pending[2] = {false, false};
+void App::wait_for_event() {}
 
-void App::wait_for_event() {
-  static bool gamepad_button_state[SDL_GAMEPAD_BUTTON_COUNT] = {false};
+static auto gamepad_button_to_button = [](u32 gb) -> int {
+  switch (gb) {
+  case SDL_GAMEPAD_BUTTON_LABEL_A:
+    return 0;
+  case SDL_GAMEPAD_BUTTON_LABEL_B:
+    return 1;
+  default:
+    return -1;
+  }
+};
+
+static void handle_event(App &app) {
   SDL_Event event;
-  // 10ms should be enough for 100 FPS and 100 updates/s
-  SDL_WaitEventTimeout(&event, 10);
-  switch (event.type) {
-  case SDL_EVENT_QUIT:
-    app_impl_instance->quit = true;
-    break;
-  case SDL_EVENT_GAMEPAD_ADDED:
-    if (app_impl_instance->pad == nullptr) {
-      app_impl_instance->pad = SDL_OpenGamepad(event.gdevice.which);
-      if (!app_impl_instance->pad) {
-        log("SDL_OpenGamepad Error: %s", SDL_GetError());
-      } else {
-        log("Gamepad connected: %s",
-            SDL_GetGamepadName(app_impl_instance->pad));
+  while (SDL_PollEvent(&event)) {
+    switch (event.type) {
+    case SDL_EVENT_QUIT:
+      app_impl_instance->quit = true;
+      break;
+    case SDL_EVENT_GAMEPAD_ADDED:
+      if (app_impl_instance->pad == nullptr) {
+        app_impl_instance->pad = SDL_OpenGamepad(event.gdevice.which);
+        if (!app_impl_instance->pad) {
+          app.log("SDL_OpenGamepad Error: %s", SDL_GetError());
+        } else {
+          app.log("Gamepad connected: %s",
+                  SDL_GetGamepadName(app_impl_instance->pad));
+        }
       }
-    }
-    break;
-  case SDL_EVENT_GAMEPAD_REMOVED:
-    if (app_impl_instance->pad &&
-        SDL_GetGamepadID(app_impl_instance->pad) == event.gdevice.which) {
-      SDL_CloseGamepad(app_impl_instance->pad);
-      app_impl_instance->pad = nullptr;
-      log("Gamepad disconnected");
-    }
-    break;
-  case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
-    gamepad_button_state[event.gbutton.button] = true;
-    break;
-  case SDL_EVENT_GAMEPAD_BUTTON_UP:
-    if (std::exchange(gamepad_button_state[event.gbutton.button], false)) {
-      // gamepad button released
-      if (event.gbutton.button == SDL_GAMEPAD_BUTTON_LABEL_A) {
-        log("A button pressed");
-        button_pending[0] = true;
-      } else if (event.gbutton.button == SDL_GAMEPAD_BUTTON_LABEL_B) {
-        log("B button pressed");
-        button_pending[1] = true;
+      break;
+    case SDL_EVENT_GAMEPAD_REMOVED:
+      if (app_impl_instance->pad &&
+          SDL_GetGamepadID(app_impl_instance->pad) == event.gdevice.which) {
+        SDL_CloseGamepad(app_impl_instance->pad);
+        app_impl_instance->pad = nullptr;
+        app.log("Gamepad disconnected");
       }
+      break;
+    case SDL_EVENT_GAMEPAD_BUTTON_DOWN: {
+      int btn = gamepad_button_to_button(event.gbutton.button);
+      if (btn >= 0) {
+        button_states[btn].last_down = app.now();
+        button_states[btn].handled_hold = false;
+      }
+      break;
     }
-    break;
+    case SDL_EVENT_GAMEPAD_BUTTON_UP: {
+      int btn = gamepad_button_to_button(event.gbutton.button);
+      if (btn >= 0) {
+        button_states[btn].last_up = app.now();
+        if (button_states[btn].last_down < 0)
+          break;
+        i64 held_time =
+            button_states[btn].last_up - button_states[btn].last_down;
+        if (held_time < BUTTON_HOLD_THRESHOLD_MS) {
+          app.on_button_clicked(static_cast<Button>(btn));
+        } else {
+          app.on_button_finished_hold(static_cast<Button>(btn));
+        }
+        button_states[btn].handled_hold = false;
+      }
+      break;
+    }
+    }
+  }
+}
+
+void App::tick(float /*dt*/) {
+  for (auto btn : {Button::Button1, Button::Button2}) {
+    auto &bs = button_states[static_cast<int>(btn)];
+    if (bs.last_down < 0 || bs.last_up > bs.last_down || bs.handled_hold)
+      continue;
+    i64 held_time = now() - bs.last_down;
+    if (held_time >= BUTTON_HOLD_THRESHOLD_MS) {
+      on_button_held(btn);
+    }
+  }
+}
+
+void App::loop() {
+  i64 last_tick = now();
+  while (*this) {
+    handle_event(*this);
+    i64 current = now();
+    float dt = (current - last_tick) * 1e-3f;
+    tick(dt);
+    last_tick = current;
+    Surface fb_region;
+    begin_render(fb_region);
+    render(fb_region);
+    end_render();
   }
 }
 
@@ -269,8 +322,15 @@ JoystickState App::get_joystick_state() {
   return {x, y};
 }
 
-bool App::button_clicked(Button button) {
-  return std::exchange(button_pending[static_cast<int>(button)], false);
+static u32 button_to_gamepad_button(Button button) {
+  switch (button) {
+  case Button::Button1:
+    return SDL_GAMEPAD_BUTTON_LABEL_A;
+  case Button::Button2:
+    return SDL_GAMEPAD_BUTTON_LABEL_B;
+  default:
+    return SDL_GAMEPAD_BUTTON_INVALID;
+  }
 }
 
 void App::log(const char *fmt, ...) {

@@ -10,9 +10,7 @@ ManagementMenuScene::ManagementMenuScene(RootManagementUIScene &parent)
                    static_cast<int>(ManagementAction::ViewStatus)};
   menu_items[1] = {"View Inventory",
                    static_cast<int>(ManagementAction::ViewInventory)};
-  menu_items[2] = {"Back to Game",
-                   static_cast<int>(ManagementAction::BackToGame)};
-  menu.set_items(menu_items, 3);
+  menu.set_items(menu_items, 2);
 }
 
 void ManagementMenuScene::on_menu_action(ManagementAction action) {
@@ -20,9 +18,6 @@ void ManagementMenuScene::on_menu_action(ManagementAction action) {
     parent.show_status_screen();
   } else if (action == ManagementAction::ViewInventory) {
     parent.show_inventory_screen();
-  } else if (action == ManagementAction::BackToGame) {
-    // Cycle back to gameplay mode (Button B will switch mode)
-    parent.hide_management_screens();
   }
 }
 } // namespace ge

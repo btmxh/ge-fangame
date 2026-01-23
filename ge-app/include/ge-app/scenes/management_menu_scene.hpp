@@ -15,7 +15,6 @@ enum class ManagementAction {
   None = 0,
   ViewStatus = 1,
   ViewInventory = 2,
-  BackToGame = 3
 };
 
 class ManagementMenuScene : public Scene {
@@ -59,7 +58,7 @@ public:
 
 private:
   ui::Menu menu;
-  ui::MenuItem menu_items[3];
+  ui::MenuItem menu_items[2];
   RootManagementUIScene &parent;
 };
 

@@ -50,7 +50,7 @@ private:
   StatusScene status_scene;
   InventoryScene inventory_scene;
 
-  Scene *management_sub_scenes[2]; // Status and Inventory as sub-scenes of
+  Scene *management_sub_scenes[3]; // Status and Inventory as sub-scenes of
                                    // ManagementMenu
 };
 

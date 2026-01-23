@@ -231,13 +231,8 @@ public:
     if (btn == Button::Button2) {
       auto new_mode = mode_indicator.switch_mode();
       clock.set_multiplier(app, new_mode);
-
       // Activate/deactivate management UI based on mode
-      if (new_mode == GameMode::Management) {
-        management_ui.set_active(true);
-      } else {
-        management_ui.set_active(false);
-      }
+      management_ui.set_active(new_mode == GameMode::Management);
       return true;
     } else if (btn == Button::Button1) {
       // Handle fishing actions

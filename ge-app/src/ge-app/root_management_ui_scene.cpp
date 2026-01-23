@@ -8,11 +8,13 @@ RootManagementUIScene::RootManagementUIScene(GameScene &parent_game_scene)
       management_menu(*this), status_scene(*this), inventory_scene(*this) {
   // Setup management sub-scenes (status and inventory are sub-scenes of
   // management menu)
-  management_sub_scenes[0] = &status_scene;
-  management_sub_scenes[1] = &inventory_scene;
-  management_menu.set_sub_scenes(management_sub_scenes, 2);
+  management_sub_scenes[0] = &management_menu;
+  management_sub_scenes[1] = &status_scene;
+  management_sub_scenes[2] = &inventory_scene;
+  set_sub_scenes(management_sub_scenes, 3);
 
   // Status and inventory start inactive (management menu shows first)
+  management_menu.set_active(true);
   status_scene.set_active(false);
   inventory_scene.set_active(false);
 
@@ -23,16 +25,19 @@ RootManagementUIScene::RootManagementUIScene(GameScene &parent_game_scene)
 }
 
 void RootManagementUIScene::show_status_screen() {
+  management_menu.set_active(false);
   status_scene.set_active(true);
   inventory_scene.set_active(false);
 }
 
 void RootManagementUIScene::show_inventory_screen() {
+  management_menu.set_active(false);
   status_scene.set_active(false);
   inventory_scene.set_active(true);
 }
 
 void RootManagementUIScene::hide_management_screens() {
+  management_menu.set_active(true);
   status_scene.set_active(false);
   inventory_scene.set_active(false);
 }

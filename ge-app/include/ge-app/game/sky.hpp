@@ -14,36 +14,29 @@
 namespace ge {
 class Sky {
 public:
-  Sky() : sun_texture{sun, sun_WIDTH, sun_HEIGHT} { invalidate(); }
-  void invalidate() { std::memset(rendered, 0, sizeof(rendered)); }
+  Sky() : sun_texture{sun, sun_WIDTH, sun_HEIGHT} {}
 
   void set_sky_color(std::uint16_t sky_color) {
     if (this->sky_color == sky_color)
       return;
     this->sky_color = sky_color;
-    invalidate();
   }
 
   void set_cloud_color(std::uint16_t cloud_color) {
     if (this->cloud_color == cloud_color)
       return;
     this->cloud_color = cloud_color;
-    invalidate();
   }
 
   void set_x_offset(int x_offset) {
     if (this->x_offset == x_offset)
       return;
     this->x_offset = x_offset;
-    invalidate();
   }
 
   static int max_x_offset() { return CLOUD_TEXTURE_WIDTH; }
 
   void render(Surface render_region) {
-    if (std::exchange(rendered[render_region.get_buffer_index()], true))
-      return;
-
     const int W = render_region.get_width();
     const int H = render_region.get_height();
     const int TEX_W = CLOUD_TEXTURE_WIDTH;
@@ -105,6 +98,5 @@ private:
   std::uint16_t sky_color = 0xFFFF, cloud_color = 0xFFFF;
   u16 cloud_lut[sizeof(CLOUD_COLORS) / sizeof(CLOUD_COLORS[0])];
   int x_offset = 0;
-  bool rendered[App::NUM_BUFFERS];
 };
 } // namespace ge

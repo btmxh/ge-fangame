@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ge-app/gfx/dialog_box.hpp"
-#include "ge-app/texture.hpp"
+#include "ge-app/game/inventory.hpp"
+#include "ge-app/scenes/dialog_scene.hpp"
 #include "ge-hal/app.hpp"
-#include "ge-hal/gpu.hpp"
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 
@@ -21,9 +21,11 @@ enum class FishingState {
 
 class Fishing {
 public:
-  Fishing() : state(FishingState::Idle) {}
+  Fishing() : state(FishingState::Idle), inventory(nullptr) {}
 
-  void update(App &app, DialogBox &dialog_box, float dt,
+  void set_inventory(Inventory *inv) { inventory = inv; }
+
+  void update(App &app, DialogScene &dialog_scene, float dt,
               const JoystickState &joystick) {
     switch (state) {
     case FishingState::Idle:
@@ -45,7 +47,7 @@ public:
       // Stay in this state until player presses button to reel in
       break;
     case FishingState::Reeling:
-      update_reeling(app, dialog_box, dt);
+      update_reeling(app, dialog_scene, dt);
       break;
     }
 
@@ -97,7 +99,7 @@ public:
     draw_bobber(region, bobber_x, bobber_y);
   }
 
-  void on_button_clicked(App &app, DialogBox &dialog, Button btn) {
+  void on_button_clicked(App &app, DialogScene &dialog, Button btn) {
     if (btn == Button::Button1) {
       if (state == FishingState::Caught) {
         // Start reeling in the fish!
@@ -231,7 +233,7 @@ private:
     }
   }
 
-  void update_reeling(App &app, DialogBox &dialog, float dt) {
+  void update_reeling(App &app, DialogScene &dialog, float dt) {
     reeling_timer += dt;
 
     if (reeling_timer >= REEL_DURATION) {
@@ -241,26 +243,75 @@ private:
         catch_fish(app, dialog);
       } else {
         // Early retraction or bait lost - no fish
-        dialog.show_message(app, "Fishing", "Nothing caught.");
+        dialog.show_message("Fishing", "Nothing caught.");
       }
       reset();
     }
   }
 
-  void catch_fish(App &app, DialogBox &dialog) {
-    // Random fish names
-    const char *fish_names[] = {
-        "Tropical Fish", "Golden Fish (RARE!)", "Sea Bass",
-        "Tuna",          "Old Boot (loot)",     "Treasure Chest (RARE loot!)",
-        "Salmon",        "Pufferfish",          "Clownfish",
-        "Sardine"};
+  void catch_fish(App &app, DialogScene &dialog) {
+    // Fish data with names, rarities, and weights
+    struct FishData {
+      const char *name;
+      FishRarity rarity;
+      int weight;        // For weighted random selection
+      float fish_weight; // Physical weight in kg
+    };
 
-    constexpr int num_fish = sizeof(fish_names) / sizeof(fish_names[0]);
-    int caught_index = rand() % num_fish;
+    const FishData fish_table[] = {
+        {"Tropical Fish", FishRarity::Common, 30000, 0.5f},
+        {"Sea Bass", FishRarity::Common, 25000, 2.0f},
+        {"Sardine", FishRarity::Common, 20000, 0.3f},
+        {"Tuna", FishRarity::Uncommon, 15000, 10.0f},
+        {"Salmon", FishRarity::Uncommon, 15000, 5.0f},
+        {"Pufferfish", FishRarity::Uncommon, 10000, 1.5f},
+        {"Clownfish", FishRarity::Rare, 8000, 0.2f},
+        {"Golden Fish", FishRarity::Legendary, 1,
+         0.1f}, // 1 in ~130,000 (insanely rare!)
+        {"Old Boot (loot)", FishRarity::Uncommon, 7000, 3.0f},
+        {"Treasure Chest", FishRarity::Legendary, 2000, 25.0f}};
 
-    // Store the caught fish message
-    caught_fish_name = fish_names[caught_index];
-    dialog.show_message(app, "Fishing", caught_fish_name);
+    constexpr int num_fish = sizeof(fish_table) / sizeof(fish_table[0]);
+
+    // Calculate total weight
+    int total_weight = 0;
+    for (int i = 0; i < num_fish; i++) {
+      total_weight += fish_table[i].weight;
+    }
+
+    // Weighted random selection
+    int random_weight = rand() % total_weight;
+    int current_weight = 0;
+    int caught_index = 0;
+
+    for (int i = 0; i < num_fish; i++) {
+      current_weight += fish_table[i].weight;
+      if (random_weight < current_weight) {
+        caught_index = i;
+        break;
+      }
+    }
+
+    const FishData &caught = fish_table[caught_index];
+    caught_fish_name = caught.name;
+
+    // Add to inventory if available
+    if (inventory != nullptr) {
+      if (inventory->add_fish(caught.name, caught.rarity, app.now(),
+                              caught.fish_weight)) {
+        char msg_buf[128];
+        snprintf(msg_buf, sizeof(msg_buf), "Caught: %s!\nInventory: %u/%u",
+                 caught.name, inventory->get_item_count(),
+                 Inventory::MAX_ITEMS);
+        dialog.show_message("Fishing", msg_buf);
+      } else {
+        // Inventory full
+        dialog.show_message("Fishing", "Inventory full!\nCannot store fish.");
+      }
+    } else {
+      // No inventory set, just show caught message
+      dialog.show_message("Fishing", caught.name);
+    }
   }
 
   void reset() {
@@ -352,6 +403,9 @@ private:
   // Catch tracking
   bool caught_fish = false;
   const char *caught_fish_name = nullptr;
+
+  // Inventory reference
+  Inventory *inventory;
 };
 
 } // namespace ge

@@ -13,14 +13,14 @@ class Clock {
 public:
   u32 get_num_days(App &app) const { return day_timer.get(app) / DAY_LENGTH; }
 
-  u32 get_hr(App &app) {
+  u32 get_hr(App &app) const {
     auto elapsed = day_timer.get(app) % DAY_LENGTH;
     static constexpr u32 HR_PER_DAY = 24;
     u32 hr = (elapsed * HR_PER_DAY) / DAY_LENGTH;
     return hr;
   }
 
-  char *get_display_string(App &app) {
+  char *get_display_string(App &app) const {
     static char buf[64] = {0};
     u32 hr = get_hr(app);
     const char *am_pm = (hr >= 12) ? "PM" : "AM";

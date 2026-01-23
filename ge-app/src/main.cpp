@@ -1,73 +1,75 @@
 #include "ge-app/scenes/credits_scene.hpp"
 #include "ge-app/scenes/game_scene.hpp"
 #include "ge-app/scenes/menu_scene.hpp"
+#include "ge-app/scenes/root_scene.hpp"
 #include "ge-app/scenes/settings_scene.hpp"
 #include "ge-hal/app.hpp"
 #include "ge-hal/surface.hpp"
 
-#include <cassert>
-
 namespace ge {
-
-enum class SceneType { Menu, Game, Settings, Credits };
 
 class MainApp : public ge::App {
 public:
   MainApp()
-      : ge::App(), menu_scene_impl(*this), game_scene{*this},
-        settings_scene_impl(*this), credits_scene_impl(*this) {
-    switch_to_menu();
+      : ge::App(), menu_scene_impl(*this), game_scene_impl(*this),
+        settings_scene_impl(*this), credits_scene_impl(*this),
+        root_scene(*this) {
+    // Setup root scene with main scenes as sub-scenes
+    main_scenes[0] = &menu_scene_impl;
+    main_scenes[1] = &game_scene_impl;
+    main_scenes[2] = &settings_scene_impl;
+    main_scenes[3] = &credits_scene_impl;
+    root_scene.set_sub_scenes(main_scenes, 4);
+
+    // Start with menu active, others inactive
+    game_scene_impl.set_active(false);
+    settings_scene_impl.set_active(false);
+    credits_scene_impl.set_active(false);
   }
 
   void tick(float dt) override {
     App::tick(dt);
-    if (current_scene) {
-      current_scene->tick(dt);
-    }
+    root_scene.tick(dt);
   }
 
-  void render(Surface &fb) override {
-    if (current_scene) {
-      current_scene->render(fb);
-    }
-  }
+  void render(Surface &fb) override { root_scene.render(fb); }
 
   void on_button_clicked(Button btn) override {
-    if (current_scene) {
-      current_scene->on_button_clicked(btn);
-    }
+    root_scene.on_button_clicked(btn);
   }
 
-  void on_button_held(Button btn) override {
-    if (current_scene) {
-      current_scene->on_button_held(btn);
-    }
-  }
+  void on_button_held(Button btn) override { root_scene.on_button_held(btn); }
 
   void on_button_finished_hold(Button btn) override {
-    if (current_scene) {
-      current_scene->on_button_finished_hold(btn);
-    }
+    root_scene.on_button_finished_hold(btn);
   }
 
   void switch_to_menu() {
-    current_scene_type = SceneType::Menu;
-    current_scene = &menu_scene_impl;
+    menu_scene_impl.set_active(true);
+    game_scene_impl.set_active(false);
+    settings_scene_impl.set_active(false);
+    credits_scene_impl.set_active(false);
   }
 
   void switch_to_game() {
-    current_scene_type = SceneType::Game;
-    current_scene = &game_scene;
+    menu_scene_impl.set_active(false);
+    game_scene_impl.set_active(true);
+    settings_scene_impl.set_active(false);
+    credits_scene_impl.set_active(false);
   }
 
   void switch_to_settings() {
-    current_scene_type = SceneType::Settings;
-    current_scene = &settings_scene_impl;
+    menu_scene_impl.set_active(false);
+    game_scene_impl.set_active(false);
+    settings_scene_impl.set_active(true);
+    credits_scene_impl.set_active(false);
   }
 
   void switch_to_credits() {
-    current_scene_type = SceneType::Credits;
-    current_scene = &credits_scene_impl;
+    menu_scene_impl.set_active(false);
+    game_scene_impl.set_active(false);
+    settings_scene_impl.set_active(false);
+    credits_scene_impl.set_active(true);
   }
 
 private:
@@ -86,6 +88,14 @@ private:
         main_app.request_quit();
       }
     }
+
+  private:
+    MainApp &main_app;
+  };
+
+  class GameSceneImpl : public GameScene {
+  public:
+    GameSceneImpl(MainApp &app) : GameScene(app), main_app(app) {}
 
   private:
     MainApp &main_app;
@@ -111,13 +121,14 @@ private:
     MainApp &main_app;
   };
 
-  SceneType current_scene_type = SceneType::Menu;
-  Scene *current_scene = nullptr;
+  RootScene root_scene;
   MenuSceneImpl menu_scene_impl;
-  GameScene game_scene;
+  GameSceneImpl game_scene_impl;
   SettingsSceneImpl settings_scene_impl;
   CreditsSceneImpl credits_scene_impl;
+  Scene *main_scenes[4];
 };
+
 } // namespace ge
 
 int main() {

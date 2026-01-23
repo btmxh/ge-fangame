@@ -6,10 +6,14 @@
 #include "ge-app/game/compass.hpp"
 #include "ge-app/game/dock.hpp"
 #include "ge-app/game/fishing.hpp"
+#include "ge-app/game/inventory.hpp"
+#include "ge-app/game/player_stats.hpp"
 #include "ge-app/game/sky.hpp"
+#include "ge-app/game/tutorial_system.hpp"
 #include "ge-app/game/water.hpp"
 #include "ge-app/gfx/color.hpp"
-#include "ge-app/gfx/dialog_box.hpp"
+#include "ge-app/scenes/dialog_scene.hpp"
+#include "ge-app/scenes/root_management_ui_scene.hpp"
 #include "ge-app/scenes/scene.hpp"
 
 namespace ge {
@@ -86,7 +90,7 @@ inline uint16_t sky_color(float t) {
 
 class GameScene : public Scene {
 public:
-  GameScene(App &app) : Scene{app} {
+  GameScene(App &app) : Scene{app}, dialog_scene(app), management_ui(*this) {
     // TODO: flash audio when it is implemented
     // Currently we skip this step to speed up flashing
 #ifndef GE_HAL_STM32
@@ -98,10 +102,25 @@ public:
     water.set_sky_color(ge::hsv_to_rgb565(150, 200, 255));
     water.set_water_color(ge::hsv_to_rgb565(142, 255, 181));
 
-    dialog_box.show_message(app, msg[0].title, msg[0].desc);
+    // Connect inventory to fishing system
+    fishing.set_inventory(&inventory);
+
+    // Setup game sub-scenes (DialogScene and RootManagementUIScene)
+    sub_scene_array[0] = &dialog_scene;
+    sub_scene_array[1] = &management_ui;
+    set_sub_scenes(sub_scene_array, 2);
+
+    // Management UI starts inactive
+    management_ui.set_active(false);
+
+    // Initialize tutorial
+    tutorial.initialize(dialog_scene, tutorial_messages, 3);
   }
 
   void tick(float dt) override {
+    // Tick sub-scenes first (includes DialogScene and ManagementMenu)
+    Scene::tick(dt);
+
     auto current_frame_world_time = clock.get_day_timer().get(app);
     float world_dt = 0.0f;
     if (last_frame_world_time >= 0) {
@@ -111,18 +130,35 @@ public:
 
     auto joystick = app.get_joystick_state();
 
+    // If in Management mode, management UI is handled by sub-scenes
+    if (mode_indicator.get_current_mode() == GameMode::Management) {
+      return; // Management menu and sub-scenes handle everything
+    }
+
+    // Dialog captures input, so we don't update game state when it's showing
+    if (dialog_scene.get_active()) {
+      return;
+    }
+
     if (mode_indicator.get_current_mode() == GameMode::Steering) {
-      if (!dialog_box.has_input_focus()) {
-        boat.update_angle(joystick.x, joystick.y, world_dt);
-      }
-      boat.update_position(app, world_dt);
+      boat.update_angle(joystick.x, joystick.y, world_dt);
+
+      // Update player stats (stamina drains when steering)
+      player_stats.update(world_dt, boat.get_angle(), true);
+
+      // Check if Button A is held for acceleration
+      float cargo_weight = inventory.get_total_weight();
+      boat.update_position(app, world_dt, is_accelerating, cargo_weight);
     } else if (mode_indicator.get_current_mode() == GameMode::Fishing) {
       // Update fishing system
-      if (!dialog_box.has_input_focus()) {
-        fishing.update(app, dialog_box, world_dt, joystick);
-      }
+      fishing.update(app, dialog_scene, world_dt, joystick);
+
       // Keep boat drifting slowly in fishing mode
-      boat.update_position(app, world_dt);
+      float cargo_weight = inventory.get_total_weight();
+      boat.update_position(app, world_dt, false, cargo_weight);
+
+      // Update player stats (no stamina drain in fishing mode)
+      player_stats.update(world_dt, boat.get_angle(), false);
     }
   }
 
@@ -173,80 +209,88 @@ public:
       mode_indicator.render(mode_indicator_region);
     }
 
-    {
-      // bottom, padding 4px
-      static constexpr auto dialog_height = 64, dialog_padding = 4;
-      auto dialog_region = fb_region.subsurface(
-          dialog_padding, ge::App::HEIGHT - dialog_height - dialog_padding,
-          ge::App::WIDTH - dialog_padding * 2, dialog_height);
-      dialog_box.render(app, dialog_region);
-    }
+    // Render sub-scenes (includes DialogScene)
+    Scene::render(fb_region);
 
     auto end_time = app.now();
     std::int64_t frame_time = end_time - start_time;
     // app.log("Frame time: %ld ms", frame_time);
   }
-  void on_button_clicked(Button btn) override {
-    if (dialog_box.has_input_focus()) {
-      if (btn == Button::Button2) {
-        dialog_box.dismiss();
-        // tutorial messages
-        if (++current_msg < sizeof(msg) / sizeof(msg[0])) {
-          dialog_box.show_message(app, msg[current_msg].title,
-                                  msg[current_msg].desc);
-        } else {
-          current_msg = sizeof(msg) / sizeof(msg[0]); // No more messages
-        }
-      } else if (btn == Button::Button1) {
-        if (dialog_box.message_complete(app)) {
-          dialog_box.dismiss();
-          // tutorial messages
-          if (++current_msg < sizeof(msg) / sizeof(msg[0])) {
-            dialog_box.show_message(app, msg[current_msg].title,
-                                    msg[current_msg].desc);
-          } else {
-            current_msg = sizeof(msg) / sizeof(msg[0]); // No more messages
-          }
-        } else {
-          dialog_box.set_start_time();
-        }
-
-        return;
+  bool on_button_clicked(Button btn) override {
+    // Check sub-scenes first (DialogScene and ManagementMenu will capture if
+    // active)
+    if (Scene::on_button_clicked(btn)) {
+      // If dialog was dismissed and tutorial not completed, show next message
+      if (!dialog_scene.get_active() && !tutorial.is_completed()) {
+        tutorial.next_message(dialog_scene);
       }
+      return true;
     }
 
+    // Handle game-specific input
     if (btn == Button::Button2) {
-      mode_indicator.switch_mode();
-      clock.set_multiplier(app, mode_indicator.get_current_mode());
+      auto new_mode = mode_indicator.switch_mode();
+      clock.set_multiplier(app, new_mode);
+      // Activate/deactivate management UI based on mode
+      management_ui.set_active(new_mode == GameMode::Management);
+      return true;
     } else if (btn == Button::Button1) {
-      // Handle fishing dialog dismissal first (input focus)
+      // Handle fishing actions
       if (mode_indicator.get_current_mode() == GameMode::Fishing) {
-        // No dialog focus, handle fishing actions
-        fishing.on_button_clicked(app, dialog_box, btn);
+        fishing.on_button_clicked(app, dialog_scene, btn);
+        return true;
       }
     }
+
+    return false;
   }
 
-  void on_button_held(Button btn) override {
-    if (dialog_box.has_input_focus()) {
-      return; // Ignore held buttons when dialog has focus
+  // Getters for management scenes
+  // Getters for management UI (used by RootManagementUIScene)
+  const Clock &get_clock() const { return clock; }
+  const Inventory &get_inventory() const { return inventory; }
+  const GameModeIndicator &get_mode_indicator() const { return mode_indicator; }
+  const PlayerStats &get_player_stats() const { return player_stats; }
+  Inventory &get_inventory() { return inventory; }
+  PlayerStats &get_player_stats() { return player_stats; }
+
+  bool on_button_held(Button btn) override {
+    // Check sub-scenes first
+    if (Scene::on_button_held(btn)) {
+      return true;
     }
 
-    if (btn == Button::Button2) {
+    if (btn == Button::Button1 &&
+        mode_indicator.get_current_mode() == GameMode::Steering) {
+      // Hold Button A to accelerate in Steering mode
+      is_accelerating = true;
+      return true;
+    } else if (btn == Button::Button2) {
       clock.begin_sped_up();
       clock.set_multiplier(app, mode_indicator.get_current_mode());
+      return true;
     }
+
+    return false;
   }
 
-  void on_button_finished_hold(Button btn) override {
-    if (dialog_box.has_input_focus()) {
-      return; // Ignore held buttons when dialog has focus
+  bool on_button_finished_hold(Button btn) override {
+    // Check sub-scenes first
+    if (Scene::on_button_finished_hold(btn)) {
+      return true;
     }
 
-    if (btn == Button::Button2) {
+    if (btn == Button::Button1) {
+      // Release acceleration
+      is_accelerating = false;
+      return true;
+    } else if (btn == Button::Button2) {
       clock.end_sped_up();
       clock.set_multiplier(app, mode_indicator.get_current_mode());
+      return true;
     }
+
+    return false;
   }
 
 private:
@@ -258,9 +302,20 @@ private:
   Sky sky;
   Water water;
   Fishing fishing;
+  Inventory inventory;      // Player inventory
+  PlayerStats player_stats; // Player food and stamina
 
-  DialogBox dialog_box;
-  DialogMessage msg[3] = {
+  // Sub-scenes
+  // Sub-scenes
+  DialogScene dialog_scene;
+  RootManagementUIScene management_ui;
+
+  Scene *sub_scene_array[2]; // Array for GameScene sub-scenes (DialogScene,
+                             // RootManagementUIScene)
+
+  // Tutorial system
+  TutorialSystem tutorial;
+  DialogMessage tutorial_messages[3] = {
       {
           "fbk",
           "Welcome to the GE-HAL and GE-App demo!\nThis "
@@ -279,11 +334,11 @@ private:
       },
   };
 
-  u32 current_msg = 0;
   GameModeIndicator mode_indicator;
   Dock dock;
   const ge::Font &font = ge::Font::bold_font();
 
   i64 last_frame_world_time = -1;
+  bool is_accelerating = false; // Track if Button A is held for acceleration
 };
 } // namespace ge

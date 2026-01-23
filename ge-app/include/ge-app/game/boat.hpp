@@ -84,14 +84,36 @@ public:
     angle = std::fmod(angle, 2.0f * M_PI);
   }
 
-  void update_position(App &app, float delta_time) {
-    const auto angle = get_angle();
-    x.update(boat_speed * std::cos(angle) * delta_time);
-    y.update(boat_speed * std::sin(angle) * delta_time);
+  void update_position(App &app, float delta_time, bool is_accelerating,
+                       float cargo_weight) {
+    // Calculate effective speed based on weight and acceleration
+    float total_weight = ship_weight + cargo_weight;
+    float weight_factor = ship_weight / total_weight; // More weight = slower
+
+    // Base speed affected by weight
+    float effective_base_speed = boat_speed * weight_factor;
+
+    // Acceleration increases speed up to 2-3x
+    if (is_accelerating) {
+      // Gradually increase current speed towards max (2.5x base for this
+      // weight)
+      float max_accel_speed = effective_base_speed * 2.5f;
+      current_speed += acceleration_rate * delta_time;
+      current_speed = std::min(current_speed, max_accel_speed);
+    } else {
+      // Gradually decrease speed back to base
+      current_speed -= deceleration_rate * delta_time;
+      current_speed = std::max(current_speed, effective_base_speed);
+    }
+
+    const auto angle_val = get_angle();
+    x.update(current_speed * std::cos(angle_val) * delta_time);
+    y.update(current_speed * std::sin(angle_val) * delta_time);
   }
 
   i32 get_x() const { return x.base; }
   i32 get_y() const { return y.base; }
+  float get_current_speed() const { return current_speed; }
 
 private:
   Texture boat{
@@ -100,9 +122,17 @@ private:
       default_boat_HEIGHT,
   };
 
-  static constexpr float default_angle = M_PI_2, turn_rate = 1.5f,
-                         boat_speed = 30; // 30m/s
+  static constexpr float default_angle = M_PI_2;
+  static constexpr float turn_rate = 1.5f;
+  static constexpr float boat_speed = 30.0f;   // 30m/s base speed
+  static constexpr float ship_weight = 100.0f; // Ship base weight in kg
+  static constexpr float acceleration_rate =
+      60.0f; // Speed increase per second when accelerating
+  static constexpr float deceleration_rate =
+      40.0f; // Speed decrease per second when not accelerating
+
   float angle = default_angle;
+  float current_speed = boat_speed; // Current actual speed
 
   Pos<> x = 0, y = 0;
 };

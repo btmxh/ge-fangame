@@ -187,7 +187,7 @@ elevated suicide as the ultimate beauty, as the final goal in student AB's life.
 While being clear suicidal propaganda, Glow Embrace ultimately became a major
 distraction for student AB. Rather than spiraling in self-destructive thoughts,
 they were celebrating the birth of a new legendary song. The original artist,
-Shirakami Fubuki, along with her two workers, Tsunomaki Watame and Nakiri Ayame
+Shirakami Fubuki, along with her two coworkers, Tsunomaki Watame and Nakiri Ayame
 was followed by this student, giving them a new purpose in life. The sudden
 appearance of these three VTubers brought immense levels of positivity into the
 student's mindset, effectively undoing years of negative thoughts and failures.

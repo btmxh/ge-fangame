@@ -3,7 +3,6 @@
 #include "ge-app/game/clock.hpp"
 #include "ge-app/game/player_stats.hpp"
 #include "ge-app/scenes/base.hpp"
-#include "ge-app/timer.hpp"
 
 namespace ge {
 namespace scenes {
@@ -15,6 +14,12 @@ public:
   TimeUpdateScene(WorldScene &parent);
 
   void tick(float dt) override;
+
+  bool on_button_held(Button btn) override;
+
+  bool on_button_finished_hold(Button btn) override;
+
+  // void on_exit(); -- not necessary as is_active() is always true
 
   Clock &get_clock() { return clock; }
   PlayerStats &get_player_stats() { return player_stats; }

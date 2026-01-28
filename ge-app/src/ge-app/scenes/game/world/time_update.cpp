@@ -18,9 +18,17 @@ void TimeUpdateScene::tick(float dt) {
 
   player_stats.update(parent.get_world_dt(), parent.get_boat().get_angle(),
                       parent.get_current_mode() == GameMode::Steering);
-  clock.set_multiplier(app, parent.get_current_mode());
+  clock.update_multiplier(app, parent.get_current_mode());
 }
 
+bool TimeUpdateScene::on_button_held(Button btn) {
+  clock.begin_sped_up();
+  return true;
+}
+bool TimeUpdateScene::on_button_finished_hold(Button btn) {
+  clock.end_sped_up();
+  return true;
+}
 } // namespace world
 } // namespace game
 } // namespace scenes

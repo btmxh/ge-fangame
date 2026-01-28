@@ -42,7 +42,7 @@ public:
     return float(elapsed) / float(DAY_LENGTH);
   }
 
-  void set_multiplier(App &app, GameMode mode) {
+  void update_multiplier(App &app, GameMode mode) {
     auto multiplier = game_mode_speed_multiplier(mode);
     day_timer.set_multiplier(app, multiplier.first * (sped_up ? 3 : 1),
                              multiplier.second);

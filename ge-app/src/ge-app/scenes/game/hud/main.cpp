@@ -15,8 +15,8 @@ HUDScene::HUDScene(GameScene &parent)
 WorldScene &HUDScene::get_world_scene() { return parent.get_world_scene(); }
 Clock &HUDScene::get_clock() { return parent.get_world_scene().get_clock(); }
 
-void HUDScene::update_mode(GameMode new_mode) {
-  parent.on_mode_changed(new_mode);
+void HUDScene::update_mode(GameMode old_mode, GameMode new_mode) {
+  parent.on_mode_changed(old_mode, new_mode);
 }
 
 } // namespace game

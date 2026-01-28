@@ -26,7 +26,7 @@ public:
   PlayerStats &get_player_stats() { return world.get_player_stats(); }
   GameMode get_current_mode() { return hud.get_current_mode(); }
 
-  void on_mode_changed(GameMode new_mode);
+  void on_mode_changed(GameMode old_mode, GameMode new_mode);
 
   bool is_active() const override;
 

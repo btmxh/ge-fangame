@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ge-app/game/boat.hpp"
+#include "ge-app/game/mode_indicator.hpp"
 #include "ge-app/scenes/base.hpp"
 #include <array>
 
@@ -43,6 +44,13 @@ public:
   BoatScene(WorldScene &parent);
 
   void on_exit() { boat_steering_scene.on_exit(); }
+
+  void on_mode_changed(GameMode old_mode, GameMode new_mode) {
+    if (old_mode == new_mode)
+      return;
+    if (new_mode != GameMode::Steering)
+      boat_steering_scene.on_exit();
+  }
 
   Boat &get_boat() { return boat; }
 

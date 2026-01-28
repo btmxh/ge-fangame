@@ -11,8 +11,9 @@ ModeIndicatorScene::ModeIndicatorScene(HUDScene &parent)
     : Scene(parent.get_app()), parent(parent) {}
 
 GameMode ModeIndicatorScene::switch_mode() {
+  auto old_mode = get_current_mode();
   GameMode mode = indicator.switch_mode();
-  parent.update_mode(mode);
+  parent.update_mode(old_mode, mode);
   return mode;
 }
 

@@ -65,6 +65,13 @@ public:
   GameMode get_current_mode() const;
   DialogScene &get_dialog_scene();
 
+  void on_mode_changed(GameMode old_mode, GameMode new_mode) {
+    if (old_mode == new_mode)
+      return;
+    boat_scene.on_mode_changed(old_mode, new_mode);
+    fishing_scene.on_mode_changed(old_mode, new_mode);
+  }
+
 private:
   static constexpr u32 SKY_HEIGHT = 80;
   GameScene &parent;

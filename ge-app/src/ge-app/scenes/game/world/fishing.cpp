@@ -46,6 +46,14 @@ FishingScene::FishingScene(WorldScene &parent)
   set_scenes(subscenes);
 }
 
+void FishingScene::on_mode_changed(GameMode old_mode, GameMode new_mode) {
+  if (old_mode == new_mode)
+    return;
+  if (new_mode != GameMode::Fishing) {
+    fishing.reel_if_fishing(app, parent.get_dialog_scene());
+    fishing.lose_focus();
+  }
+}
 } // namespace world
 } // namespace game
 } // namespace scenes

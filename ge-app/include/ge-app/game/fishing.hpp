@@ -63,7 +63,9 @@ public:
     float mag = std::sqrt(x * x + y * y);
 
     // Track previous joystick state to detect velocity
-    if (dt > MIN_DELTA_TIME) { // Avoid division by very small numbers
+    if (dt > MIN_DELTA_TIME &&
+        !std::isnan(
+            prev_joystick_mag)) { // Avoid division by very small numbers
       float velocity = (mag - prev_joystick_mag) / dt;
 
       // If joystick moved fast enough, start casting
@@ -148,6 +150,20 @@ public:
 
     return false;
   }
+
+  void reel_if_fishing(App &app, scenes::DialogScene &dialog_scene) {
+    // HACK: simulate button press to reel in if fishing
+    // bool handled = on_button_clicked(app, dialog_scene, Button::Button1);
+    // FIXME: currently on_button_clicked does not play nice with mode switch
+    // so we manually set state here
+    bool handled = false;
+    // if not yet handled, reset state
+    if (!handled) {
+      reset();
+    }
+  }
+
+  void lose_focus() { prev_joystick_mag = NAN; }
 
   FishingState get_state() const { return state; }
 
@@ -406,7 +422,7 @@ private:
   float wiggle_freq = 2.0f;
 
   // Joystick tracking
-  float prev_joystick_mag = 0.0f;
+  float prev_joystick_mag = NAN;
 
   // Catch tracking
   bool caught_fish = false;

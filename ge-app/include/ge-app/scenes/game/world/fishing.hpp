@@ -3,6 +3,7 @@
 #include <array>
 
 #include "ge-app/game/fishing.hpp"
+#include "ge-app/game/mode_indicator.hpp"
 #include "ge-app/scenes/base.hpp"
 
 namespace ge {
@@ -40,6 +41,8 @@ private:
 class FishingScene : public ContainerScene {
 public:
   FishingScene(WorldScene &parent);
+
+  void on_mode_changed(GameMode old_mode, GameMode new_mode);
 
 private:
   WorldScene &parent;

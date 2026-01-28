@@ -40,7 +40,11 @@ GameScene::GameScene(RootScene &parent)
 
 DialogScene &GameScene::get_dialog_scene() { return parent.get_dialog_scene(); }
 
-void GameScene::on_mode_changed(GameMode old_mode) {}
+void GameScene::on_mode_changed(GameMode old_mode, GameMode new_mode) {
+  if (old_mode == new_mode)
+    return;
+  world.on_mode_changed(old_mode, new_mode);
+}
 
 // TODO: implement boat acceleration + time speed up
 // bool GameScene::on_button_held(Button btn) {

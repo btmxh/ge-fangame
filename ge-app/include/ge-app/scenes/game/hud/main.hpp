@@ -23,7 +23,7 @@ public:
     return mode_indicator.get_current_mode();
   }
 
-  void update_mode(GameMode new_mode);
+  void update_mode(GameMode old_mode, GameMode new_mode);
 
   Clock &get_clock();
 

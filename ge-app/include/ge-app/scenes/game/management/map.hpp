@@ -3,6 +3,7 @@
 #include "ge-app/font.hpp"
 #include "ge-app/game/boat.hpp"
 #include "ge-app/game/clock.hpp"
+#include "ge-app/game/water.hpp"
 #include "ge-app/scenes/base.hpp"
 #include "ge-hal/app.hpp"
 #include "ge-hal/gpu.hpp"
@@ -66,8 +67,10 @@ public:
   }
 
   void render(Surface &fb_region) override {
-    // Clear screen with ocean color (dark blue)
-    hal::gpu::fill(fb_region, 0x001F);
+    // Render ocean texture
+    water.render(fb_region, 0.0f,
+                 static_cast<u32>(static_cast<i32>(map_offset_x)),
+                 static_cast<u32>(static_cast<i32>(-map_offset_y)));
 
     const auto &font = Font::regular_font();
     const u32 line_height = font.line_height() + 2;
@@ -100,8 +103,9 @@ public:
     // Only draw boat marker if on screen
     if (boat_screen_x >= 0 && boat_screen_x < (i32)fb_region.get_width() &&
         boat_screen_y >= 0 && boat_screen_y < (i32)fb_region.get_height()) {
-      font.render_colored("B", -1, fb_region, boat_screen_x, boat_screen_y,
-                          0x07E0); // Green for boat
+      // Temp marker (red square)
+      hal::gpu::fill(fb_region.subsurface(boat_screen_x, boat_screen_y, 4, 4),
+                     0xF800);
     }
 
     // Draw bookmarks
@@ -188,6 +192,7 @@ public:
 
 private:
   ManagementUIScene &parent;
+  Water water;
 
   static constexpr u32 MAX_BOOKMARKS = 5;
   static constexpr i32 MIN_Y = -100; // Minimum Y coordinate

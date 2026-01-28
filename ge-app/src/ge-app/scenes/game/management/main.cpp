@@ -42,8 +42,8 @@ PlayerStats &ManagementUIScene::get_player_stats() {
 
 Clock &ManagementUIScene::get_clock() { return parent.get_clock(); }
 
-WorldScene &ManagementUIScene::get_world_scene() {
-  return parent.get_world_scene();
+Boat &ManagementUIScene::get_boat() {
+  return parent.get_world_scene().get_boat();
 }
 
 bool ManagementUIScene::is_active() const {

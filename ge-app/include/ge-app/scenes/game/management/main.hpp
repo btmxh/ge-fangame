@@ -37,7 +37,7 @@ public:
   PlayerStats &get_player_stats();
   Clock &get_clock();
   GameMode get_current_mode();
-  WorldScene &get_world_scene();
+  Boat &get_boat();
 
   bool is_screen_active(ManagementUIScreen screen) const {
     return current_screen == screen;

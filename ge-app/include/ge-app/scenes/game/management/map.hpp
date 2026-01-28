@@ -45,7 +45,8 @@ public:
     } else if (joystick.x > MOVE_THRESHOLD && !joy_moved_x) {
       map_offset_x += MAP_MOVE_SPEED * dt;
       joy_moved_x = true;
-    } else if (joystick.x > -CENTER_THRESHOLD && joystick.x < CENTER_THRESHOLD) {
+    } else if (joystick.x > -CENTER_THRESHOLD &&
+               joystick.x < CENTER_THRESHOLD) {
       joy_moved_x = false;
     }
 
@@ -55,7 +56,8 @@ public:
     } else if (joystick.y > MOVE_THRESHOLD && !joy_moved_y) {
       map_offset_y += MAP_MOVE_SPEED * dt;
       joy_moved_y = true;
-    } else if (joystick.y > -CENTER_THRESHOLD && joystick.y < CENTER_THRESHOLD) {
+    } else if (joystick.y > -CENTER_THRESHOLD &&
+               joystick.y < CENTER_THRESHOLD) {
       joy_moved_y = false;
     }
 
@@ -94,7 +96,7 @@ public:
     i32 boat_rel_y = boat_y - crosshair_y;
     i32 boat_screen_x = screen_center_x + boat_rel_x;
     i32 boat_screen_y = screen_center_y + boat_rel_y;
-    
+
     // Only draw boat marker if on screen
     if (boat_screen_x >= 0 && boat_screen_x < (i32)fb_region.get_width() &&
         boat_screen_y >= 0 && boat_screen_y < (i32)fb_region.get_height()) {
@@ -129,8 +131,7 @@ public:
 
     snprintf(coord_buf, sizeof(coord_buf), "Cross: (%d, %d)", crosshair_x,
              crosshair_y);
-    font.render_colored(coord_buf, -1, fb_region, 10, 25 + line_height,
-                        0x7BEF);
+    font.render_colored(coord_buf, -1, fb_region, 10, 25 + line_height, 0x7BEF);
 
     // Display bookmarks list at bottom
     u32 y_pos = fb_region.get_height() - (MAX_BOOKMARKS + 2) * line_height - 5;
@@ -152,7 +153,8 @@ public:
     if (active_count == 0) {
       font.render_colored("None yet", -1, fb_region, 15, y_pos, 0x7BEF);
     } else if (active_count >= MAX_BOOKMARKS) {
-      font.render_colored("(Full - new adds remove oldest)", -1, fb_region, 15, y_pos, 0xFFE0); // Yellow
+      font.render_colored("(Full - new adds remove oldest)", -1, fb_region, 15,
+                          y_pos, 0xFFE0); // Yellow
     }
 
     // Instructions
@@ -216,8 +218,8 @@ private:
         const char *am_pm = (hr >= 12) ? "PM" : "AM";
         u32 display_hr = (hr % 12 == 0) ? 12 : (hr % 12);
 
-        snprintf(bookmarks[i].name, sizeof(bookmarks[i].name),
-                 "day %u %u %s", day, display_hr, am_pm);
+        snprintf(bookmarks[i].name, sizeof(bookmarks[i].name), "day %u %u %s",
+                 day, display_hr, am_pm);
         return true;
       }
     }

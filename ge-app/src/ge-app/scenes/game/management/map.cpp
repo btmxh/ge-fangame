@@ -24,13 +24,9 @@ bool MapScene::is_active() const {
   return parent.is_screen_active(ManagementUIScreen::Map);
 }
 
-i32 MapScene::get_boat_x() {
-  return parent.get_world_scene().get_boat().get_x();
-}
+i32 MapScene::get_boat_x() { return parent.get_boat().get_x(); }
 
-i32 MapScene::get_boat_y() {
-  return parent.get_world_scene().get_boat().get_y();
-}
+i32 MapScene::get_boat_y() { return parent.get_boat().get_y(); }
 
 Clock &MapScene::get_clock() { return parent.get_clock(); }
 

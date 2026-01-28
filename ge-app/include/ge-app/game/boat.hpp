@@ -31,7 +31,7 @@ class Boat {
 public:
   u32 get_width() const { return boat.get_width(); }
   u32 get_height() const { return boat.get_height(); }
-  void render(Surface &region) {
+  void render(Surface region) {
     auto angle_to_8dir = [](float angle) {
       // normalize to [0, 2π)
       angle = std::fmod(angle, 2.0f * M_PI);

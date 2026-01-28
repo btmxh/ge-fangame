@@ -95,7 +95,8 @@ public:
 
 private:
   Texture sun_texture;
-  std::uint16_t sky_color = 0xFFFF, cloud_color = 0xFFFF;
+  u16 sky_color = hsv_to_rgb565(150, 200, 255),
+      cloud_color = hsv_to_rgb565(0, 0, 255);
   u16 cloud_lut[sizeof(CLOUD_COLORS) / sizeof(CLOUD_COLORS[0])];
   int x_offset = 0;
 };

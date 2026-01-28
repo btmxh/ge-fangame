@@ -51,11 +51,11 @@ public:
   void begin_sped_up() { sped_up = true; }
   void end_sped_up() { sped_up = false; }
 
-  const Timer &get_day_timer() const { return day_timer; }
+  const Timer &get_game_timer() const { return day_timer; }
 
-private:
   static constexpr i64 DAY_LENGTH =
       180 * 1000; // each day is 3 minute in real time
+private:
   Timer day_timer;
   bool sped_up = false;
 };

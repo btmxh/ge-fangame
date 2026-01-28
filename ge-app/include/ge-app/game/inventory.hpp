@@ -27,6 +27,8 @@ public:
   static constexpr u32 MAX_ITEMS = 50; // Maximum inventory size
 
   Inventory() : item_count(0) {}
+  Inventory(const Inventory &other) = delete;
+  Inventory &operator=(const Inventory &other) = delete;
 
   // Add a fish to the inventory
   bool add_fish(const char *name, FishRarity rarity, i64 caught_time,

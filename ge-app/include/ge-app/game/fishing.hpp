@@ -1,10 +1,11 @@
 #pragma once
 
 #include "ge-app/game/inventory.hpp"
-#include "ge-app/scenes/dialog_scene.hpp"
+#include "ge-app/scenes/dialog.hpp"
 #include "ge-hal/app.hpp"
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 
 namespace ge {
@@ -21,15 +22,13 @@ enum class FishingState {
 
 class Fishing {
 public:
-  Fishing() : state(FishingState::Idle), inventory(nullptr) {}
+  Fishing() : state(FishingState::Idle) {}
 
-  void set_inventory(Inventory *inv) { inventory = inv; }
-
-  void update(App &app, DialogScene &dialog_scene, float dt,
-              const JoystickState &joystick) {
+  void update(App &app, Inventory &inventory, scenes::DialogScene &dialog_scene,
+              float dt) {
     switch (state) {
     case FishingState::Idle:
-      update_idle(joystick, dt);
+      update_idle(dt);
       break;
     case FishingState::Casting:
       update_casting(dt);
@@ -47,12 +46,35 @@ public:
       // Stay in this state until player presses button to reel in
       break;
     case FishingState::Reeling:
-      update_reeling(app, dialog_scene, dt);
+      update_reeling(app, inventory, dialog_scene, dt);
       break;
     }
 
     // Update wiggle animation
     wiggle_time += dt;
+  }
+
+  bool on_joystick_moved(float dt, float x, float y) {
+    if (state != FishingState::Idle) {
+      return false;
+    }
+
+    // Detect joystick flick
+    float mag = std::sqrt(x * x + y * y);
+
+    // Track previous joystick state to detect velocity
+    if (dt > MIN_DELTA_TIME) { // Avoid division by very small numbers
+      float velocity = (mag - prev_joystick_mag) / dt;
+
+      // If joystick moved fast enough, start casting
+      if (velocity > FLICK_THRESHOLD && mag > MIN_JOYSTICK_MAG) {
+        // Y is reverse
+        start_cast(x, -y, mag);
+      }
+    }
+
+    prev_joystick_mag = mag;
+    return true;
   }
 
   void render(Surface &region, i32 boat_center_x, i32 boat_center_y) {
@@ -99,29 +121,33 @@ public:
     draw_bobber(region, bobber_x, bobber_y);
   }
 
-  void on_button_clicked(App &app, DialogScene &dialog, Button btn) {
+  bool on_button_clicked(App &app, scenes::DialogScene &dialog, Button btn) {
     if (btn == Button::Button1) {
       if (state == FishingState::Caught) {
         // Start reeling in the fish!
         state = FishingState::Reeling;
         reeling_timer = 0.0f;
         caught_fish = true; // Mark that we caught a fish
-      } else if (state == FishingState::BaitLost) {
+        return true;
+      }
+      if (state == FishingState::BaitLost) {
         // Reel in after losing bait
         state = FishingState::Reeling;
         reeling_timer = 0.0f;
         caught_fish = false; // No fish caught
-      } else if (state == FishingState::Fishing ||
-                 state == FishingState::FishBiting) {
+        return true;
+      }
+      if (state == FishingState::Fishing || state == FishingState::FishBiting) {
         // Allow early retraction - player won't get anything
         state = FishingState::Reeling;
         reeling_timer = 0.0f;
         caught_fish = false; // No fish caught
+        return true;
       }
     }
-  }
 
-  bool is_active() const { return state != FishingState::Idle; }
+    return false;
+  }
 
   FishingState get_state() const { return state; }
 
@@ -144,23 +170,7 @@ private:
     return f * f * f + 1.0f;
   }
 
-  void update_idle(const JoystickState &joystick, float dt) {
-    // Detect joystick flick
-    float mag = std::sqrt(joystick.x * joystick.x + joystick.y * joystick.y);
-
-    // Track previous joystick state to detect velocity
-    if (dt > MIN_DELTA_TIME) { // Avoid division by very small numbers
-      float velocity = (mag - prev_joystick_mag) / dt;
-
-      // If joystick moved fast enough, start casting
-      if (velocity > FLICK_THRESHOLD && mag > MIN_JOYSTICK_MAG) {
-        // Y is reverse
-        start_cast(joystick.x, -joystick.y, mag);
-      }
-    }
-
-    prev_joystick_mag = mag;
-  }
+  void update_idle(float dt) {}
 
   void start_cast(float joy_x, float joy_y, float strength) {
     state = FishingState::Casting;
@@ -233,14 +243,15 @@ private:
     }
   }
 
-  void update_reeling(App &app, DialogScene &dialog, float dt) {
+  void update_reeling(App &app, Inventory &inventory,
+                      scenes::DialogScene &dialog, float dt) {
     reeling_timer += dt;
 
     if (reeling_timer >= REEL_DURATION) {
       // Animation complete
       if (caught_fish) {
         // Player caught a fish!
-        catch_fish(app, dialog);
+        catch_fish(app, inventory, dialog);
       } else {
         // Early retraction or bait lost - no fish
         dialog.show_message("Fishing", "Nothing caught.");
@@ -249,7 +260,7 @@ private:
     }
   }
 
-  void catch_fish(App &app, DialogScene &dialog) {
+  void catch_fish(App &app, Inventory &inventory, scenes::DialogScene &dialog) {
     // Fish data with names, rarities, and weights
     struct FishData {
       const char *name;
@@ -296,21 +307,18 @@ private:
     caught_fish_name = caught.name;
 
     // Add to inventory if available
-    if (inventory != nullptr) {
-      if (inventory->add_fish(caught.name, caught.rarity, app.now(),
-                              caught.fish_weight)) {
-        char msg_buf[128];
-        snprintf(msg_buf, sizeof(msg_buf), "Caught: %s!\nInventory: %u/%u",
-                 caught.name, inventory->get_item_count(),
-                 Inventory::MAX_ITEMS);
-        dialog.show_message("Fishing", msg_buf);
-      } else {
-        // Inventory full
-        dialog.show_message("Fishing", "Inventory full!\nCannot store fish.");
-      }
+    if (inventory.add_fish(caught.name, caught.rarity, app.now(),
+                           caught.fish_weight)) {
+      // TODO: handle this memory thing better instead of rawdogging static
+      static char msg_buf[128];
+      std::snprintf(msg_buf, sizeof(msg_buf), "Caught: %s!\nInventory: %u/%u",
+                    caught.name, inventory.get_item_count(),
+                    Inventory::MAX_ITEMS);
+      dialog.show_message("Fishing", msg_buf);
     } else {
-      // No inventory set, just show caught message
-      dialog.show_message("Fishing", caught.name);
+      // Inventory full
+      // TODO: show discard item UI
+      dialog.show_message("Fishing", "Inventory full!\nCannot store fish.");
     }
   }
 
@@ -403,9 +411,6 @@ private:
   // Catch tracking
   bool caught_fish = false;
   const char *caught_fish_name = nullptr;
-
-  // Inventory reference
-  Inventory *inventory;
 };
 
 } // namespace ge

@@ -3,7 +3,7 @@
 #include "ge-app/font.hpp"
 #include "ge-app/game/inventory.hpp"
 #include "ge-app/game/player_stats.hpp"
-#include "ge-app/scenes/scene.hpp"
+#include "ge-app/scenes/base.hpp"
 #include "ge-hal/app.hpp"
 #include "ge-hal/gpu.hpp"
 #include "ge-hal/surface.hpp"
@@ -12,12 +12,16 @@
 #include <cstring>
 
 namespace ge {
-
-class RootManagementUIScene;
+namespace scenes {
+namespace game {
+class ManagementUIScene;
+namespace mgmt {
 
 class InventoryScene : public Scene {
 public:
-  InventoryScene(RootManagementUIScene &parent);
+  InventoryScene(ManagementUIScene &parent);
+
+  Inventory &get_inventory() { return inventory; }
 
   void tick(float dt) override {
     auto joystick = app.get_joystick_state();
@@ -148,6 +152,7 @@ public:
         }
 
         if (is_edible) {
+          auto &player_stats = get_player_stats();
           // Consume the fish - food value based on weight
           food_value = item.weight * 20.0f; // 1kg = 20 food
           player_stats.consume_fish(food_value);
@@ -177,10 +182,12 @@ public:
 
   void on_back_action();
 
+  bool is_active() const override;
+
 private:
-  RootManagementUIScene &parent;
-  Inventory &inventory;
-  PlayerStats &player_stats;
+  ManagementUIScene &parent;
+  Inventory inventory;
+  PlayerStats &get_player_stats();
   u32 scroll_offset;
   u32 selected_index;
   bool joy_moved = false;
@@ -224,4 +231,7 @@ private:
   }
 };
 
+} // namespace mgmt
+} // namespace game
+} // namespace scenes
 } // namespace ge

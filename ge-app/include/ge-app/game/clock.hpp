@@ -13,14 +13,14 @@ class Clock {
 public:
   u32 get_num_days(App &app) const { return day_timer.get(app) / DAY_LENGTH; }
 
-  u32 get_hr(App &app) {
+  u32 get_hr(App &app) const {
     auto elapsed = day_timer.get(app) % DAY_LENGTH;
     static constexpr u32 HR_PER_DAY = 24;
     u32 hr = (elapsed * HR_PER_DAY) / DAY_LENGTH;
     return hr;
   }
 
-  char *get_display_string(App &app) {
+  char *get_display_string(App &app) const {
     static char buf[64] = {0};
     u32 hr = get_hr(app);
     const char *am_pm = (hr >= 12) ? "PM" : "AM";
@@ -42,7 +42,7 @@ public:
     return float(elapsed) / float(DAY_LENGTH);
   }
 
-  void set_multiplier(App &app, GameMode mode) {
+  void update_multiplier(App &app, GameMode mode) {
     auto multiplier = game_mode_speed_multiplier(mode);
     day_timer.set_multiplier(app, multiplier.first * (sped_up ? 3 : 1),
                              multiplier.second);
@@ -51,11 +51,11 @@ public:
   void begin_sped_up() { sped_up = true; }
   void end_sped_up() { sped_up = false; }
 
-  const Timer &get_day_timer() const { return day_timer; }
+  const Timer &get_game_timer() const { return day_timer; }
 
-private:
   static constexpr i64 DAY_LENGTH =
       180 * 1000; // each day is 3 minute in real time
+private:
   Timer day_timer;
   bool sped_up = false;
 };

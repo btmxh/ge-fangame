@@ -5,12 +5,11 @@
 #include "ge-hal/surface.hpp"
 
 namespace ge {
-
 struct JoystickState {
   float x, y;
 };
 
-enum class Button { Button1, Button2 };
+enum class Button { Button1, Button2, NumButtons };
 
 class App {
 public:

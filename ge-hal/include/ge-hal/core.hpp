@@ -1,6 +1,9 @@
 #pragma once
 
+#include <cassert>
 #include <cstdint>
+
+#define GE_ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 namespace ge {
 using u8 = std::uint8_t;
@@ -18,4 +21,8 @@ using isize = std::intptr_t;
 
 using f32 = float;
 // f64 is not available on the targeted platform
+
+// assert_se: assert in side-effect context
+template <class T> inline void assert_se(T condition) { assert(condition); }
+
 } // namespace ge

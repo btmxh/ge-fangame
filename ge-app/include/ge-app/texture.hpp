@@ -6,20 +6,39 @@
 #include <cmath>
 
 namespace ge {
+
+namespace detail {
+template <usize N> struct uintN {};
+
+template <> struct uintN<16> {
+  using type = u16;
+};
+template <> struct uintN<32> {
+  using type = u32;
+};
+} // namespace detail
+
+template <PixelFormat format,
+          class DType = typename detail::uintN<pixel_format_bpp(format)>::type>
 class Texture : public ConstSurface {
 public:
-  Texture(const u16 *color_data, u32 width, u32 height,
-          PixelFormat format = PixelFormat::ARGB1555)
-      : ConstSurface{color_data, width, width, height, format} {}
+  Texture(const DType *color_data, u32 width, u32 height,
+          PixelFormat ctor_format = format)
+      : ConstSurface{color_data, width, width, height, format} {
+    // Ensure format matches
+    assert(ctor_format == format);
+  }
 
-  void blit(Surface &region) { hal::gpu::blit_blend(region, *this, 0xFF); }
+  void blit(const Surface &region) {
+    hal::gpu::blit_blend(region, *this, 0xFF);
+  }
 
   template <class Region>
   void blit_rotated(
       Region &region, int dst_cx,
-      int dst_cy,     // destination center (screen coords)
-      float angle_rad // clockwise or CCW, your choice, just be consistent
-  ) {
+      int dst_cy,      // destination center (screen coords)
+      float angle_rad, // clockwise or CCW, your choice, just be consistent
+      float src_cx = NAN, float src_cy = NAN) {
     const int W = region.get_width();
     const int H = region.get_height();
 
@@ -28,8 +47,10 @@ public:
     float s = std::sin(angle_rad);
 
     // Sprite center in source space
-    float src_cx = (get_width() - 1) * 0.5f;
-    float src_cy = (get_height() - 1) * 0.5f;
+    if (std::isnan(src_cx))
+      src_cx = (get_width() - 1) * 0.5f;
+    if (std::isnan(src_cy))
+      src_cy = (get_height() - 1) * 0.5f;
 
     // Compute conservative bounding box radius
     float hw = get_width() * 0.5f;
@@ -56,13 +77,22 @@ public:
 
         if ((unsigned)sx < (unsigned)get_width() &&
             (unsigned)sy < (unsigned)get_height()) {
-          auto col = *static_cast<const u16 *>(pixel_at(sx, sy));
-          if (col & 0x8000) {
-            region.set_pixel(x, y, col);
-          }
+          auto col = *static_cast<const DType *>(pixel_at(sx, sy));
+          // HACK: using HAL GPU to blend alpha for us
+          auto dst = region.subsurface(x, y, 1, 1);
+          auto src = ConstSurface(&col, 1, 1, 1, format);
+          hal::gpu::blit_blend(dst, src, 0xFF);
+          // if (col & 0x8000) {
+          // region.set_pixel(x, y, col);
+          // }
         }
       }
     }
   }
 };
+
+using TextureRGB565 = Texture<PixelFormat::RGB565>;
+using TextureARGB1555 = Texture<PixelFormat::ARGB1555>;
+using TextureARGB8888 = Texture<PixelFormat::ARGB8888>;
+
 } // namespace ge

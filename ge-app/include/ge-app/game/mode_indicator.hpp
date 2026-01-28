@@ -4,7 +4,7 @@
 #include "ge-hal/gpu.hpp"
 #include <utility>
 namespace ge {
-enum class GameMode { Fishing, Steering, Management };
+enum class GameMode { Steering, Fishing, Management, NumModes };
 
 inline std::pair<u32, u32> game_mode_speed_multiplier(GameMode mode) {
   switch (mode) {
@@ -30,13 +30,16 @@ public:
     case GameMode::Management:
       mode_str = "Mode: Management";
       break;
+    default:
+      break;
     }
     Font::regular_font().render_colored(mode_str, -1, region, 1, 1, 0xFFFF);
   }
 
   GameMode switch_mode() {
     return current_mode =
-               static_cast<GameMode>((static_cast<int>(current_mode) + 1) % 3);
+               static_cast<GameMode>((static_cast<int>(current_mode) + 1) %
+                                     static_cast<int>(GameMode::NumModes));
   }
 
   GameMode get_current_mode() const { return current_mode; }

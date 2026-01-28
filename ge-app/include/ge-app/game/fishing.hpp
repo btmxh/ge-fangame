@@ -1,10 +1,11 @@
 #pragma once
 
-#include "ge-app/gfx/dialog_box.hpp"
-#include "ge-app/texture.hpp"
+#include "ge-app/game/inventory.hpp"
+#include "ge-app/scenes/dialog.hpp"
 #include "ge-hal/app.hpp"
-#include "ge-hal/gpu.hpp"
+#include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 
 namespace ge {
@@ -23,11 +24,11 @@ class Fishing {
 public:
   Fishing() : state(FishingState::Idle) {}
 
-  void update(App &app, DialogBox &dialog_box, float dt,
-              const JoystickState &joystick) {
+  void update(App &app, Inventory &inventory, scenes::DialogScene &dialog_scene,
+              float dt) {
     switch (state) {
     case FishingState::Idle:
-      update_idle(joystick, dt);
+      update_idle(dt);
       break;
     case FishingState::Casting:
       update_casting(dt);
@@ -45,12 +46,37 @@ public:
       // Stay in this state until player presses button to reel in
       break;
     case FishingState::Reeling:
-      update_reeling(app, dialog_box, dt);
+      update_reeling(app, inventory, dialog_scene, dt);
       break;
     }
 
     // Update wiggle animation
     wiggle_time += dt;
+  }
+
+  bool on_joystick_moved(float dt, float x, float y) {
+    if (state != FishingState::Idle) {
+      return false;
+    }
+
+    // Detect joystick flick
+    float mag = std::sqrt(x * x + y * y);
+
+    // Track previous joystick state to detect velocity
+    if (dt > MIN_DELTA_TIME &&
+        !std::isnan(
+            prev_joystick_mag)) { // Avoid division by very small numbers
+      float velocity = (mag - prev_joystick_mag) / dt;
+
+      // If joystick moved fast enough, start casting
+      if (velocity > FLICK_THRESHOLD && mag > MIN_JOYSTICK_MAG) {
+        // Y is reverse
+        start_cast(x, -y, mag);
+      }
+    }
+
+    prev_joystick_mag = mag;
+    return true;
   }
 
   void render(Surface &region, i32 boat_center_x, i32 boat_center_y) {
@@ -97,29 +123,47 @@ public:
     draw_bobber(region, bobber_x, bobber_y);
   }
 
-  void on_button_clicked(App &app, DialogBox &dialog, Button btn) {
+  bool on_button_clicked(App &app, scenes::DialogScene &dialog, Button btn) {
     if (btn == Button::Button1) {
       if (state == FishingState::Caught) {
         // Start reeling in the fish!
         state = FishingState::Reeling;
         reeling_timer = 0.0f;
         caught_fish = true; // Mark that we caught a fish
-      } else if (state == FishingState::BaitLost) {
+        return true;
+      }
+      if (state == FishingState::BaitLost) {
         // Reel in after losing bait
         state = FishingState::Reeling;
         reeling_timer = 0.0f;
         caught_fish = false; // No fish caught
-      } else if (state == FishingState::Fishing ||
-                 state == FishingState::FishBiting) {
+        return true;
+      }
+      if (state == FishingState::Fishing || state == FishingState::FishBiting) {
         // Allow early retraction - player won't get anything
         state = FishingState::Reeling;
         reeling_timer = 0.0f;
         caught_fish = false; // No fish caught
+        return true;
       }
+    }
+
+    return false;
+  }
+
+  void reel_if_fishing(App &app, scenes::DialogScene &dialog_scene) {
+    // HACK: simulate button press to reel in if fishing
+    // bool handled = on_button_clicked(app, dialog_scene, Button::Button1);
+    // FIXME: currently on_button_clicked does not play nice with mode switch
+    // so we manually set state here
+    bool handled = false;
+    // if not yet handled, reset state
+    if (!handled) {
+      reset();
     }
   }
 
-  bool is_active() const { return state != FishingState::Idle; }
+  void lose_focus() { prev_joystick_mag = NAN; }
 
   FishingState get_state() const { return state; }
 
@@ -142,23 +186,7 @@ private:
     return f * f * f + 1.0f;
   }
 
-  void update_idle(const JoystickState &joystick, float dt) {
-    // Detect joystick flick
-    float mag = std::sqrt(joystick.x * joystick.x + joystick.y * joystick.y);
-
-    // Track previous joystick state to detect velocity
-    if (dt > MIN_DELTA_TIME) { // Avoid division by very small numbers
-      float velocity = (mag - prev_joystick_mag) / dt;
-
-      // If joystick moved fast enough, start casting
-      if (velocity > FLICK_THRESHOLD && mag > MIN_JOYSTICK_MAG) {
-        // Y is reverse
-        start_cast(joystick.x, -joystick.y, mag);
-      }
-    }
-
-    prev_joystick_mag = mag;
-  }
+  void update_idle(float dt) {}
 
   void start_cast(float joy_x, float joy_y, float strength) {
     state = FishingState::Casting;
@@ -231,36 +259,83 @@ private:
     }
   }
 
-  void update_reeling(App &app, DialogBox &dialog, float dt) {
+  void update_reeling(App &app, Inventory &inventory,
+                      scenes::DialogScene &dialog, float dt) {
     reeling_timer += dt;
 
     if (reeling_timer >= REEL_DURATION) {
       // Animation complete
       if (caught_fish) {
         // Player caught a fish!
-        catch_fish(app, dialog);
+        catch_fish(app, inventory, dialog);
       } else {
         // Early retraction or bait lost - no fish
-        dialog.show_message(app, "Fishing", "Nothing caught.");
+        dialog.show_message("Fishing", "Nothing caught.");
       }
       reset();
     }
   }
 
-  void catch_fish(App &app, DialogBox &dialog) {
-    // Random fish names
-    const char *fish_names[] = {
-        "Tropical Fish", "Golden Fish (RARE!)", "Sea Bass",
-        "Tuna",          "Old Boot (loot)",     "Treasure Chest (RARE loot!)",
-        "Salmon",        "Pufferfish",          "Clownfish",
-        "Sardine"};
+  void catch_fish(App &app, Inventory &inventory, scenes::DialogScene &dialog) {
+    // Fish data with names, rarities, and weights
+    struct FishData {
+      const char *name;
+      FishRarity rarity;
+      int weight;        // For weighted random selection
+      float fish_weight; // Physical weight in kg
+    };
 
-    constexpr int num_fish = sizeof(fish_names) / sizeof(fish_names[0]);
-    int caught_index = rand() % num_fish;
+    const FishData fish_table[] = {
+        {"Tropical Fish", FishRarity::Common, 30000, 0.5f},
+        {"Sea Bass", FishRarity::Common, 25000, 2.0f},
+        {"Sardine", FishRarity::Common, 20000, 0.3f},
+        {"Tuna", FishRarity::Uncommon, 15000, 10.0f},
+        {"Salmon", FishRarity::Uncommon, 15000, 5.0f},
+        {"Pufferfish", FishRarity::Uncommon, 10000, 1.5f},
+        {"Clownfish", FishRarity::Rare, 8000, 0.2f},
+        {"Golden Fish", FishRarity::Legendary, 1,
+         0.1f}, // 1 in ~130,000 (insanely rare!)
+        {"Old Boot (loot)", FishRarity::Uncommon, 7000, 3.0f},
+        {"Treasure Chest", FishRarity::Legendary, 2000, 25.0f}};
 
-    // Store the caught fish message
-    caught_fish_name = fish_names[caught_index];
-    dialog.show_message(app, "Fishing", caught_fish_name);
+    constexpr int num_fish = sizeof(fish_table) / sizeof(fish_table[0]);
+
+    // Calculate total weight
+    int total_weight = 0;
+    for (int i = 0; i < num_fish; i++) {
+      total_weight += fish_table[i].weight;
+    }
+
+    // Weighted random selection
+    int random_weight = rand() % total_weight;
+    int current_weight = 0;
+    int caught_index = 0;
+
+    for (int i = 0; i < num_fish; i++) {
+      current_weight += fish_table[i].weight;
+      if (random_weight < current_weight) {
+        caught_index = i;
+        break;
+      }
+    }
+
+    const FishData &caught = fish_table[caught_index];
+    caught_fish_name = caught.name;
+
+    // Add to inventory if available
+    if (inventory.add_fish(caught.name, caught.rarity, app.now(),
+                           caught.fish_weight)) {
+      // TODO: handle this memory thing better instead of rawdogging static
+      static char msg_buf[128];
+      std::snprintf(msg_buf, sizeof(msg_buf), "Caught: %s!\nInventory: %u/%u",
+                    caught.name, inventory.get_item_count(),
+                    Inventory::MAX_ITEMS);
+      dialog.show_message("Fishing", msg_buf);
+    } else {
+      // Inventory full
+      // TODO: show discard item UI
+      dialog.show_message("Fishing", "Inventory full!\nCannot store fish.");
+    }
   }
 
   void reset() {
@@ -347,7 +422,7 @@ private:
   float wiggle_freq = 2.0f;
 
   // Joystick tracking
-  float prev_joystick_mag = 0.0f;
+  float prev_joystick_mag = NAN;
 
   // Catch tracking
   bool caught_fish = false;

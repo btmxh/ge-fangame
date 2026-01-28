@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ge-app/gfx/color.hpp"
 #include "ge-app/texture.hpp"
 #include "ge-hal/app.hpp"
 #include "ge-hal/gpu.hpp"
@@ -74,9 +75,10 @@ public:
 private:
   static u16 row_memory[App::WIDTH * water_texture_HEIGHT];
 
-  std::uint16_t water_color = 0x03E0; // initial water color (greenish)
-  std::uint16_t sky_color = 0xFFFF;
-  Texture water_pattern{water_texture, water_texture_WIDTH,
-                        water_texture_HEIGHT, PixelFormat::RGB565};
+  u16 water_color =
+      hsv_to_rgb565(142, 255, 181); // initial water color (greenish)
+  u16 sky_color = hsv_to_rgb565(150, 200, 255);
+  Texture<water_texture_FORMAT_CPP> water_pattern{
+      water_texture, water_texture_WIDTH, water_texture_HEIGHT};
 };
 } // namespace ge

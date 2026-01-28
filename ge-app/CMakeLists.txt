@@ -2,24 +2,11 @@ add_subdirectory(assets)
 
 add_executable(ge-app)
 
-target_sources(
-    ge-app
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/font.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/assets/bgm.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/scenes/scene.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/scenes/game_scene.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/scenes/menu_scene.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/scenes/settings_scene.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/scenes/credits_scene.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/ui/menu.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/ui/slider.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/ge-app/ui/option_selector.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ge-app/font.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ge-app/game/water.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ge-app/assets/bgm.cpp
-)
+file(GLOB_RECURSE GE_APP_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+
+file(GLOB_RECURSE GE_APP_HEADERS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp)
+
+target_sources(ge-app PRIVATE ${GE_APP_SOURCES} ${GE_APP_HEADERS})
 
 target_include_directories(ge-app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(ge-app PRIVATE ge-hal ge-assets)

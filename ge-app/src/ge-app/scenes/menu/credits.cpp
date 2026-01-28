@@ -14,7 +14,7 @@ namespace menu {
 CreditsScene::CreditsScene(MenuScene &parent)
     : Scene{parent.get_app()}, parent{parent},
       menu_bg_texture{menu_bg, menu_bg_WIDTH, menu_bg_HEIGHT,
-                      PixelFormat::RGB565} {}
+                      menu_bg_FORMAT_CPP} {}
 
 void CreditsScene::tick(float /*dt*/) {}
 

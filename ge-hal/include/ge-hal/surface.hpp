@@ -98,6 +98,36 @@ public:
     }
   }
 
+  u32 get_pixel(int x, int y) {
+    auto ptr = pixel_at(x, y);
+    if (!ptr)
+      return 0;
+    switch (pixel_format_bpp(fmt)) {
+    case 32:
+      return *static_cast<u32 *>(ptr);
+    case 24: {
+      u8 *bptr = static_cast<u8 *>(ptr);
+      return (bptr[0] << 16) | (bptr[1] << 8) | bptr[2];
+    }
+    case 16:
+      return *static_cast<u16 *>(ptr);
+    case 8:
+      return *static_cast<u8 *>(ptr);
+    case 4: {
+      u8 byte = *static_cast<u8 *>(ptr);
+      if ((y * stride + x) & 1) {
+        // High nibble
+        return (byte >> 4) & 0x0F;
+      } else {
+        // Low nibble
+        return byte & 0x0F;
+      }
+    }
+    }
+
+    return 0;
+  }
+
   ElemT *data() const { return fb_ptr; }
 
   BaseSurface<const ElemT> as_const() const {

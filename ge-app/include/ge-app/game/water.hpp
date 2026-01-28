@@ -78,7 +78,7 @@ private:
   u16 water_color =
       hsv_to_rgb565(142, 255, 181); // initial water color (greenish)
   u16 sky_color = hsv_to_rgb565(150, 200, 255);
-  Texture water_pattern{water_texture, water_texture_WIDTH,
-                        water_texture_HEIGHT, PixelFormat::RGB565};
+  Texture<water_texture_FORMAT_CPP> water_pattern{
+      water_texture, water_texture_WIDTH, water_texture_HEIGHT};
 };
 } // namespace ge

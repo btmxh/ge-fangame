@@ -13,7 +13,7 @@ MenuSelectScene::MenuSelectScene(MenuScene &parent)
     : Scene{parent.get_app()}, parent{parent},
       subtitle{"A Fangame by CTB Girls' Dorm."},
       menu_bg_texture{menu_bg, menu_bg_WIDTH, menu_bg_HEIGHT,
-                      PixelFormat::RGB565} {
+                      menu_bg_FORMAT_CPP} {
   menu_items[0] = {"Start Game", static_cast<int>(MenuAction::StartGame)};
   menu_items[1] = {"Options", static_cast<int>(MenuAction::Options)};
   menu_items[2] = {"Credits", static_cast<int>(MenuAction::Credits)};

@@ -31,7 +31,7 @@ private:
   ui::MenuItem menu_items[4];
   const char *subtitle;
 
-  Texture menu_bg_texture;
+  TextureRGB565 menu_bg_texture;
 };
 
 } // namespace menu

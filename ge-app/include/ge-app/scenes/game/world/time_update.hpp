@@ -16,7 +16,6 @@ public:
   void tick(float dt) override;
 
   bool on_button_held(Button btn) override;
-
   bool on_button_finished_hold(Button btn) override;
 
   // void on_exit(); -- not necessary as is_active() is always true

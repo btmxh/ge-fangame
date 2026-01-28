@@ -26,7 +26,7 @@ public:
 
 private:
   MenuScene &parent;
-  Texture menu_bg_texture;
+  TextureRGB565 menu_bg_texture;
 };
 
 } // namespace menu

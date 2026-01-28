@@ -116,7 +116,7 @@ public:
   float get_current_speed() const { return current_speed; }
 
 private:
-  Texture boat{
+  Texture<default_boat_FORMAT_CPP> boat{
       default_boat,
       default_boat_WIDTH,
       default_boat_HEIGHT,

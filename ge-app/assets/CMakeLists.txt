@@ -91,7 +91,7 @@ function(raw_image_alpha SYMBOL_NAME IMAGE_FILE)
 
     # Default mode is argb1555, but allow override via ARGS
     if(NOT RAW_IMAGE_ALPHA_ARGS)
-        set(RAW_IMAGE_ALPHA_ARGS argb1555)
+        set(RAW_IMAGE_ALPHA_ARGS argb8888)
     endif()
 
     bin2c_generic(bin2c_image.py ${SYMBOL_NAME} ${IMAGE_FILE} ARGS ${RAW_IMAGE_ALPHA_ARGS})

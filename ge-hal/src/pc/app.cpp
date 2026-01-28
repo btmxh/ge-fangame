@@ -40,6 +40,7 @@ public:
     frame_texture =
         SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565,
                           SDL_TEXTUREACCESS_STREAMING, App::WIDTH, App::HEIGHT);
+    SDL_SetTextureScaleMode(frame_texture, SDL_SCALEMODE_NEAREST);
 
     SDL_AudioSpec spec{};
     spec.format = SDL_AUDIO_U8;

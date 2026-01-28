@@ -46,7 +46,7 @@ private:
   u32 selected_item;
   bool joy_moved_y;
 
-  Texture menu_bg_texture;
+  TextureRGB565 menu_bg_texture;
 };
 
 } // namespace menu

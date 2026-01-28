@@ -19,26 +19,35 @@ def argb888_to_argb1555(r, g, b, a):
     return ((1 if a else 0) << 15) | ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3)
 
 
+def argb8_pack(r, g, b, a):
+    return (a << 24) | (r << 16) | (g << 8) | b
+
+
 def convert_image_to_data(img: Image.Image, mode: str):
     """Convert a PIL Image to pixel data in the specified format."""
     img = img.convert("RGBA")
     w, h = img.size
     px = img.load()
 
-    data_u16 = []
+    data = []
+    dtype = np.uint16
+    if mode == "argb8888":
+        dtype = np.uint32
 
     for y in range(h):
         for x in range(w):
             r, g, b, a = px[x, y]
 
             if mode == "rgb565":
-                data_u16.append(rgb888_to_rgb565(r, g, b))
+                data.append(rgb888_to_rgb565(r, g, b))
             elif mode == "argb1555":
-                data_u16.append(argb888_to_argb1555(r, g, b, a > 0))
+                data.append(argb888_to_argb1555(r, g, b, a > 0))
+            elif mode == "argb8888":
+                data.append(argb8_pack(r, g, b, a))
             else:
                 raise ValueError(f"unknown mode: {mode}")
 
-    return np.array(data_u16, dtype=np.uint16), w, h
+    return np.array(data, dtype=dtype), w, h
 
 
 def rotate_image(img: Image.Image, angle: int, mode: str):
@@ -140,6 +149,12 @@ def main(
         animated: Whether to process as animated image
     """
     header_additional = ""
+    # see surface.hpp for these values
+    format_raw = {
+        "argb8888": 0,
+        "rgb565": 2,
+        "argb1555": 3,
+    }[mode]
 
     if rotation_angle != 0:
         # Rotate image by specified angle
@@ -174,6 +189,8 @@ def main(
 #define {sym}_FRAME_COUNT {frame_count}
 
 static const unsigned short {sym}_FRAME_DURATIONS[] = {{{duration_values_csv}}};
+#define {sym}_FORMAT_RAW {format_raw}
+#define {sym}_FORMAT_CPP static_cast<ge::PixelFormat>({format_raw})
             """
     else:
         # Simple static image
@@ -183,6 +200,8 @@ static const unsigned short {sym}_FRAME_DURATIONS[] = {{{duration_values_csv}}};
         header_additional = f"""
 #define {sym}_WIDTH {w}
 #define {sym}_HEIGHT {h}
+#define {sym}_FORMAT_RAW {format_raw}
+#define {sym}_FORMAT_CPP static_cast<ge::PixelFormat>({format_raw})
         """
 
     # Emit C/H via shared helper
@@ -192,7 +211,7 @@ static const unsigned short {sym}_FRAME_DURATIONS[] = {{{duration_values_csv}}};
         out_h,
         sym,
         header_additional=header_additional,
-        dtype="uint16_t",
+        dtype="uint16_t" if data.dtype == np.uint16 else "uint32_t",
     )
 
 
@@ -222,7 +241,7 @@ Examples:
         "mode",
         nargs="?",
         default="rgb565",
-        choices=["rgb565", "argb1555"],
+        choices=["rgb565", "argb1555", "argb8888"],
         help="Color mode (default: rgb565)",
     )
     parser.add_argument(
@@ -245,41 +264,14 @@ Examples:
     # New-style: at least one argument starts with '--'
     has_new_style_args = any(arg.startswith("--") for arg in sys.argv[1:])
 
-    if len(sys.argv) >= 5 and not has_new_style_args:
-        # Old-style: bin2c_image.py input.png output.c output.h symbol [mode] [...]
-        inp_img = sys.argv[1]
-        out_c = sys.argv[2]
-        out_h = sys.argv[3]
-        sym = sys.argv[4]
-        mode = sys.argv[5] if len(sys.argv) >= 6 else "rgb565"
-        rotation_angle = 0
-        animated = False
-
-        # Check for special flags in additional args (with bounds checking)
-        remaining_args = sys.argv[6:] if len(sys.argv) > 6 else []
-        i = 0
-        while i < len(remaining_args):
-            arg = remaining_args[i]
-            if arg == "--rotate" and i + 1 < len(remaining_args):
-                try:
-                    rotation_angle = int(remaining_args[i + 1])
-                    i += 2  # Skip the next argument too
-                except ValueError:
-                    i += 1
-            elif arg == "--animated":
-                animated = True
-                i += 1
-            else:
-                i += 1
-    else:
-        # New-style: use argparse
-        args = parser.parse_args()
-        inp_img = args.input
-        out_c = args.output_c
-        out_h = args.output_h
-        sym = args.symbol
-        mode = args.mode
-        rotation_angle = args.rotate or 0
-        animated = args.animated
+    # New-style: use argparse
+    args = parser.parse_args()
+    inp_img = args.input
+    out_c = args.output_c
+    out_h = args.output_h
+    sym = args.symbol
+    mode = args.mode
+    rotation_angle = args.rotate or 0
+    animated = args.animated
 
     main(inp_img, out_c, out_h, sym, mode, rotation_angle, animated)

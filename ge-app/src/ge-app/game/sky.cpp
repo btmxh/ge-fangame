@@ -56,17 +56,73 @@ inline u16 sky_color(float t) {
   return SKY_NIGHT_RGB;
 }
 
+inline u8 luminance565(u16 c) {
+  u8 r = (c >> 11) & 0x1F;
+  u8 g = (c >> 5) & 0x3F;
+  u8 b = c & 0x1F;
+
+  // scale to ~8-bit domain
+  r <<= 3;
+  g <<= 2;
+  b <<= 3;
+
+  // perceptual-ish
+  return (r * 77 + g * 150 + b * 29) >> 8;
+}
+
+inline u16 gray565(u8 lum) {
+  u16 r = (lum >> 3) & 0x1F; // 5 bits
+  u16 g = (lum >> 2) & 0x3F; // 6 bits
+  u16 b = (lum >> 3) & 0x1F;
+  return (r << 11) | (g << 5) | b;
+}
+
+inline u16 cloud_from_sky(u16 sky, float t) {
+  // t in [0,1)
+  // reuse your day cycle
+
+  constexpr float SUNRISE_START = 0.23f;
+  constexpr float SUNRISE_END = 0.27f;
+  constexpr float SUNSET_START = 0.73f;
+  constexpr float SUNSET_END = 0.77f;
+  constexpr u16 CLOUD_BASE_RGB = 0xEF7B;
+
+  float day_k;
+  if (t < SUNRISE_START || t > SUNSET_END) {
+    day_k = 0.0f; // night
+  } else if (t < SUNRISE_END) {
+    day_k = smooth01((t - SUNRISE_START) / (SUNRISE_END - SUNRISE_START));
+  } else if (t < SUNSET_START) {
+    day_k = 1.0f; // full day
+  } else {
+    day_k = 1.0f - smooth01((t - SUNSET_START) / (SUNSET_END - SUNSET_START));
+  }
+
+  // 1) tint clouds toward sky hue (but don't lose identity)
+  u16 c = ge::blend_rgb565(CLOUD_BASE_RGB, sky,
+                           u8(48 + 48 * day_k) // more sky tint during day
+  );
+
+  // 2) darken at night, slightly at day
+  u8 night_dark = u8(96 * (1.0f - day_k)); // never full black
+  c = ge::blend_rgb565(c, 0x0000, night_dark);
+
+  return c;
+}
+
 void Sky::render(App &app, Surface render_region, Clock &clock) {
-  set_x_offset(clock.get_game_timer().get(app) / 1000 % max_x_offset());
-  set_sky_color(::ge::sky_color(clock.time_in_day(app)));
+  x_offset = clock.get_game_timer().get(app) / 1000 % CLOUD_TEXTURE_WIDTH;
+  sky_color = ::ge::sky_color(clock.time_in_day(app));
+  cloud_color = cloud_from_sky(sky_color, clock.time_in_day(app));
 
   const int W = render_region.get_width();
   const int H = render_region.get_height();
   const int TEX_W = CLOUD_TEXTURE_WIDTH;
   auto fb = render_region;
 
-  // Fill sky
-  hal::gpu::fill(render_region, sky_color);
+  // Fill sky upper region
+  hal::gpu::fill(render_region.subsurface(0, 0, W, H - CLOUD_TEXTURE_HEIGHT),
+                 sky_color);
 
   // temporary: recalculate cloud LUT every frame
   for (usize i = 0; i < sizeof(CLOUD_COLORS) / sizeof(CLOUD_COLORS[0]); ++i) {
@@ -79,10 +135,11 @@ void Sky::render(App &app, Surface render_region, Clock &clock) {
   auto sun = render_sun(render_region, clock.time_in_day(app));
   bool sun_visible = (sun.w > 0 && sun.h > 0);
 
-  for (i32 y = 0; y < H; ++y) {
-    const u8 *row_rle = &bg_clouds[CLOUD_ROW_OFFSETS[y]];
+  for (i32 dy = 0; dy < CLOUD_TEXTURE_HEIGHT; ++dy) {
+    const u8 *row_rle = &bg_clouds[CLOUD_ROW_OFFSETS[dy]];
     i32 tex_x = 0;
 
+    auto y = dy + H - CLOUD_TEXTURE_HEIGHT;
     const bool sun_row = sun_visible && (y >= sun.y && y < sun.y + sun.h);
 
     while (true) {
@@ -125,6 +182,7 @@ void Sky::render(App &app, Surface render_region, Clock &clock) {
 
         // middle (sun overlap → manual blend)
         for (i32 x = ox0; x < ox1; ++x) {
+          assert(fb.get_pixel_format() == PixelFormat::RGB565);
           u16 bg = fb.get_pixel(x, y); // sun already drawn
           u16 out = blend_rgb565(bg, cloud_color, CLOUD_COLORS[value]);
           fb.set_pixel(x, y, out);

@@ -17,24 +17,6 @@ class Sky {
 public:
   Sky() : sun_texture{sun, sun_WIDTH, sun_HEIGHT} {}
 
-  void set_sky_color(std::uint16_t sky_color) {
-    if (this->sky_color == sky_color)
-      return;
-    this->sky_color = sky_color;
-  }
-
-  void set_cloud_color(std::uint16_t cloud_color) {
-    if (this->cloud_color == cloud_color)
-      return;
-    this->cloud_color = cloud_color;
-  }
-
-  void set_x_offset(int x_offset) {
-    if (this->x_offset == x_offset)
-      return;
-    this->x_offset = x_offset;
-  }
-
   static int max_x_offset() { return CLOUD_TEXTURE_WIDTH; }
 
   void render(App &app, Surface render_region, Clock &clock);

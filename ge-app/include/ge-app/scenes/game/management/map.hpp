@@ -36,19 +36,27 @@ public:
     // Handle navigation with joystick
     static constexpr float MOVE_THRESHOLD = 0.5f;
     static constexpr float CENTER_THRESHOLD = 0.3f;
-    static constexpr float MAP_MOVE_SPEED = 5.0f; // pixels per tick
+    static constexpr float MAP_MOVE_SPEED = 100.0f; // pixels per second
 
-    // Move the map view (crosshair stays at center)
-    if (joystick.x < -MOVE_THRESHOLD) {
-      map_offset_x -= MAP_MOVE_SPEED;
-    } else if (joystick.x > MOVE_THRESHOLD) {
-      map_offset_x += MAP_MOVE_SPEED;
+    // Move the map view (crosshair stays at center) - frame-rate independent
+    if (joystick.x < -MOVE_THRESHOLD && !joy_moved_x) {
+      map_offset_x -= MAP_MOVE_SPEED * dt;
+      joy_moved_x = true;
+    } else if (joystick.x > MOVE_THRESHOLD && !joy_moved_x) {
+      map_offset_x += MAP_MOVE_SPEED * dt;
+      joy_moved_x = true;
+    } else if (joystick.x > -CENTER_THRESHOLD && joystick.x < CENTER_THRESHOLD) {
+      joy_moved_x = false;
     }
 
-    if (joystick.y < -MOVE_THRESHOLD) {
-      map_offset_y -= MAP_MOVE_SPEED;
-    } else if (joystick.y > MOVE_THRESHOLD) {
-      map_offset_y += MAP_MOVE_SPEED;
+    if (joystick.y < -MOVE_THRESHOLD && !joy_moved_y) {
+      map_offset_y -= MAP_MOVE_SPEED * dt;
+      joy_moved_y = true;
+    } else if (joystick.y > MOVE_THRESHOLD && !joy_moved_y) {
+      map_offset_y += MAP_MOVE_SPEED * dt;
+      joy_moved_y = true;
+    } else if (joystick.y > -CENTER_THRESHOLD && joystick.y < CENTER_THRESHOLD) {
+      joy_moved_y = false;
     }
 
     // Apply Y clamping
@@ -80,6 +88,19 @@ public:
     // Draw crosshair at center of screen
     font.render_colored("+", -1, fb_region, screen_center_x - 3,
                         screen_center_y - 4, 0xFFFF);
+
+    // Draw boat position on map
+    i32 boat_rel_x = boat_x - crosshair_x;
+    i32 boat_rel_y = boat_y - crosshair_y;
+    i32 boat_screen_x = screen_center_x + boat_rel_x;
+    i32 boat_screen_y = screen_center_y + boat_rel_y;
+    
+    // Only draw boat marker if on screen
+    if (boat_screen_x >= 0 && boat_screen_x < (i32)fb_region.get_width() &&
+        boat_screen_y >= 0 && boat_screen_y < (i32)fb_region.get_height()) {
+      font.render_colored("B", -1, fb_region, boat_screen_x, boat_screen_y,
+                          0x07E0); // Green for boat
+    }
 
     // Draw bookmarks
     for (u32 i = 0; i < MAX_BOOKMARKS; i++) {
@@ -130,17 +151,26 @@ public:
 
     if (active_count == 0) {
       font.render_colored("None yet", -1, fb_region, 15, y_pos, 0x7BEF);
+    } else if (active_count >= MAX_BOOKMARKS) {
+      font.render_colored("(Full - new adds remove oldest)", -1, fb_region, 15, y_pos, 0xFFE0); // Yellow
     }
 
     // Instructions
-    font.render_colored("A: Add Bookmark  B: Return", -1, fb_region, 10,
+    char instr_buf[64];
+    snprintf(instr_buf, sizeof(instr_buf), "A: Add Bookmark  B: Return");
+    font.render_colored(instr_buf, -1, fb_region, 10,
                         fb_region.get_height() - line_height - 5, 0x7BEF);
   }
 
   bool on_button_clicked(Button btn) override {
     if (btn == Button::Button1) {
       // Add bookmark at crosshair position
-      add_bookmark();
+      bool added = add_bookmark();
+      if (!added) {
+        // All slots full - remove oldest and add new one
+        remove_first_bookmark();
+        add_bookmark();
+      }
       return true;
     } else if (btn == Button::Button2) {
       // Return to management menu
@@ -163,19 +193,21 @@ private:
   Bookmark bookmarks[MAX_BOOKMARKS];
   float map_offset_x = 0.0f;
   float map_offset_y = 0.0f;
+  bool joy_moved_x = false;
+  bool joy_moved_y = false;
 
   i32 get_boat_x();
   i32 get_boat_y();
   Clock &get_clock();
 
-  void add_bookmark() {
+  bool add_bookmark() {
     // Find first empty slot
     for (u32 i = 0; i < MAX_BOOKMARKS; i++) {
       if (!bookmarks[i].active) {
         bookmarks[i].active = true;
         bookmarks[i].x = static_cast<i32>(map_offset_x);
         bookmarks[i].y = static_cast<i32>(map_offset_y);
-        bookmarks[i].icon = '0' + (i % 10); // Use 0-9 as icons
+        bookmarks[i].icon = '0' + i; // Use 0-4 as icons
 
         // Generate bookmark name based on current time
         auto &clock = get_clock();
@@ -186,6 +218,17 @@ private:
 
         snprintf(bookmarks[i].name, sizeof(bookmarks[i].name),
                  "day %u %u %s", day, display_hr, am_pm);
+        return true;
+      }
+    }
+    return false; // All slots full
+  }
+
+  void remove_first_bookmark() {
+    // Remove the first active bookmark (oldest)
+    for (u32 i = 0; i < MAX_BOOKMARKS; i++) {
+      if (bookmarks[i].active) {
+        bookmarks[i].active = false;
         return;
       }
     }

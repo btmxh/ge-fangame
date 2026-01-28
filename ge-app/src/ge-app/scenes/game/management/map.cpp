@@ -9,8 +9,8 @@ namespace mgmt {
 MapScene::MapScene(ManagementUIScene &parent)
     : Scene{parent.get_app()}, parent{parent} {
   // Initialize to boat's current position
-  map_offset_x = 0.0f;
-  map_offset_y = 0.0f;
+  map_offset_x = static_cast<float>(get_boat_x());
+  map_offset_y = static_cast<float>(get_boat_y());
 
   // Initialize bookmarks
   for (u32 i = 0; i < MAX_BOOKMARKS; i++) {

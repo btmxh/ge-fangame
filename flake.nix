@@ -4,6 +4,8 @@
     systems.url = "github:nix-systems/default";
     flake-utils.url = "github:numtide/flake-utils";
     git-hooks.url = "github:cachix/git-hooks.nix";
+    jailed-agents.url = "github:btmxh/jailed-agents";
+    jail-nix.url = "sourcehut:~alexdavid/jail.nix";
   };
 
   outputs =
@@ -12,6 +14,8 @@
       nixpkgs,
       systems,
       git-hooks,
+      jailed-agents,
+      jail-nix,
       ...
     }:
     let
@@ -29,7 +33,9 @@
               soundfile
             ]
           );
-          inherit (self.checks.${system}.pre-commit-check) shellHook enabledPackages;
+          inherit (self.checks.${system}.pre-commit-check) shellHook enabledPackages config;
+          inherit (config) package configFile;
+          jail = jail-nix.lib.init pkgs;
         in
         {
           default = pkgs.mkShell {
@@ -58,23 +64,48 @@
               export CMAKE_COLOR_DIAGNOSTICS=ON
             '';
 
-            packages = with pkgs; [
-              openocd
-              gdb
-              tio
-              ffmpeg
+            packages =
+              with pkgs;
+              [
+                openocd
+                gdb
+                tio
+                ffmpeg
 
-              # tooling
-              clang-tools
-              nixd
-              nixfmt-rfc-style
-              ty
+                # tooling
+                clang-tools
+                nixd
+                nixfmt-rfc-style
+                ty
 
-              # cmake
-              gersemi
-              cmake-lint
-              neocmakelsp
-            ];
+                # cmake
+                gersemi
+                cmake-lint
+                neocmakelsp
+              ]
+              ++ (builtins.attrValues (
+                jailed-agents.lib.${system}.makeJailedAgents {
+                  extraPkgs = [
+                    ruff
+                    ty
+                    nixfmt-rfc-style
+                    package
+                    cmake
+                    ninja
+                    pkg-config
+                    gcc-arm-embedded
+                    gcc
+                    clang-tools
+                    gersemi
+                  ]
+                  ++ enabledPackages;
+
+                  extraJailOptions = with jail.combinators; [
+                    (readonly configFile)
+                    (readonly (lib.getExe package))
+                  ];
+                }
+              ));
           };
         }
       );

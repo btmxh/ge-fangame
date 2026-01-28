@@ -340,7 +340,11 @@ void App::audio_bgm_play(const std::uint8_t *data, std::size_t len, bool loop) {
   app_impl_instance->bgm = {data, len, 0, loop, true};
 }
 
-void App::audio_bgm_stop() { app_impl_instance->bgm.active = false; }
+void App::audio_bgm_stop() {
+  auto *impl = app_impl_instance.get();
+  impl->bgm.active = false;
+  SDL_ClearAudioStream(impl->audio_stream);
+}
 
 bool App::audio_bgm_is_playing() { return app_impl_instance->bgm.active; }
 

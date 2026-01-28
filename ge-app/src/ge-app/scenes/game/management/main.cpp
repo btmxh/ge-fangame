@@ -21,6 +21,7 @@ void ManagementUIScene::show_inventory_screen() {
 }
 
 void ManagementUIScene::show_map_screen() {
+  map_scene.on_enter();
   current_screen = ManagementUIScreen::Map;
 }
 

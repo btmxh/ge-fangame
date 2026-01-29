@@ -54,6 +54,8 @@ public:
 
   Boat &get_boat() { return boat; }
 
+  void start_new_game() { boat = Boat{}; }
+
 private:
   WorldScene &parent;
   Boat boat;

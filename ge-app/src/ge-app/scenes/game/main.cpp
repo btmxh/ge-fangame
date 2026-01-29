@@ -33,7 +33,7 @@ static DialogMessage tutorial_messages[3] = {
 
 GameScene::GameScene(RootScene &parent)
     : ContainerScene{parent.get_app()}, parent{parent}, bgm{*this},
-      world{*this}, hud{*this}, management_ui(*this) {
+      world{*this}, hud{*this}, management_ui(*this), game_over{*this} {
   set_scenes(sub_scene_array);
   // tutorial.initialize(dialog_scene, tutorial_messages, 3);
 }
@@ -43,6 +43,8 @@ DialogScene &GameScene::get_dialog_scene() { return parent.get_dialog_scene(); }
 void GameScene::on_mode_changed(GameMode old_mode, GameMode new_mode) {
   if (old_mode == new_mode)
     return;
+  // // DEBUG: trigger game over
+  // get_player_stats().apply_damage(app, 10000);
   world.on_mode_changed(old_mode, new_mode);
 }
 
@@ -86,6 +88,10 @@ void GameScene::on_mode_changed(GameMode old_mode, GameMode new_mode) {
 
 bool GameScene::is_active() const {
   return parent.is_current_screen(RootSceneScreen::Game);
+}
+void GameScene::return_to_main_menu() {
+  world.end_game();
+  parent.switch_to_main_menu();
 }
 } // namespace scenes
 } // namespace ge

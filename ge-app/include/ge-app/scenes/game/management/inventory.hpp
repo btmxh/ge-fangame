@@ -23,6 +23,12 @@ public:
 
   Inventory &get_inventory() { return inventory; }
 
+  void start_new_game() {
+    inventory.clear();
+    selected_index = 0;
+    scroll_offset = 0;
+  }
+
   void tick(float dt) override {
     auto joystick = app.get_joystick_state();
 
@@ -77,8 +83,7 @@ public:
 
     // Display items
     if (inventory.get_item_count() == 0) {
-      font.render_colored("No fish caught yet!", -1, fb_region, 10, y_pos,
-                          0x7BEF);
+      font.render_colored("Nothing here!", -1, fb_region, 10, y_pos, 0x7BEF);
       y_pos += line_height;
       font.render_colored("Go fishing to add items.", -1, fb_region, 10, y_pos,
                           0x7BEF);
@@ -126,7 +131,7 @@ public:
     }
 
     // Instructions
-    font.render_colored("A: Eat Fish  B: Return", -1, fb_region, 10,
+    font.render_colored("A: Use Item  B: Return", -1, fb_region, 10,
                         fb_region.get_height() - line_height - 10, 0x7BEF);
   }
 

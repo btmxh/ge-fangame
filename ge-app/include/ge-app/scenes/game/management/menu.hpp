@@ -16,6 +16,7 @@ namespace mgmt {
 enum class Action {
   ViewStatus,
   ViewInventory,
+  ViewMap,
 };
 
 class MenuScene : public Scene {
@@ -27,23 +28,7 @@ public:
     menu.move_selection(joystick.y);
   }
 
-  void render(Surface &fb_region) override {
-    // Clear screen with dark background
-    hal::gpu::fill(fb_region, 0x0000);
-
-    // Title
-    Font::regular_font().render_colored("=== Management ===", -1, fb_region, 80,
-                                        30, 0xFFFF);
-
-    // Subtitle
-    Font::regular_font().render_colored("Select an option:", -1, fb_region, 70,
-                                        50, 0x7BEF);
-
-    // Render menu
-    auto menu_region = fb_region.subsurface(0, 70, fb_region.get_width(),
-                                            fb_region.get_height() - 70);
-    menu.render(menu_region, Font::regular_font());
-  }
+  void render(Surface &fb_region) override;
 
   bool on_button_clicked(Button btn) override {
     if (btn == Button::Button1) {
@@ -63,7 +48,7 @@ private:
   ManagementUIScene &parent;
 
   ui::Menu menu;
-  ui::MenuItem menu_items[2];
+  ui::MenuItem menu_items[3];
 };
 
 } // namespace mgmt

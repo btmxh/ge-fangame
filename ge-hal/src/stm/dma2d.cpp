@@ -59,7 +59,10 @@ static void setup_input(ConstSurface src, u8 global_alpha = 0,
   DMA2D->FGOR = src.get_stride() - src.get_width();
 }
 
-static void fire() { DMA2D->CR |= DMA2D_CR_START; }
+static void fire() {
+  DMA2D->CR |= DMA2D_CR_START;
+  wait_idle();
+}
 
 void fill(Surface dst, u32 color) {
   wait_idle();
@@ -91,9 +94,7 @@ void blit_blend(Surface dst, ConstSurface src, u8 global_alpha) {
   wait_idle();
   set_mode(Mode::M2M_BLEND);
   setup_output(dst);
-  setup_input(src, global_alpha,
-              // Alpha Mode: 0=NoMod, 1=Replace, 2=Combine (Multiply)
-              (global_alpha < 255) ? u8{2} : u8{0});
+  setup_input(src, global_alpha, 2);
   setup_background(dst);
   fire();
 }

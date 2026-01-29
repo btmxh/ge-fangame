@@ -29,6 +29,8 @@ public:
     return current_screen == screen;
   }
 
+  void switch_to_main_menu();
+
 private:
   GameScene game_scene;
   MenuScene menu_scene;

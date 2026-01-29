@@ -42,7 +42,14 @@ class WorldScene : public ContainerScene {
 public:
   WorldScene(GameScene &parent);
 
-  void start_new_game() { time_update_scene.start_new_game(); }
+  void start_new_game() {
+    boat_scene.start_new_game();
+    obstacle_scene.start_new_game();
+    time_update_scene.start_new_game();
+    world_dt = 0;
+  }
+
+  void end_game() { time_update_scene.end_game(); }
 
   Clock &get_clock() { return time_update_scene.get_clock(); }
   PlayerStats &get_player_stats() {

@@ -45,6 +45,14 @@ public:
 
   bool is_active() const override;
 
+  Surface render_bg(Surface &fb);
+
+  void start_new_game() {
+    inventory_scene.start_new_game();
+    map_scene.start_new_game();
+    back_to_menu();
+  }
+
 private:
   GameScene &parent;
   // Management UI sub-scenes
@@ -55,6 +63,8 @@ private:
   ManagementUIScreen current_screen = ManagementUIScreen::Menu;
   std::array<Scene *, 4> management_sub_scenes = {
       &management_menu, &status_scene, &inventory_scene, &map_scene};
+
+  TextureARGB8888 bg_texture;
 };
 
 } // namespace game

@@ -19,5 +19,11 @@ void RootScene::start_game() {
 
 void RootScene::exit() { app.request_quit(); }
 
+void RootScene::switch_to_main_menu() {
+  game_scene.on_exit();
+  current_screen = RootSceneScreen::Menu;
+  menu_scene.on_enter();
+}
+
 } // namespace scenes
 } // namespace ge

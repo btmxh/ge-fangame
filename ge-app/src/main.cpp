@@ -22,7 +22,6 @@ public:
     auto start = now();
     root_scene.render(fb);
     auto end = now();
-    // log("Frame render time: %d ms", static_cast<int>(end - start));
   }
 
   void on_button_clicked(Button btn) override {

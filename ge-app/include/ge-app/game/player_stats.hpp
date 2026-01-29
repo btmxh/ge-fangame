@@ -17,7 +17,7 @@ public:
   static constexpr float STAMINA_HEAL_RATE =
       0.5f; // Stamina per second when healing
   static constexpr float FOOD_DRAIN_RATE =
-      0.05f; // Food drain per second (passive)
+      5.0f; // Food drain per second (passive)
   static constexpr float STAMINA_DRAIN_ON_TURN =
       10.0f; // Stamina drain when turning
   static constexpr u32 INITIAL_HP = 100;
@@ -84,13 +84,13 @@ public:
     } else {
       hp -= damage;
     }
-
-    if (hp == 0) {
-      // TODO: show game over screen
-    }
   }
 
   i64 get_last_taken_damage_time() const { return last_taken_damage_time; }
+
+  bool is_dead() const { return hp == 0 || food <= 0; }
+
+  i32 get_max_y() const { return max_y; }
 
 private:
   i64 last_taken_damage_time = -1;

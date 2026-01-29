@@ -53,11 +53,13 @@ public:
 
   const Timer &get_game_timer() const { return day_timer; }
 
-  void reset() {
+  void reset(App &app) {
     // start at 6AM
-    day_timer.reset(DAY_LENGTH / 4);
+    day_timer.reset(app, DAY_LENGTH / 4);
     sped_up = false;
   }
+
+  void pause(App &app) { day_timer.set_multiplier(app, 0, 1); }
 
   static constexpr i64 DAY_LENGTH =
       180 * 1000; // each day is 3 minute in real time

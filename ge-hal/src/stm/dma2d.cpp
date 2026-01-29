@@ -59,7 +59,10 @@ static void setup_input(ConstSurface src, u8 global_alpha = 0,
   DMA2D->FGOR = src.get_stride() - src.get_width();
 }
 
-static void fire() { DMA2D->CR |= DMA2D_CR_START; }
+static void fire() {
+  DMA2D->CR |= DMA2D_CR_START;
+  wait_idle();
+}
 
 void fill(Surface dst, u32 color) {
   wait_idle();

@@ -31,6 +31,13 @@ class MapScene : public Scene {
 public:
   MapScene(ManagementUIScene &parent);
 
+  void start_new_game() {
+    // Clear bookmarks
+    for (u32 i = 0; i < MAX_BOOKMARKS; i++) {
+      bookmarks[i] = Bookmark{};
+    }
+  }
+
   void on_enter() {
     // set map_offset to boat position
     map_offset_x = static_cast<float>(get_boat_x());

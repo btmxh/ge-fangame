@@ -172,6 +172,7 @@ public:
 
   void tick(float dt) override;
   void render(Surface &fb_region) override;
+  void start_new_game() { whirlpools.clear(); }
 
 private:
   WorldScene &parent;

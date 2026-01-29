@@ -1,5 +1,6 @@
 #include "ge-app/scenes/game/world/time_update.hpp"
 #include "ge-app/scenes/game/world/main.hpp"
+#include <cinttypes>
 
 namespace ge {
 namespace scenes {
@@ -10,7 +11,14 @@ TimeUpdateScene::TimeUpdateScene(WorldScene &parent)
     : Scene(parent.get_app()), parent(parent) {}
 
 void TimeUpdateScene::tick(float dt) {
+  if (player_stats.is_dead()) {
+    end_game();
+    parent.get_world_dt_setter().set(0);
+    return;
+  }
+
   auto now = parent.get_clock().get_game_timer().get(app);
+
   if (last_frame_world_time >= 0) {
     parent.get_world_dt_setter().set((now - last_frame_world_time) * 1e-3f);
   }

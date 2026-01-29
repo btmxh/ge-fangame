@@ -25,9 +25,11 @@ public:
 
   void start_new_game() {
     last_frame_world_time = -1;
-    clock.reset();
+    clock.reset(app);
     player_stats = PlayerStats();
   }
+
+  void end_game() { clock.pause(app); }
 
 private:
   WorldScene &parent;

@@ -14,10 +14,7 @@ class ModeIndicatorScene : public Scene {
 public:
   ModeIndicatorScene(HUDScene &parent);
 
-  void render(Surface &fb_region) override {
-    auto mode_indicator_region = fb_region.subsurface(10, 30, 120, 16);
-    indicator.render(mode_indicator_region);
-  }
+  void render(Surface &fb_region) override;
 
   bool on_button_clicked(Button btn) override {
     if (btn == Button::Button2) {
@@ -30,6 +27,8 @@ public:
 
   GameMode switch_mode();
   GameMode get_current_mode() const { return indicator.get_current_mode(); }
+
+  void start_new_game() { indicator.reset(); }
 
 private:
   HUDScene &parent;

@@ -44,6 +44,8 @@ public:
 
   GameMode get_current_mode() const { return current_mode; }
 
+  void reset() { current_mode = GameMode::Steering; }
+
 private:
   GameMode current_mode = GameMode::Steering;
 };

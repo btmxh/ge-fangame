@@ -5,6 +5,7 @@
 #include "ge-app/game/player_stats.hpp"
 #include "ge-app/scenes/base.hpp"
 #include "ge-app/scenes/game/bgm.hpp"
+#include "ge-app/scenes/game/gameover.hpp"
 #include "ge-app/scenes/game/hud/main.hpp"
 #include "ge-app/scenes/game/management/main.hpp"
 #include "ge-app/scenes/game/world/main.hpp"
@@ -19,6 +20,7 @@ public:
   explicit GameScene(RootScene &parent);
 
   game::WorldScene &get_world_scene() { return world; }
+  game::ManagementUIScene &get_management_ui_scene() { return management_ui; }
   DialogScene &get_dialog_scene();
 
   Clock &get_clock() { return world.get_clock(); }
@@ -31,7 +33,15 @@ public:
   bool is_active() const override;
 
   void on_enter() { bgm.on_enter(); }
+  void start_new_game() {
+    world.start_new_game();
+    hud.start_new_game();
+    management_ui.start_new_game();
+    management_ui.back_to_menu();
+  }
+  void end_game() { world.end_game(); }
   void on_exit() { bgm.on_exit(); }
+  void return_to_main_menu();
 
 private:
   RootScene &parent;
@@ -41,7 +51,9 @@ private:
   game::WorldScene world;
   game::HUDScene hud;
   game::ManagementUIScene management_ui;
-  std::array<Scene *, 4> sub_scene_array = {&bgm, &world, &hud, &management_ui};
+  game::GameOverScene game_over;
+  std::array<Scene *, 5> sub_scene_array = {&bgm, &world, &hud, &management_ui,
+                                            &game_over};
 
   // Tutorial system
   // TutorialSystem tutorial;
@@ -50,6 +62,5 @@ private:
   // i64 last_frame_world_time;
   // bool is_accelerating;
 };
-
 } // namespace scenes
 } // namespace ge

@@ -7,6 +7,7 @@
 #include "ge-app/scenes/game/hud/clock.hpp"
 #include "ge-app/scenes/game/hud/compass.hpp"
 #include "ge-app/scenes/game/hud/mode_indicator.hpp"
+#include "ge-app/scenes/game/hud/y_hud.hpp"
 
 namespace ge {
 namespace scenes {
@@ -27,13 +28,17 @@ public:
 
   Clock &get_clock();
 
+  void start_new_game() { mode_indicator.start_new_game(); }
+
 private:
   GameScene &parent;
 
   hud::ModeIndicatorScene mode_indicator;
   hud::CompassScene compass;
   hud::ClockScene clock;
-  std::array<Scene *, 3> hud_sub_scenes{&mode_indicator, &compass, &clock};
+  hud::YHUDScene y_hud;
+  std::array<Scene *, 4> hud_sub_scenes{&mode_indicator, &compass, &clock,
+                                        &y_hud};
 };
 
 } // namespace game

@@ -8,7 +8,7 @@ namespace game {
 
 HUDScene::HUDScene(GameScene &parent)
     : ContainerScene(parent.get_app()), parent{parent}, mode_indicator{*this},
-      compass{*this}, clock{*this} {
+      compass{*this}, clock{*this}, y_hud{*this} {
   set_scenes(hud_sub_scenes);
 }
 

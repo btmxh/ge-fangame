@@ -4,6 +4,7 @@
 #include "ge-app/game/inventory.hpp"
 #include "ge-app/game/player_stats.hpp"
 #include "ge-app/scenes/base.hpp"
+#include "ge-app/ui/menu.hpp"
 #include "ge-hal/app.hpp"
 #include "ge-hal/gpu.hpp"
 #include "ge-hal/surface.hpp"
@@ -31,38 +32,8 @@ public:
 
   void tick(float dt) override {
     auto joystick = app.get_joystick_state();
-
-    // Handle navigation with joystick
-    static constexpr float MOVE_THRESHOLD = 0.5f;
-    static constexpr float CENTER_THRESHOLD = 0.3f;
-
-    if (inventory.get_item_count() > 0) {
-      if (joystick.y < -MOVE_THRESHOLD && !joy_moved) {
-        // Move up
-        if (selected_index > 0) {
-          selected_index--;
-          // Adjust scroll if needed
-          if (selected_index < scroll_offset) {
-            scroll_offset = selected_index;
-          }
-        }
-        joy_moved = true;
-      } else if (joystick.y > MOVE_THRESHOLD && !joy_moved) {
-        // Move down
-        if (selected_index < inventory.get_item_count() - 1) {
-          selected_index++;
-          // Adjust scroll if needed
-          const u32 max_visible_items = 8;
-          if (selected_index >= scroll_offset + max_visible_items) {
-            scroll_offset = selected_index - max_visible_items + 1;
-          }
-        }
-        joy_moved = true;
-      } else if (joystick.y > -CENTER_THRESHOLD &&
-                 joystick.y < CENTER_THRESHOLD) {
-        joy_moved = false;
-      }
-    }
+    ui::Menu::joystick_move_logic(joystick.y, joy_moved, selected_index,
+                                  inventory.get_item_count());
   }
 
   void render(Surface &fb_region) override {

@@ -2,6 +2,11 @@
 
 English version available in README_EN.md file. **Nhóm chỉ chịu trách nhiệm với những nội dung trong file README tiếng Việt.**
 
+## Demo Videos
+
+- [SDL Backend Demo](demo/sdl_backend.mp4)
+- [STM Backend Demo](demo/stm_backend.mp4)
+
 ## Giới thiệu project
 
 Project là một fangame 2D đơn giản về một câu chuyện vượt qua đại dương để gặp được "người tri kỷ". Trong game này, người chơi cần thực hiện:

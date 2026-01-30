@@ -109,8 +109,8 @@ void StatusScene::render(Surface &fb_region) {
   y_pos += 12;
 
   // Food
-  float food_percent = player_stats.get_food_percent();
-  snprintf(inv_buf, sizeof(inv_buf), "  Food: %.0f%%", food_percent);
+  int food_percent = player_stats.get_food_percent();
+  snprintf(inv_buf, sizeof(inv_buf), "  Food: %d%%", food_percent);
   font.render_colored(inv_buf, -1, fb_region, 10, y_pos, 0xFBE0);
   y_pos += line_height;
 
@@ -119,8 +119,8 @@ void StatusScene::render(Surface &fb_region) {
   y_pos += 12;
 
   // Stamina
-  float stamina_percent = player_stats.get_stamina_percent();
-  snprintf(inv_buf, sizeof(inv_buf), "  Stamina: %.0f%%", stamina_percent);
+  int stamina_percent = player_stats.get_stamina_percent();
+  snprintf(inv_buf, sizeof(inv_buf), "  Stamina: %d%%", stamina_percent);
   font.render_colored(inv_buf, -1, fb_region, 10, y_pos, 0x07FF);
   y_pos += line_height;
 

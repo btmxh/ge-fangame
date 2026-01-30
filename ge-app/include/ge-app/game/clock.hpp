@@ -24,9 +24,9 @@ public:
     static char buf[64] = {0};
     u32 hr = get_hr(app);
     const char *am_pm = (hr >= 12) ? "PM" : "AM";
-    snprintf(buf, sizeof(buf), "Day %u, %u %s (%.1fx)", get_num_days(app) + 1,
+    snprintf(buf, sizeof(buf), "Day %u, %u %s (%u.0x)", get_num_days(app) + 1,
              (hr % 12 == 0) ? 12 : (hr % 12), am_pm,
-             (float)day_timer.get_multiplier_num() /
+             (unsigned)day_timer.get_multiplier_num() /
                  day_timer.get_multiplier_den());
     return buf;
   }

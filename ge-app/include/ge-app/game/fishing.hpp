@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ge-app/game/inventory.hpp"
+#include "ge-app/rng.hpp"
 #include "ge-app/scenes/dialog.hpp"
 #include "ge-hal/app.hpp"
 #include <algorithm>
@@ -220,8 +221,7 @@ private:
     // Random chance for fish to bite (check every frame)
     if (fishing_timer > MIN_FISHING_TIME) {
       float bite_chance = BITE_CHANCE_PER_SECOND * dt;
-      float random_value =
-          static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+      float random_value = rng::next_float();
 
       if (random_value < bite_chance) {
         // Fish is biting!

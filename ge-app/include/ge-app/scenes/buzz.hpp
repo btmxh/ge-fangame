@@ -16,6 +16,10 @@ public:
   void buzz_for(i64 time);
 
   void tick(float dt) override;
+  bool on_button_clicked(Button btn) override {
+    buzz_for(50);
+    return false;
+  }
 
 private:
   RootScene &parent;

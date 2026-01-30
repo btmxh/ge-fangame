@@ -18,7 +18,7 @@ public:
   static constexpr float STAMINA_HEAL_RATE =
       0.5f; // Stamina per second when healing
   static constexpr float FOOD_DRAIN_RATE =
-      5.0f; // Food drain per second (passive)
+      0.1f; // Food drain per second (passive)
   static constexpr float STAMINA_DRAIN_ON_TURN =
       10.0f; // Stamina drain when turning
   static constexpr u32 INITIAL_HP = 100;
@@ -80,7 +80,7 @@ public:
     if (damage == 0)
       return;
     last_taken_damage_time = app.now();
-    scene.buzz_for(50);
+    // scene.buzz_for(50);
     if (damage >= hp) {
       hp = 0;
     } else {

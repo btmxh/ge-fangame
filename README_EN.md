@@ -3,6 +3,11 @@
 This is a fangame project for CTB Girls' Dorm's _Glow Embrace_ parody, released
 in the EP _And so, I’ll keep wishing for that day to come._
 
+## Demo Videos
+
+- [SDL Backend Demo](demo/sdl_backend.mp4)
+- [STM Backend Demo](demo/stm_backend.mp4)
+
 ## Build & Run
 
 This project follows standard CMake build procedures. A `flake.nix` file is

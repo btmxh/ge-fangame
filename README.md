@@ -1,68 +1,50 @@
 # ge-fangame
 
-This is a fangame project for CTB Girls' Dorm's _Glow Embrace_ parody, released
-in the EP _And so, I’ll keep wishing for that day to come._
+English version available in README_EN.md file. **Nhóm chỉ chịu trách nhiệm với những nội dung trong file README tiếng Việt.**
 
-## Build & Run
+## Giới thiệu project
 
-This project follows standard CMake build procedures. A `flake.nix` file is
-provided, but the use of Nix in this project is not required. One should still
-use it, however.
+Project là một fangame 2D đơn giản về một câu chuyện vượt qua đại dương để gặp được "người tri kỷ". Trong game này, người chơi cần thực hiện:
+- Lái thuyền sao cho đạt được độ xa bờ (tọa độ Y, coi là điểm số chính của game) cao nhất.
+- Tránh các chướng ngại vật xuất hiện trong thời điểm biển động (tầm 1PM-6PM mỗi ngày).
+- Câu cá để hồi phục các thanh thức ăn và thể lực (để lái được thuyền).
+- Dự báo các cơn bão (chướng ngại vật chết người) bằng các dụng cụ trên thuyền và lái tránh các cơn bão này (*bỏ vì không đủ thời gian*).
+- Nâng cấp thuyền, dụng cụ, "stat vật lý" của người chơi, chuẩn bị lương thực thực phẩm trước mỗi chuyến đi thông qua hệ thống currency trong game (*bỏ vì không đủ thời gian*).
 
-### PC build
+Phân công công việc:
+- Nguyễn Hoàng Xuân Sơn: viết driver cho DMA2D, SDRAM, thiết kế các menu giao diện game.
+- Nguyễn Hồng Đăng: enable FPU, implement chức năng lái thuyền, câu cá trong game.
+- Ngô Duy Anh: viết driver cho ILI9341, LTDC, UART, backend SDL, thiết kế chính game.
 
-This project is meant to be run on a STM32 microcontroller, but building for PC
-is possible for testing purposes.
+## Hướng dẫn cài đặt
 
-First, ensure Python (for automatic asset bundling) and SDL3 is installed on
-your system. Then, configure and build without any extra options.
+Game sử dụng CMake và GCC để biên dịch (arm-none-eabi toolchain trên backend STM32 hoặc native toolchain trên PC), Python để bundle assets. Ngoài ra OpenOCD được sử dụng để flash lên MCU  (có thể dùng st-link nhưng OpenOCD tiện hơn nhiều do bỏ qua bước objcopy) và debug (cùng với GDB).
 
-```bash
-cmake -S. -Bbuild/pc && cmake --build build/pc
+Cách đơn giản nhất để cài đặt các công cụ cần thiết là sử dụng Nix direnv. File `flake.nix` trong project khai báo tất cả các công cụ cần sử dụng, và file này cũng được sử dụng để cài đặt môi trường trên CI.
+
+Để build cho PC, chạy CMake mà không cần thêm lựa chọn gì:
+```sh
+# configure
+cmake -S. -Bbuild/pc
+# build
+cmake --build build/pc -j
+# executable nằm ở build/pc/ge-app/(Debug/Release nếu Ninja Multi-Config)/ge-app
 ```
-
-The output executable is self-contained in a binary directory depending on your
-CMake generator.
-
-### STM32 build
-
-> [!NOTE]
-> This project only supports the Discovery kit with STM32F429ZI MCU.
-> Clocks, pins and peripherals are configured based on this kit alone.
-> Once input and audio is supported, wiring instructions will be properly
-> documented in this README file.
-
-To build for STM32, only the `arm-none-eabi-gcc` toolchain is supported. LLVM
-might work but some of the STM32-specific code heavily depends on GNU compiler
-extensions, so maybe Clang will complain about that.
-
-Python is still required for automatic asset bundling here. SDL3 is no longer
-required.
-
-To compile, configure your toolchain and run
-
-```bash
-cmake -S. -Bbuild/stm -DGE_HAL_STM32=ON && cmake --build build/stm
-
-# or if your toolchain was not yet configured, use the template toolchain file
-# in cmake/arm-none-eabi.cmake
+Để build cho STM, pass thêm option `-DGE_HAL_STM32=ON`trong bước configure. Ngoài ra nếu GCC native và cross-compiling toolchain đều available thì cũng phải set lại môi trường để trỏ đến cross-compiler, cách đơn giản nhất là sử dụng file toolchain trong project `cmake/arm-none-eabi.cmake`.
+```sh
+# configure
 cmake -S. -Bbuild/stm -DGE_HAL_STM32=ON\
-        -DCMAKE_TOOLCHAIN_FILE=cmake/arm-none-eabi.cmake &&
-cmake --build build/stm
+        -DCMAKE_TOOLCHAIN_FILE=cmake/arm-none-eabi.cmake
+# build
+cmake --build build/stm -j
+# ELF executable nằm ở build/stm/ge-app/(Debug/Release nếu Ninja Multi-Config)/ge-app(.exe)
 ```
-
-Handy scripts are provided in `scripts/` to flash and run. This requires
-`openocd` and `tio` (to read from stdout/USART1). One should treat these scripts
-as documentation, rather than proper tooling, as these do not cover all use
-cases.
-
-To flash, run:
-```bash
+Để flash/debug, sử dụng OpenOCD (`PATH_TO_THE_ELF` là đường dẫn đến ELF executable):
+```sh
+# Flash
 openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c "program PATH_TO_THE_ELF verify reset exit"
-```
 
-To debug, run:
-```bash
+# Debug
 openocd -f interface/stlink.cfg -f target/stm32f4x.cfg
 
 # in another terminal
@@ -73,51 +55,45 @@ gdb PATH_TO_THE_ELF
     (gdb) load # reflash the ELF
 ```
 
-Make sure to set up proper udev rules if you are on Linux.
+## Thiết kế phần cứng
 
-## Copyright
+Thiết kế phần cứng của project không có gì đặc biệt do chỉ sử dụng các peripheral có sẵn trên kit và một số linh kiện đơn giản (2 push button, 1 joystick và một bộ phát âm thanh (MAX98357A + 1 loa khuếch đại)).
 
-CTB Girls' Dorm's works are all for private use (not shared to anyone except the
-author), including the EP _And so, I’ll keep wishing for that day to come._ Such
-works, if distributed publicly, are blatant copyright infringements.
+Hướng dẫn cắm mạch:
+- Joystick: Nối GND và +5V đến các pin tương ứng, URX và URY lần lượt vào PC4 và PC5.
+- Push button: Nối GND, hai button A và B nối với PA0 và PC13.
+- Buzzer TMAB12A05: Nối GND và cực dương tương ứng, pin còn lại nối vào PB12.
 
-The EP _And so, I’ll keep wishing for that day to come._ contains three main
-tracks (details about why these three songs are chosen are intentionally
-omitted):
+## Thiết kế phần mềm
 
-- [Kitto](https://www.youtube.com/watch?v=dVAf4gRZro0),
-  from Tsunomaki Watame's _Hop Step Sheep_ album.
-- [Moshimo Unmei No Hito ga Iru No Nara](https://www.youtube.com/watch?v=l-k70gZmFqU),
-  from the single with the same title by Nishino Kana.
-- [Glow Embrace](https://www.youtube.com/watch?v=BWEmA6AxIyM),
-  from [Shirakami Fubuki](https://www.youtube.com/@ShirakamiFubuki)'s _FBKINGDOM_
-  album.
+Game hỗ trợ hai backend: STM32 backend (hiện chỉ hỗ trợ kit STM32F429ZIT6) và một cross-platform desktop backend dựa trên SDL. Trên backend STM32, project chỉ sử dụng các thư viện header CMSIS ([CMSIS](https://github.com/ARM-software/CMSIS_5), [cmsis_device_f4](https://github.com/STMicroelectronics/cmsis_device_f4/)) trên runtime. SDL backend cần có một gamepad để điều khiển, và mục đích chính là để thử nghiệm tiện lợi trên PC mà không cần phải dùng MCU.
 
-These tracks are rearranged for use as background music (BGM) in this fangame.
-The use of both _Kitto_ and _Glow Embrace_ are protected under Cover Corp's
-[Derivative Works Guidelines](https://hololivepro.com/en/terms/). However,
-Nishino Kana's _Moshimo Unmei No Hito ga Iru No Nara_ is not covered by any
-derivative works policy, and that the sole programmer does not have enough time
-to rearrange yet another song, and therefore this GitHub repo will skip this track
-completely (Nishino Kana deserves more than this!).
+Project **không** hỗ trợ và **không** phụ thuộc vào STM32CubeIDE, STM32CubeMX, TouchGFX và FreeRTOS. Quá trình biên dịch được thực hiện trực tiếp sử dụng GCC cross-compiler toolchain kết hợp với CMake. Project *có thể* hỗ trợ Clang (vì Clang phần lớn tương thích với GCC) nhưng điều này chưa được thử nghiệm.
 
-Character sprites and backgrounds are hand-drawn by the author, but based on
-the three _hololive_ VTubers' design: Shirakami Fubuki, Tsunomaki Watame, and
-Nakiri Ayame (once again, details about why these three VTubers are chosen
-are intentionally omitted). The use of these characters are also protected
-under the same Derivative Works Guidelines. However, currently there is only
-plans to use Fubuki's model due to time constraints.
+Project gồm hai module chính. `ge-hal`là thư viện trừu tượng hóa phần cứng (HAL) của PC/STM32, cung cấp một API chung cho cả hai backend. `ge-app` là executable game, được viết một cách cross-platform dựa trên API của `ge-hal`.
 
-> [!NOTE]
-> While this project is _legally_ a _hololive_ fangame, **DO NOT** expect it to
-> be one in any meaningful sense. The game story and characters are majorly
-> different from that of the VTubers.
+### ge-hal
 
-## Credits
+Do trên backend STM, project chỉ phụ thuộc vào các thư viện header CMSIS, phần lớn thư viện tương tác trực tiếp với các register trên STM. Phần code cho backend SDL khá đơn giản do SDL đã làm phần lớn công việc. API `ge-hal` expose một API chính bằng `ge::App` wrap cả chương trình và một API phụ trợ `ge::hal::gpu`, abstract cho DMA2D của thiết bị.
 
-See the corresponding `README.md` in `ge-app/assets`.
+Quá trình khởi tạo của `ge-hal` trên backend STM chủ yếu gồm có:
+- Enable FPU để hỗ trợ fp32.
+- Setup Clock để đạt được 180MHz (cần thiết cho performance cao).
+- Setup interrupt cho hai push button.
+- Setup SDRAM (để có đủ bộ nhớ cho các framebuffer).
+- Setup màn hình TFT9342 và LTDC.
+- Setup DMA2D (để blit nhanh hơn bằng phần cứng, tăng tốc các operation đồ họa).
+- Setup ADC (sử dụng DMA) cho Joystick
+- Setup Clock và DMA cho I2S audio.
 
-## License
+### ge-app
 
-All code and self-made assets in this project is in the public domain. Other
-borrowed works like fonts are released under their respective licenses.
+#### Asset bundling
+
+Quá trình bundle asset được thực hiện bằng các script Python (kèm một số thư viện đọc ảnh). Để đơn giản thì các file asset (ảnh, âm thanh, v.v.) được convert thành một cặp file header-source bằng C để có thể dễ dàng bundle trong project. Việc generate các file này được tự động hóa bằng CMake. Linker script sẽ đặt các mảng này trong đúng vị trí trên flash.
+
+#### Kiến trúc hệ thống
+
+Hệ thống được tổ chức thành các Scene (màn) để organize code. Các scene có thể chứa lẫn nhau, giúp cho việc compose các Scene dễ dàng hơn. Mỗi scene thừa kế từ lớp `Scene` gốc hoặc `ContainerScene`, và override các hàm tick (update), render, và các hàm nhận input.
+
+Ngoài ra, `ge-app` còn có các hàm thư viện high-level như để render text, sinh số ngẫu nhiên (từ một seed khởi tạo lấy từ phần cứng), đo thời gian (cho phép tăng tốc hoặc dừng đồng hồ). blend màu, v.v. Những chức năng này không low-level để nằm trong `ge-hal`, do đó được đưa trực tiếp vào `ge-app`.

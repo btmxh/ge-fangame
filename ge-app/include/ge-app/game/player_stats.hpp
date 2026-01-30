@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ge-app/scenes/buzz.hpp"
 #include "ge-hal/app.hpp"
 #include "ge-hal/core.hpp"
 #include <algorithm>
@@ -75,10 +76,11 @@ public:
   u32 get_ship_hp() const { return hp; }
   u32 get_max_ship_hp() const { return INITIAL_HP; }
 
-  void apply_damage(App &app, u32 damage) {
+  void apply_damage(App &app, scenes::BuzzScene &scene, u32 damage) {
     if (damage == 0)
       return;
     last_taken_damage_time = app.now();
+    scene.buzz_for(50);
     if (damage >= hp) {
       hp = 0;
     } else {

@@ -5,7 +5,7 @@ namespace ge {
 namespace scenes {
 RootScene::RootScene(App &app)
     : ContainerScene(app), game_scene(*this), menu_scene(*this),
-      dialog_scene(*this) {
+      dialog_scene(*this), buzz_scene(*this) {
   set_scenes(sub_scenes);
   menu_scene.on_enter();
 }

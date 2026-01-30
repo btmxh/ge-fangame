@@ -93,5 +93,6 @@ void GameScene::return_to_main_menu() {
   world.end_game();
   parent.switch_to_main_menu();
 }
+BuzzScene &GameScene::get_buzz_scene() { return parent.get_buzz_scene(); }
 } // namespace scenes
 } // namespace ge

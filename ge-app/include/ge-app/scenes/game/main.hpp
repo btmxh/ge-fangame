@@ -4,6 +4,7 @@
 #include "ge-app/game/inventory.hpp"
 #include "ge-app/game/player_stats.hpp"
 #include "ge-app/scenes/base.hpp"
+#include "ge-app/scenes/buzz.hpp"
 #include "ge-app/scenes/game/bgm.hpp"
 #include "ge-app/scenes/game/gameover.hpp"
 #include "ge-app/scenes/game/hud/main.hpp"
@@ -42,6 +43,8 @@ public:
   void end_game() { world.end_game(); }
   void on_exit() { bgm.on_exit(); }
   void return_to_main_menu();
+
+  BuzzScene &get_buzz_scene();
 
 private:
   RootScene &parent;

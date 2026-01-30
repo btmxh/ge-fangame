@@ -51,7 +51,8 @@ void ObstacleScene::tick(float tick_dt) {
     ++i;
   }
 
-  parent.get_player_stats().apply_damage(app, total_damage);
+  parent.get_player_stats().apply_damage(app, parent.get_buzz_scene(),
+                                         total_damage);
 }
 
 void ObstacleScene::render(Surface &fb_region) {

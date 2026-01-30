@@ -7,6 +7,7 @@
 #include "ge-app/game/inventory.hpp"
 #include "ge-app/game/player_stats.hpp"
 #include "ge-app/scenes/base.hpp"
+#include "ge-app/scenes/buzz.hpp"
 #include "ge-app/scenes/game/hud/main.hpp"
 #include "ge-app/scenes/game/world/boat.hpp"
 #include "ge-app/scenes/game/world/dock.hpp"
@@ -60,6 +61,7 @@ public:
 
   Boat &get_boat() { return boat_scene.get_boat(); }
   Inventory &get_inventory();
+  BuzzScene &get_buzz_scene();
 
   template <class ElemT>
   BaseSurface<ElemT> sky_region(BaseSurface<ElemT> &fb_region) {

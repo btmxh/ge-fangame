@@ -1,5 +1,6 @@
 #include "ge-app/scenes/game/world/main.hpp"
 
+#include "ge-app/scenes/buzz.hpp"
 #include "ge-app/scenes/game/hud/main.hpp"
 #include "ge-app/scenes/game/main.hpp"
 #include "ge-app/scenes/game/world/boat.hpp"
@@ -17,6 +18,8 @@ WorldScene::WorldScene(GameScene &parent)
 }
 
 Inventory &WorldScene::get_inventory() { return parent.get_inventory(); }
+
+BuzzScene &WorldScene::get_buzz_scene() { return parent.get_buzz_scene(); }
 
 GameMode WorldScene::get_current_mode() const {
   return parent.get_current_mode();

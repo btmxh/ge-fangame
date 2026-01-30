@@ -1,10 +1,12 @@
 #include "ge-app/scenes/main.hpp"
 #include "ge-app/rng.hpp"
 #include "ge-hal/app.hpp"
+#ifdef GE_HAL_STM32
+#include "ge-hal/stm/gpio.hpp"
+#endif
 #include "ge-hal/surface.hpp"
 
 namespace ge {
-
 class MainApp : public App {
 public:
   MainApp() : root_scene(*this) {}
@@ -49,6 +51,7 @@ private:
 int main() {
   ge::rng::init_seed();
   ge::MainApp app;
+
   app.loop();
   return 0;
 }

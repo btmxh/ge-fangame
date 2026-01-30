@@ -1,9 +1,6 @@
 #include "ge-app/scenes/main.hpp"
 #include "ge-app/rng.hpp"
 #include "ge-hal/app.hpp"
-#ifdef GE_HAL_STM32
-#include "ge-hal/stm/gpio.hpp"
-#endif
 #include "ge-hal/surface.hpp"
 
 namespace ge {

@@ -1,5 +1,11 @@
 # ge-fangame
 
+<div align="center">
+<b>I love my beautiful fox king who saved me from the Third Suicidal Era.</b>
+</div>
+
+![fbking](./image.png)
+
 This is a fangame project for CTB Girls' Dorm's _Glow Embrace_ parody, released
 in the EP _And so, I’ll keep wishing for that day to come._
 
